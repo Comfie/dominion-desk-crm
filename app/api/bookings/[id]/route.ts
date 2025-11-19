@@ -35,7 +35,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       where: {
         id,
         property: {
-          ownerId: session.user.id,
+          userId: session.user.id,
         },
       },
       include: {
@@ -83,7 +83,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       where: {
         id,
         property: {
-          ownerId: session.user.id,
+          userId: session.user.id,
         },
       },
     });
@@ -175,7 +175,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       where: {
         id,
         property: {
-          ownerId: session.user.id,
+          userId: session.user.id,
         },
       },
     });

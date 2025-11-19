@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
     const where: Record<string, unknown> = {
       property: {
-        ownerId: session.user.id,
+        userId: session.user.id,
       },
     };
 
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     const property = await prisma.property.findFirst({
       where: {
         id: validatedData.propertyId,
-        ownerId: session.user.id,
+        userId: session.user.id,
       },
     });
 
