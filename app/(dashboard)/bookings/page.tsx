@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Calendar, Filter } from 'lucide-react';
+import { Plus, Search, Calendar, Filter, CalendarDays } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -56,12 +56,20 @@ export default function BookingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Bookings" description="Manage your property bookings and reservations">
-        <Button asChild>
-          <Link href="/bookings/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Booking
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/bookings/calendar">
+              <CalendarDays className="mr-2 h-4 w-4" />
+              Calendar
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/bookings/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Booking
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Filters */}
