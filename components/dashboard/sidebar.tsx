@@ -85,7 +85,7 @@ const navigation = [
   },
   {
     name: 'Integrations',
-    href: '/integrations',
+    href: '/settings/integrations',
     icon: Link2,
   },
   {
