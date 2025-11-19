@@ -24,7 +24,14 @@ export async function POST(request: Request) {
         id: bookingId,
         userId: session.user.id,
       },
-      include: {
+      select: {
+        id: true,
+        propertyId: true,
+        status: true,
+        totalAmount: true,
+        amountPaid: true,
+        amountDue: true,
+        internalNotes: true,
         property: {
           select: {
             id: true,
@@ -42,6 +49,18 @@ export async function POST(request: Request) {
     if (booking.status !== 'CHECKED_IN') {
       return NextResponse.json(
         { error: `Cannot check out a booking with status: ${booking.status}` },
+        { status: 400 }
+      );
+    }
+
+    // Check for outstanding payments
+    const outstandingAmount = Number(booking.totalAmount) - Number(booking.amountPaid);
+    if (outstandingAmount > 0) {
+      return NextResponse.json(
+        {
+          error: `Cannot check out with outstanding payment of R${outstandingAmount.toFixed(2)}. Please collect payment first.`,
+          outstandingAmount: outstandingAmount,
+        },
         { status: 400 }
       );
     }
