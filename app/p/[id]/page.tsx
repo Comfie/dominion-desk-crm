@@ -60,7 +60,7 @@ interface PropertyData {
       lastName: string;
       email: string;
       phone: string | null;
-      businessName: string | null;
+      companyName: string | null;
     };
   };
   bookedDates: Array<{ start: string; end: string }>;
@@ -414,8 +414,8 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
                   <div className="mt-6 border-t pt-4">
                     <h4 className="mb-3 text-sm font-medium">Contact Directly</h4>
                     <div className="space-y-2 text-sm">
-                      {property.user.businessName && (
-                        <p className="font-medium">{property.user.businessName}</p>
+                      {property.user.companyName && (
+                        <p className="font-medium">{property.user.companyName}</p>
                       )}
                       {property.user.phone && (
                         <a

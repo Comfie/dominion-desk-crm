@@ -36,7 +36,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             lastName: true,
             email: true,
             phone: true,
-            businessName: true,
+            companyName: true,
           },
         },
       },
