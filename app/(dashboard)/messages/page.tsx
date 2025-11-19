@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Plus,
   Search,
+  FileText,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
@@ -65,12 +66,20 @@ export default function MessagesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Messages" description="Manage all communications with guests and tenants">
-        <Link href="/messages/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Compose
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/messages/templates">
+            <Button variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              Templates
+            </Button>
+          </Link>
+          <Link href="/messages/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Compose
+            </Button>
+          </Link>
+        </div>
       </PageHeader>
 
       {/* Summary Cards */}
