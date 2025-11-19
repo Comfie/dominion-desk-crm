@@ -11,13 +11,17 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Allow access to auth pages without token
+        // Allow access to public pages without token
         if (
+          pathname === '/' ||
+          pathname.startsWith('/p/') ||
           pathname.startsWith('/login') ||
           pathname.startsWith('/register') ||
           pathname.startsWith('/forgot-password') ||
           pathname.startsWith('/verify-email') ||
-          pathname.startsWith('/api/auth')
+          pathname.startsWith('/portal/login') ||
+          pathname.startsWith('/api/auth') ||
+          pathname.startsWith('/api/public')
         ) {
           return true;
         }
