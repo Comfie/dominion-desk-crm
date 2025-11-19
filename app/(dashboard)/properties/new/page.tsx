@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const propertySchema = z.object({
   name: z.string().min(1, 'Property name is required'),
@@ -67,6 +68,7 @@ const provinces = [
 export default function NewPropertyPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const {
     register,
@@ -93,7 +95,10 @@ export default function NewPropertyPage() {
       const response = await fetch('/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          primaryImageUrl: imageUrl,
+        }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -178,6 +183,17 @@ export default function NewPropertyPage() {
                 {...register('description')}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Property Image */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Image</CardTitle>
+            <CardDescription>Upload a main image for your property</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ImageUpload value={imageUrl} onChange={setImageUrl} folder="properties" />
           </CardContent>
         </Card>
 

@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const propertySchema = z.object({
   name: z.string().min(1, 'Property name is required'),
@@ -88,6 +89,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
   const router = useRouter();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const { data: property, isLoading: isLoadingProperty } = useQuery({
     queryKey: ['property', id],
@@ -141,6 +143,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
         checkOutTime: property.checkOutTime || null,
         houseRules: property.houseRules || null,
       });
+      setImageUrl(property.primaryImageUrl || null);
     }
   }, [property, reset]);
 
@@ -151,7 +154,10 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
       const response = await fetch(`/api/properties/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          primaryImageUrl: imageUrl,
+        }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -288,6 +294,17 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
                 {...register('description')}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Property Image */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Image</CardTitle>
+            <CardDescription>Upload or change the main image</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ImageUpload value={imageUrl} onChange={setImageUrl} folder="properties" />
           </CardContent>
         </Card>
 
