@@ -70,7 +70,7 @@ const navigation = [
   },
   {
     name: 'Communications',
-    href: '/communications/messages',
+    href: '/messages',
     icon: Mail,
   },
   {
