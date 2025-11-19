@@ -56,7 +56,8 @@ interface PropertyData {
     primaryImageUrl: string | null;
     images: string[];
     user: {
-      name: string | null;
+      firstName: string;
+      lastName: string;
       email: string;
       phone: string | null;
       businessName: string | null;

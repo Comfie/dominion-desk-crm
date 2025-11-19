@@ -32,7 +32,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         status: true,
         user: {
           select: {
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             phone: true,
             businessName: true,
