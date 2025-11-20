@@ -57,7 +57,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
+    const totalRevenue = payments.reduce(
+      (sum: number, p) => sum + parseFloat(p.amount.toString()),
+      0
+    );
 
     // Get expenses
     const expenses = await prisma.expense.findMany({
@@ -71,7 +74,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount.toString()), 0);
+    const totalExpenses = expenses.reduce(
+      (sum: number, e) => sum + parseFloat(e.amount.toString()),
+      0
+    );
 
     // Get outstanding payments
     const bookingsWithBalance = await prisma.booking.findMany({
@@ -85,7 +91,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const outstandingPayments = bookingsWithBalance.reduce((sum, b) => {
+    const outstandingPayments = bookingsWithBalance.reduce((sum: number, b) => {
       const due = parseFloat(b.totalAmount.toString()) - parseFloat(b.amountPaid.toString());
       return sum + (due > 0 ? due : 0);
     }, 0);
@@ -115,7 +121,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const occupiedDays = bookingsInPeriod.reduce((sum, booking) => {
+    const occupiedDays = bookingsInPeriod.reduce((sum: number, booking) => {
       const start = new Date(Math.max(booking.checkInDate.getTime(), startDate.getTime()));
       const end = new Date(Math.min(booking.checkOutDate.getTime(), new Date().getTime()));
       const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));

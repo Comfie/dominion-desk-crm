@@ -64,9 +64,15 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate totals
-    const totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
+    const totalRevenue = payments.reduce(
+      (sum: number, p) => sum + parseFloat(p.amount.toString()),
+      0
+    );
 
-    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount.toString()), 0);
+    const totalExpenses = expenses.reduce(
+      (sum: number, e) => sum + parseFloat(e.amount.toString()),
+      0
+    );
 
     const netIncome = totalRevenue - totalExpenses;
 
@@ -108,9 +114,12 @@ export async function GET(request: NextRequest) {
       const propertyPayments = payments.filter((p) => p.booking?.propertyId === property.id);
       const propertyExpenses = expenses.filter((e) => e.propertyId === property.id);
 
-      const revenue = propertyPayments.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
+      const revenue = propertyPayments.reduce(
+        (sum: number, p) => sum + parseFloat(p.amount.toString()),
+        0
+      );
       const expenseTotal = propertyExpenses.reduce(
-        (sum, e) => sum + parseFloat(e.amount.toString()),
+        (sum: number, e) => sum + parseFloat(e.amount.toString()),
         0
       );
 

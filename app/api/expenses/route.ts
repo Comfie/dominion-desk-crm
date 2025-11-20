@@ -64,19 +64,19 @@ export async function GET(request: Request) {
 
     // Calculate summary statistics
     const summary = {
-      totalAmount: expenses.reduce((sum, e) => sum + Number(e.amount), 0),
+      totalAmount: expenses.reduce((sum: number, e) => sum + Number(e.amount), 0),
       unpaidAmount: expenses
         .filter((e) => e.status === 'UNPAID' || e.status === 'OVERDUE')
-        .reduce((sum, e) => sum + Number(e.amount), 0),
+        .reduce((sum: number, e) => sum + Number(e.amount), 0),
       paidAmount: expenses
         .filter((e) => e.status === 'PAID')
-        .reduce((sum, e) => sum + Number(e.amount), 0),
+        .reduce((sum: number, e) => sum + Number(e.amount), 0),
       deductibleAmount: expenses
         .filter((e) => e.isDeductible)
-        .reduce((sum, e) => sum + Number(e.amount), 0),
+        .reduce((sum: number, e) => sum + Number(e.amount), 0),
       count: expenses.length,
       byCategory: expenses.reduce(
-        (acc, e) => {
+        (acc: Record<string, number>, e) => {
           acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
           return acc;
         },

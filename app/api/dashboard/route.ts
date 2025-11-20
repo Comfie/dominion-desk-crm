@@ -146,7 +146,7 @@ export async function GET() {
     ]);
 
     // Calculate outstanding amount
-    const totalOutstanding = outstandingPayments.reduce((sum, booking) => {
+    const totalOutstanding = outstandingPayments.reduce((sum: number, booking) => {
       const due =
         parseFloat(booking.totalAmount.toString()) - parseFloat(booking.amountPaid.toString());
       return sum + (due > 0 ? due : 0);
@@ -192,7 +192,7 @@ export async function GET() {
       },
     });
 
-    const occupiedDays = bookingsThisMonth.reduce((sum, booking) => {
+    const occupiedDays = bookingsThisMonth.reduce((sum: number, booking) => {
       const start = new Date(Math.max(booking.checkInDate.getTime(), startOfMonth.getTime()));
       const end = new Date(Math.min(booking.checkOutDate.getTime(), endOfMonth.getTime()));
       const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));

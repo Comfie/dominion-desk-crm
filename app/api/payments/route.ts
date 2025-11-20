@@ -77,13 +77,13 @@ export async function GET(request: Request) {
 
     // Calculate summary statistics
     const summary = {
-      totalAmount: payments.reduce((sum, p) => sum + Number(p.amount), 0),
+      totalAmount: payments.reduce((sum: number, p) => sum + Number(p.amount), 0),
       pendingAmount: payments
         .filter((p) => p.status === 'PENDING')
-        .reduce((sum, p) => sum + Number(p.amount), 0),
+        .reduce((sum: number, p) => sum + Number(p.amount), 0),
       paidAmount: payments
         .filter((p) => p.status === 'PAID')
-        .reduce((sum, p) => sum + Number(p.amount), 0),
+        .reduce((sum: number, p) => sum + Number(p.amount), 0),
       count: payments.length,
     };
 
