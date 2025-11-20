@@ -31,6 +31,7 @@ interface BookingEvent {
   propertyName: string;
   guestName: string;
   totalAmount: number;
+  type?: 'booking' | 'lease';
 }
 
 async function fetchBookings(filters: Record<string, string>) {
@@ -43,6 +44,18 @@ async function fetchBookings(filters: Record<string, string>) {
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
+  const allProperties = await response.json();
+  // Filter to only show SHORT_TERM or BOTH properties (properties that can have bookings)
+  return allProperties.filter(
+    (p: { rentalType: string }) => p.rentalType === 'SHORT_TERM' || p.rentalType === 'BOTH'
+  );
+}
+
+async function fetchTenantLeases(propertyId?: string) {
+  const params = new URLSearchParams();
+  if (propertyId) params.append('propertyId', propertyId);
+  const response = await fetch(`/api/tenants/leases?${params}`);
+  if (!response.ok) return [];
   return response.json();
 }
 
@@ -60,7 +73,7 @@ export default function BookingsCalendarPage() {
   const [propertyFilter, setPropertyFilter] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<BookingEvent | null>(null);
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings, isLoading: isLoadingBookings } = useQuery({
     queryKey: ['bookings', { propertyId: propertyFilter }],
     queryFn: () =>
       fetchBookings({
@@ -68,10 +81,17 @@ export default function BookingsCalendarPage() {
       }),
   });
 
+  const { data: leases, isLoading: isLoadingLeases } = useQuery({
+    queryKey: ['tenant-leases', propertyFilter],
+    queryFn: () => fetchTenantLeases(propertyFilter),
+  });
+
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: fetchProperties,
   });
+
+  const isLoading = isLoadingBookings || isLoadingLeases;
 
   const handleSelectEvent = (event: BookingEvent) => {
     setSelectedBooking(event);
@@ -140,58 +160,78 @@ export default function BookingsCalendarPage() {
       ) : (
         <BookingCalendar
           bookings={bookings || []}
+          leases={leases || []}
           onSelectEvent={handleSelectEvent}
           onSelectSlot={handleSelectSlot}
         />
       )}
 
-      {/* Booking Details Dialog */}
+      {/* Booking/Lease Details Dialog */}
       <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedBooking?.guestName}</DialogTitle>
-            <DialogDescription>{selectedBooking?.propertyName}</DialogDescription>
+            <DialogDescription>
+              {selectedBooking?.type === 'lease' ? 'Tenant Lease' : 'Booking'} -{' '}
+              {selectedBooking?.propertyName}
+            </DialogDescription>
           </DialogHeader>
 
           {selectedBooking && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Badge className={statusColors[selectedBooking.status] || statusColors.PENDING}>
-                  {selectedBooking.status.replace('_', ' ')}
+                  {selectedBooking.type === 'lease'
+                    ? 'ACTIVE LEASE'
+                    : selectedBooking.status.replace('_', ' ')}
                 </Badge>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="text-muted-foreground text-sm">Check-in</p>
+                  <p className="text-muted-foreground text-sm">
+                    {selectedBooking.type === 'lease' ? 'Lease Start' : 'Check-in'}
+                  </p>
                   <p className="font-medium">{formatDate(selectedBooking.start.toISOString())}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-sm">Check-out</p>
+                  <p className="text-muted-foreground text-sm">
+                    {selectedBooking.type === 'lease' ? 'Lease End' : 'Check-out'}
+                  </p>
                   <p className="font-medium">{formatDate(selectedBooking.end.toISOString())}</p>
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-muted-foreground text-sm">Duration</p>
-                  <p className="font-medium">
-                    {nights} {nights === 1 ? 'night' : 'nights'}
-                  </p>
+              {selectedBooking.type !== 'lease' && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Duration</p>
+                    <p className="font-medium">
+                      {nights} {nights === 1 ? 'night' : 'nights'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-sm">Total Amount</p>
+                    <p className="font-medium">{formatCurrency(selectedBooking.totalAmount)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-sm">Total Amount</p>
-                  <p className="font-medium">{formatCurrency(selectedBooking.totalAmount)}</p>
-                </div>
-              </div>
+              )}
 
               <div className="flex gap-2 pt-4">
-                <Button asChild className="flex-1">
-                  <Link href={`/bookings/${selectedBooking.id}`}>View Details</Link>
-                </Button>
-                <Button variant="outline" asChild className="flex-1">
-                  <Link href={`/bookings/${selectedBooking.id}/edit`}>Edit</Link>
-                </Button>
+                {selectedBooking.type === 'lease' ? (
+                  <Button asChild className="flex-1">
+                    <Link href={`/tenants`}>View Tenant</Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button asChild className="flex-1">
+                      <Link href={`/bookings/${selectedBooking.id}`}>View Details</Link>
+                    </Button>
+                    <Button variant="outline" asChild className="flex-1">
+                      <Link href={`/bookings/${selectedBooking.id}/edit`}>Edit</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}

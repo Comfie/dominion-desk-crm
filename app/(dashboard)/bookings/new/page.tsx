@@ -36,7 +36,11 @@ type BookingFormData = z.infer<typeof bookingSchema>;
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
-  return response.json();
+  const allProperties = await response.json();
+  // Filter to only show SHORT_TERM or BOTH properties
+  return allProperties.filter(
+    (p: { rentalType: string }) => p.rentalType === 'SHORT_TERM' || p.rentalType === 'BOTH'
+  );
 }
 
 export default function NewBookingPage() {
@@ -202,7 +206,12 @@ export default function NewBookingPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="numberOfGuests">Number of Guests *</Label>
-                <Input id="numberOfGuests" type="number" min="1" {...register('numberOfGuests')} />
+                <Input
+                  id="numberOfGuests"
+                  type="number"
+                  min="1"
+                  {...register('numberOfGuests', { valueAsNumber: true })}
+                />
                 {errors.numberOfGuests && (
                   <p className="text-destructive text-sm">{errors.numberOfGuests.message}</p>
                 )}
@@ -369,7 +378,7 @@ export default function NewBookingPage() {
                   type="number"
                   min="0"
                   step="0.01"
-                  {...register('totalAmount')}
+                  {...register('totalAmount', { valueAsNumber: true })}
                 />
                 {errors.totalAmount && (
                   <p className="text-destructive text-sm">{errors.totalAmount.message}</p>

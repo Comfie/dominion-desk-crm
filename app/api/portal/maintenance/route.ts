@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { notifyMaintenanceRequest } from '@/lib/notifications';
 
 const maintenanceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -30,6 +31,12 @@ export async function POST(request: Request) {
           where: { isActive: true },
           select: {
             propertyId: true,
+            property: {
+              select: {
+                name: true,
+                userId: true,
+              },
+            },
           },
           take: 1,
         },
@@ -47,6 +54,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const validatedData = maintenanceSchema.parse(body);
+
+    const activeProperty = tenant.properties[0];
 
     // Create the maintenance request
     const maintenanceRequest = await prisma.maintenanceRequest.create({
@@ -73,12 +82,18 @@ export async function POST(request: Request) {
       },
     });
 
-    // TODO: Send notification to property manager
-    console.log(`New maintenance request from tenant ${tenant.firstName} ${tenant.lastName}:`, {
-      requestId: maintenanceRequest.id,
-      title: validatedData.title,
-      priority: validatedData.priority,
-    });
+    // Send notification to property manager
+    try {
+      await notifyMaintenanceRequest(
+        activeProperty.property.userId,
+        validatedData.title,
+        activeProperty.property.name,
+        maintenanceRequest.id
+      );
+    } catch (notificationError) {
+      console.error('Failed to send notification:', notificationError);
+      // Don't fail the request if notification fails
+    }
 
     return NextResponse.json({
       success: true,

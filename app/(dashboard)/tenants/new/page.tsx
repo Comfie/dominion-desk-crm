@@ -107,6 +107,7 @@ async function fetchAvailableProperties(startDate?: string, endDate?: string) {
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
+  params.append('purpose', 'tenant'); // Only show LONG_TERM or BOTH properties
 
   const response = await fetch(`/api/properties/available?${params.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch available properties');
