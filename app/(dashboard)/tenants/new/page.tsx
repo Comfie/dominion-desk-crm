@@ -31,7 +31,7 @@ const tenantSchema = z
     employmentStatus: z.string().optional(),
     employer: z.string().optional(),
     employerPhone: z.string().optional(),
-    monthlyIncome: z.number().nullable().optional(),
+    monthlyIncome: z.union([z.number(), z.nan()]).optional(),
     emergencyContactName: z.string().optional(),
     emergencyContactPhone: z.string().optional(),
     emergencyContactRelation: z.string().optional(),
@@ -40,14 +40,6 @@ const tenantSchema = z
     createPortalAccess: z.boolean().optional(),
     password: z.string().optional(),
   })
-  .transform((data) => ({
-    ...data,
-    // Convert NaN to undefined for monthlyIncome
-    monthlyIncome:
-      data.monthlyIncome !== null && !isNaN(data.monthlyIncome as number)
-        ? data.monthlyIncome
-        : undefined,
-  }))
   .refine(
     (data) => {
       if (data.createPortalAccess && !data.password) {
