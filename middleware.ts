@@ -6,6 +6,11 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
+    // Skip middleware for API routes
+    if (pathname.startsWith('/api')) {
+      return NextResponse.next();
+    }
+
     // Redirect tenants trying to access dashboard to portal
     if (token?.accountType === 'TENANT' && !pathname.startsWith('/portal')) {
       return NextResponse.redirect(new URL('/portal/dashboard', req.url));
