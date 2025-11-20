@@ -23,7 +23,7 @@ const terminateLeaseSchema = z.object({
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string; propertyId: string } }
+  { params }: { params: Promise<{ id: string; propertyId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -32,7 +32,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, propertyId } = params;
+    const { id, propertyId } = await params;
 
     // Verify tenant belongs to user
     const tenant = await prisma.tenant.findFirst({
@@ -135,7 +135,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; propertyId: string } }
+  { params }: { params: Promise<{ id: string; propertyId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -144,7 +144,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, propertyId } = params;
+    const { id, propertyId } = await params;
 
     // Verify tenant belongs to user
     const tenant = await prisma.tenant.findFirst({

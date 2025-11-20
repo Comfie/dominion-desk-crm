@@ -16,7 +16,7 @@ const assignPropertySchema = z.object({
   leaseDocumentUrl: z.string().optional().nullable(),
 });
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -24,7 +24,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Verify tenant belongs to user
     const tenant = await prisma.tenant.findFirst({
@@ -70,7 +70,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -78,7 +78,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Verify tenant belongs to user
     const tenant = await prisma.tenant.findFirst({
