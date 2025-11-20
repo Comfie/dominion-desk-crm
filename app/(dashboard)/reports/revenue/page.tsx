@@ -13,7 +13,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
+import { PageHeader, Loading } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -106,7 +106,23 @@ export default function RevenueReportPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-12 w-64" />
+        <PageHeader
+          title="Revenue Report"
+          description="Analyze income, expenses, and profitability"
+        >
+          <Link href="/reports/analytics">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Analytics
+            </Button>
+          </Link>
+        </PageHeader>
+        <Loading
+          size="xl"
+          text="Loading revenue data..."
+          submessage="Calculating financial metrics"
+          className="py-12"
+        />
         <div className="grid gap-4 md:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-32" />

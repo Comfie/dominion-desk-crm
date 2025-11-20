@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, Building2, TrendingUp, TrendingDown, Download } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
+import { PageHeader, Loading } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -101,7 +101,23 @@ export default function OccupancyReportPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-12 w-64" />
+        <PageHeader
+          title="Occupancy Report"
+          description="Analyze property occupancy rates and performance"
+        >
+          <Link href="/reports/analytics">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Analytics
+            </Button>
+          </Link>
+        </PageHeader>
+        <Loading
+          size="xl"
+          text="Loading occupancy data..."
+          submessage="Analyzing property performance"
+          className="py-12"
+        />
         <div className="grid gap-4 md:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-32" />
