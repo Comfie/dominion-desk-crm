@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
   PawPrint,
   Cigarette,
   Sofa,
+  Users,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency } from '@/lib/utils';
 
 interface PropertyData {
@@ -68,9 +70,18 @@ interface PropertyData {
 
 export default function PublicPropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+
+  // Inquiry form state
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquiryError, setInquiryError] = useState('');
+
+  // Booking form state
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
 
   const { data, isLoading, error } = useQuery<PropertyData>({
     queryKey: ['public-property', id],
@@ -83,6 +94,37 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
       return response.json();
     },
   });
+
+  // Calculate nights and total price
+  const bookingCalculation = useMemo(() => {
+    if (!checkInDate || !checkOutDate || !data?.property.dailyRate) {
+      return { nights: 0, total: 0 };
+    }
+
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+    const diffTime = end.getTime() - start.getTime();
+    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (nights <= 0) return { nights: 0, total: 0 };
+
+    const total = nights * Number(data.property.dailyRate);
+    return { nights, total };
+  }, [checkInDate, checkOutDate, data?.property.dailyRate]);
+
+  // Check if selected dates conflict with booked dates
+  const hasDateConflict = useMemo(() => {
+    if (!checkInDate || !checkOutDate || !data?.bookedDates) return false;
+
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+
+    return data.bookedDates.some((booking) => {
+      const bookedStart = new Date(booking.start);
+      const bookedEnd = new Date(booking.end);
+      return start < bookedEnd && end > bookedStart;
+    });
+  }, [checkInDate, checkOutDate, data?.bookedDates]);
 
   const handleInquirySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -116,6 +158,50 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
       setInquiryError(err instanceof Error ? err.message : 'Failed to submit inquiry');
     } finally {
       setInquiryLoading(false);
+    }
+  };
+
+  const handleBookingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setBookingLoading(true);
+    setBookingError('');
+
+    if (hasDateConflict) {
+      setBookingError('Selected dates are not available');
+      setBookingLoading(false);
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const bookingData = {
+      propertyId: id,
+      guestName: formData.get('guestName'),
+      guestEmail: formData.get('guestEmail'),
+      guestPhone: formData.get('guestPhone'),
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      guests: Number(formData.get('guests')) || 1,
+      totalAmount: bookingCalculation.total,
+      notes: formData.get('notes'),
+    };
+
+    try {
+      const response = await fetch('/api/public/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to submit booking');
+      }
+
+      setBookingSubmitted(true);
+    } catch (err) {
+      setBookingError(err instanceof Error ? err.message : 'Failed to submit booking');
+    } finally {
+      setBookingLoading(false);
     }
   };
 
@@ -157,6 +243,208 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
   }
 
   const { property } = data;
+  const supportsShortTerm = property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH';
+  const supportsLongTerm = property.rentalType === 'LONG_TERM' || property.rentalType === 'BOTH';
+  const showTabs = property.rentalType === 'BOTH';
+
+  // Get minimum date (today)
+  const today = new Date().toISOString().split('T')[0];
+
+  const BookingForm = () => (
+    <>
+      {bookingSubmitted ? (
+        <div className="text-center">
+          <Check className="mx-auto mb-4 h-12 w-12 text-green-500" />
+          <h3 className="mb-2 font-semibold">Booking Request Sent!</h3>
+          <p className="text-sm text-gray-500">
+            We've received your booking request and will confirm availability soon.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleBookingSubmit} className="space-y-4">
+          {bookingError && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20">
+              {bookingError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="checkIn">Check-in *</Label>
+              <Input
+                id="checkIn"
+                type="date"
+                required
+                min={today}
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkOut">Check-out *</Label>
+              <Input
+                id="checkOut"
+                type="date"
+                required
+                min={checkInDate || today}
+                value={checkOutDate}
+                onChange={(e) => setCheckOutDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {hasDateConflict && (
+            <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-700 dark:bg-yellow-900/20">
+              These dates are not available. Please select different dates.
+            </div>
+          )}
+
+          {bookingCalculation.nights > 0 && !hasDateConflict && (
+            <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
+              <div className="flex items-center justify-between text-sm">
+                <span>
+                  {bookingCalculation.nights} night{bookingCalculation.nights !== 1 ? 's' : ''} ×{' '}
+                  {formatCurrency(Number(property.dailyRate))}
+                </span>
+                <span className="font-bold">{formatCurrency(bookingCalculation.total)}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="guests">Number of Guests *</Label>
+            <Input
+              id="guests"
+              name="guests"
+              type="number"
+              required
+              min={1}
+              max={10}
+              defaultValue={1}
+              placeholder="1"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="guestName">Full Name *</Label>
+            <Input id="guestName" name="guestName" required placeholder="John Doe" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="guestEmail">Email *</Label>
+            <Input
+              id="guestEmail"
+              name="guestEmail"
+              type="email"
+              required
+              placeholder="john@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="guestPhone">Phone *</Label>
+            <Input id="guestPhone" name="guestPhone" required placeholder="082 123 4567" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Special Requests</Label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={2}
+              className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+              placeholder="Any special requests..."
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={bookingLoading || hasDateConflict || bookingCalculation.nights <= 0}
+          >
+            {bookingLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Calendar className="mr-2 h-4 w-4" />
+                Request Booking
+              </>
+            )}
+          </Button>
+        </form>
+      )}
+    </>
+  );
+
+  const InquiryForm = () => (
+    <>
+      {inquirySubmitted ? (
+        <div className="text-center">
+          <Check className="mx-auto mb-4 h-12 w-12 text-green-500" />
+          <h3 className="mb-2 font-semibold">Inquiry Sent!</h3>
+          <p className="text-sm text-gray-500">
+            We've received your inquiry and will contact you soon.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleInquirySubmit} className="space-y-4">
+          {inquiryError && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20">
+              {inquiryError}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name *</Label>
+            <Input id="name" name="name" required placeholder="John Doe" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input id="email" name="email" type="email" required placeholder="john@example.com" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone *</Label>
+            <Input id="phone" name="phone" required placeholder="082 123 4567" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="preferredMoveIn">Preferred Move-in Date</Label>
+            <Input id="preferredMoveIn" name="preferredMoveIn" type="date" min={today} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="message">Message</Label>
+            <textarea
+              id="message"
+              name="message"
+              rows={3}
+              className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+              placeholder="I'm interested in this property..."
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={inquiryLoading}>
+            {inquiryLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Send Inquiry
+              </>
+            )}
+          </Button>
+        </form>
+      )}
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -179,8 +467,15 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
       <main className="mx-auto max-w-6xl px-4 py-8">
         {/* Property Title */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold md:text-3xl">{property.name}</h1>
-          <div className="mt-2 flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-2">
+            <h1 className="text-2xl font-bold md:text-3xl">{property.name}</h1>
+            <Badge variant="outline">
+              {property.rentalType === 'SHORT_TERM' && 'Short-term'}
+              {property.rentalType === 'LONG_TERM' && 'Long-term'}
+              {property.rentalType === 'BOTH' && 'Short & Long-term'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <MapPin className="h-4 w-4" />
             <span>
               {property.address}, {property.city}, {property.province}
@@ -332,81 +627,41 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
             </Card>
           </div>
 
-          {/* Sidebar - Inquiry Form */}
+          {/* Sidebar - Booking/Inquiry Form */}
           <div className="lg:sticky lg:top-4">
             <Card>
               <CardHeader>
-                <CardTitle>Interested in this property?</CardTitle>
-                <CardDescription>Send an inquiry and we'll get back to you shortly</CardDescription>
+                <CardTitle>
+                  {supportsShortTerm && !supportsLongTerm && 'Book This Property'}
+                  {supportsLongTerm && !supportsShortTerm && 'Interested in this property?'}
+                  {showTabs && 'Get in Touch'}
+                </CardTitle>
+                <CardDescription>
+                  {supportsShortTerm && !supportsLongTerm && 'Select your dates and book your stay'}
+                  {supportsLongTerm &&
+                    !supportsShortTerm &&
+                    "Send an inquiry and we'll get back to you shortly"}
+                  {showTabs && 'Book a stay or inquire about long-term rental'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {inquirySubmitted ? (
-                  <div className="text-center">
-                    <Check className="mx-auto mb-4 h-12 w-12 text-green-500" />
-                    <h3 className="mb-2 font-semibold">Inquiry Sent!</h3>
-                    <p className="text-sm text-gray-500">
-                      We've received your inquiry and will contact you soon.
-                    </p>
-                  </div>
+                {showTabs ? (
+                  <Tabs defaultValue="booking" className="w-full">
+                    <TabsList className="mb-4 grid w-full grid-cols-2">
+                      <TabsTrigger value="booking">Book Stay</TabsTrigger>
+                      <TabsTrigger value="inquiry">Inquire</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="booking">
+                      <BookingForm />
+                    </TabsContent>
+                    <TabsContent value="inquiry">
+                      <InquiryForm />
+                    </TabsContent>
+                  </Tabs>
+                ) : supportsShortTerm ? (
+                  <BookingForm />
                 ) : (
-                  <form onSubmit={handleInquirySubmit} className="space-y-4">
-                    {inquiryError && (
-                      <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20">
-                        {inquiryError}
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name *</Label>
-                      <Input id="name" name="name" required placeholder="John Doe" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="john@example.com"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone *</Label>
-                      <Input id="phone" name="phone" required placeholder="082 123 4567" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="preferredMoveIn">Preferred Move-in Date</Label>
-                      <Input id="preferredMoveIn" name="preferredMoveIn" type="date" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Message</Label>
-                      <textarea
-                        id="message"
-                        name="message"
-                        rows={3}
-                        className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
-                        placeholder="I'm interested in this property..."
-                      />
-                    </div>
-
-                    <Button type="submit" className="w-full" disabled={inquiryLoading}>
-                      {inquiryLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Send Inquiry
-                        </>
-                      )}
-                    </Button>
-                  </form>
+                  <InquiryForm />
                 )}
 
                 {/* Contact Info */}
