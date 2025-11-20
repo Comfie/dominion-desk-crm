@@ -63,16 +63,41 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Get completed maintenance requests with costs for the year
+    const maintenanceRequests = await prisma.maintenanceRequest.findMany({
+      where: {
+        userId: session.user.id,
+        status: 'COMPLETED',
+        completedDate: {
+          gte: startOfYear,
+          lte: endOfYear,
+        },
+        OR: [{ actualCost: { not: null } }, { estimatedCost: { not: null } }],
+        ...(propertyId && { propertyId }),
+      },
+      include: {
+        property: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
     // Calculate totals
     const totalRevenue = payments.reduce(
       (sum: number, p: (typeof payments)[number]) => sum + parseFloat(p.amount.toString()),
       0
     );
 
-    const totalExpenses = expenses.reduce(
-      (sum: number, e: (typeof expenses)[number]) => sum + parseFloat(e.amount.toString()),
-      0
-    );
+    const totalExpenses =
+      expenses.reduce(
+        (sum: number, e: (typeof expenses)[number]) => sum + parseFloat(e.amount.toString()),
+        0
+      ) +
+      maintenanceRequests.reduce((sum: number, m: (typeof maintenanceRequests)[number]) => {
+        // Use actualCost if available, otherwise use estimatedCost
+        const cost = m.actualCost || m.estimatedCost;
+        return sum + (cost ? parseFloat(cost.toString()) : 0);
+      }, 0);
 
     const netIncome = totalRevenue - totalExpenses;
 
@@ -98,6 +123,19 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Add maintenance costs to monthly expenses
+    maintenanceRequests.forEach((maintenance: (typeof maintenanceRequests)[number]) => {
+      if (maintenance.completedDate) {
+        const monthKey = maintenance.completedDate.toISOString().slice(0, 7);
+        if (revenueByMonth[monthKey]) {
+          const cost = maintenance.actualCost || maintenance.estimatedCost;
+          if (cost) {
+            revenueByMonth[monthKey].expenses += parseFloat(cost.toString());
+          }
+        }
+      }
+    });
+
     // Revenue by property
     const properties = await prisma.property.findMany({
       where: {
@@ -117,17 +155,25 @@ export async function GET(request: NextRequest) {
       const propertyExpenses = expenses.filter(
         (e: (typeof expenses)[number]) => e.propertyId === property.id
       );
+      const propertyMaintenance = maintenanceRequests.filter(
+        (m: (typeof maintenanceRequests)[number]) => m.propertyId === property.id
+      );
 
       const revenue = propertyPayments.reduce(
         (sum: number, p: (typeof propertyPayments)[number]) =>
           sum + parseFloat(p.amount.toString()),
         0
       );
-      const expenseTotal = propertyExpenses.reduce(
-        (sum: number, e: (typeof propertyExpenses)[number]) =>
-          sum + parseFloat(e.amount.toString()),
-        0
-      );
+      const expenseTotal =
+        propertyExpenses.reduce(
+          (sum: number, e: (typeof propertyExpenses)[number]) =>
+            sum + parseFloat(e.amount.toString()),
+          0
+        ) +
+        propertyMaintenance.reduce((sum: number, m: (typeof propertyMaintenance)[number]) => {
+          const cost = m.actualCost || m.estimatedCost;
+          return sum + (cost ? parseFloat(cost.toString()) : 0);
+        }, 0);
 
       return {
         property: {
@@ -162,6 +208,15 @@ export async function GET(request: NextRequest) {
       const category = expense.category;
       expensesByCategory[category] =
         (expensesByCategory[category] || 0) + parseFloat(expense.amount.toString());
+    });
+
+    // Add maintenance costs to MAINTENANCE category
+    maintenanceRequests.forEach((maintenance: (typeof maintenanceRequests)[number]) => {
+      const cost = maintenance.actualCost || maintenance.estimatedCost;
+      if (cost) {
+        expensesByCategory['MAINTENANCE'] =
+          (expensesByCategory['MAINTENANCE'] || 0) + parseFloat(cost.toString());
+      }
     });
 
     // Year-over-year comparison

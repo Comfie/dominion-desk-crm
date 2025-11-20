@@ -139,6 +139,10 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
       phone: formData.get('phone'),
       message: formData.get('message'),
       preferredMoveIn: formData.get('preferredMoveIn'),
+      preferredMoveOut: formData.get('preferredMoveOut'),
+      numberOfGuests: formData.get('numberOfGuests')
+        ? Number(formData.get('numberOfGuests'))
+        : undefined,
     };
 
     try {
@@ -411,9 +415,28 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
             <Input id="phone" name="phone" required placeholder="082 123 4567" />
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="preferredMoveIn">Preferred Move-in Date</Label>
+              <Input id="preferredMoveIn" name="preferredMoveIn" type="date" min={today} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preferredMoveOut">Preferred Move-out Date</Label>
+              <Input id="preferredMoveOut" name="preferredMoveOut" type="date" min={today} />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="preferredMoveIn">Preferred Move-in Date</Label>
-            <Input id="preferredMoveIn" name="preferredMoveIn" type="date" min={today} />
+            <Label htmlFor="numberOfGuests">Number of Guests</Label>
+            <Input
+              id="numberOfGuests"
+              name="numberOfGuests"
+              type="number"
+              min={1}
+              max={10}
+              placeholder="1"
+            />
           </div>
 
           <div className="space-y-2">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { notifyNewBooking } from '@/lib/notifications';
 
 const bookingRequestSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
@@ -119,12 +120,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // TODO: Send email notification to property owner about new booking request
-    console.log(`New booking request for property ${property.name}:`, {
-      bookingId: booking.id,
-      guest: validatedData.guestName,
-      dates: `${validatedData.checkInDate} to ${validatedData.checkOutDate}`,
-    });
+    // Send notification to property owner
+    try {
+      await notifyNewBooking(property.userId, validatedData.guestName, property.name, booking.id);
+    } catch (notificationError) {
+      console.error('Failed to send booking notification:', notificationError);
+      // Don't fail the request if notification fails
+    }
 
     return NextResponse.json({
       success: true,

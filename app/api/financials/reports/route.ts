@@ -68,6 +68,28 @@ export async function GET(request: Request) {
       },
     });
 
+    // Get completed maintenance requests with costs for the period
+    const maintenanceRequests = await prisma.maintenanceRequest.findMany({
+      where: {
+        userId: session.user.id,
+        status: 'COMPLETED',
+        completedDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        OR: [{ actualCost: { not: null } }, { estimatedCost: { not: null } }],
+        ...(propertyId && { propertyId }),
+      },
+      include: {
+        property: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
     // Calculate monthly breakdown
     const monthlyData = Array.from({ length: 12 }, (_, i) => ({
       month: i + 1,
@@ -87,6 +109,17 @@ export async function GET(request: Request) {
     expenses.forEach((expense: (typeof expenses)[number]) => {
       const month = new Date(expense.expenseDate).getMonth();
       monthlyData[month].expenses += Number(expense.amount);
+    });
+
+    // Add maintenance costs to monthly expenses
+    maintenanceRequests.forEach((maintenance: (typeof maintenanceRequests)[number]) => {
+      if (maintenance.completedDate) {
+        const month = new Date(maintenance.completedDate).getMonth();
+        const cost = maintenance.actualCost || maintenance.estimatedCost;
+        if (cost) {
+          monthlyData[month].expenses += Number(cost);
+        }
+      }
     });
 
     // Calculate profit for each month
@@ -123,6 +156,14 @@ export async function GET(request: Request) {
       {} as Record<string, number>
     );
 
+    // Add maintenance costs to MAINTENANCE category
+    maintenanceRequests.forEach((maintenance: (typeof maintenanceRequests)[number]) => {
+      const cost = maintenance.actualCost || maintenance.estimatedCost;
+      if (cost) {
+        expensesByCategory['MAINTENANCE'] = (expensesByCategory['MAINTENANCE'] || 0) + Number(cost);
+      }
+    });
+
     // Property performance
     const propertyPerformance: Record<
       string,
@@ -158,6 +199,26 @@ export async function GET(request: Request) {
           };
         }
         propertyPerformance[propId].expenses += Number(expense.amount);
+      }
+    });
+
+    // Add maintenance costs to property performance
+    maintenanceRequests.forEach((maintenance: (typeof maintenanceRequests)[number]) => {
+      if (maintenance.property) {
+        const propId = maintenance.property.id;
+        if (!propertyPerformance[propId]) {
+          propertyPerformance[propId] = {
+            propertyId: propId,
+            propertyName: maintenance.property.name,
+            income: 0,
+            expenses: 0,
+            profit: 0,
+          };
+        }
+        const cost = maintenance.actualCost || maintenance.estimatedCost;
+        if (cost) {
+          propertyPerformance[propId].expenses += Number(cost);
+        }
       }
     });
 

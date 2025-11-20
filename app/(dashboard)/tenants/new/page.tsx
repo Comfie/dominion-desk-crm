@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -116,6 +116,7 @@ async function fetchAvailableProperties(startDate?: string, endDate?: string) {
 
 export default function NewTenantPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [createPortalAccess, setCreatePortalAccess] = useState(false);
   const [assignProperty, setAssignProperty] = useState(false);
@@ -136,6 +137,40 @@ export default function NewTenantPage() {
       assignProperty: false,
     },
   });
+
+  // Pre-fill form from URL parameters (from inquiry conversion)
+  useEffect(() => {
+    const firstName = searchParams.get('firstName');
+    const lastName = searchParams.get('lastName');
+    const email = searchParams.get('email');
+    const phone = searchParams.get('phone');
+    const propertyId = searchParams.get('propertyId');
+    const leaseStart = searchParams.get('leaseStartDate');
+    const leaseEnd = searchParams.get('leaseEndDate');
+
+    if (firstName) setValue('firstName', firstName);
+    if (lastName) setValue('lastName', lastName);
+    if (email) setValue('email', email);
+    if (phone) setValue('phone', phone);
+
+    // If property info is provided, enable property assignment
+    if (propertyId) {
+      setAssignProperty(true);
+      setValue('assignProperty', true);
+      setValue('propertyId', propertyId);
+    }
+
+    if (leaseStart) {
+      setLeaseStartDate(leaseStart);
+      setValue('leaseStartDate', leaseStart);
+      setValue('propertyMoveInDate', leaseStart);
+    }
+
+    if (leaseEnd) {
+      setLeaseEndDate(leaseEnd);
+      setValue('leaseEndDate', leaseEnd);
+    }
+  }, [searchParams, setValue]);
 
   const { data: availableProperties, isLoading: isLoadingProperties } = useQuery({
     queryKey: ['available-properties', leaseStartDate, leaseEndDate],

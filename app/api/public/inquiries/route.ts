@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { notifyNewInquiry } from '@/lib/notifications';
 
 const inquirySchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
@@ -9,6 +10,8 @@ const inquirySchema = z.object({
   phone: z.string().min(1, 'Phone is required'),
   message: z.string().optional(),
   preferredMoveIn: z.string().optional(),
+  preferredMoveOut: z.string().optional(),
+  numberOfGuests: z.coerce.number().optional(),
 });
 
 export async function POST(request: Request) {
@@ -23,6 +26,7 @@ export async function POST(request: Request) {
         id: true,
         name: true,
         userId: true,
+        rentalType: true,
         user: {
           select: {
             email: true,
@@ -37,6 +41,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
+    // Determine inquiry type based on property rental type
+    let inquiryType: 'BOOKING' | 'VIEWING' | 'GENERAL' = 'GENERAL';
+    if (property.rentalType === 'SHORT_TERM') {
+      inquiryType = 'BOOKING';
+    } else if (property.rentalType === 'LONG_TERM') {
+      inquiryType = 'VIEWING';
+    } else if (property.rentalType === 'BOTH') {
+      // If property supports both, use BOOKING if dates provided, otherwise VIEWING
+      inquiryType =
+        validatedData.preferredMoveIn && validatedData.preferredMoveOut ? 'BOOKING' : 'VIEWING';
+    }
+
     // Create the inquiry
     const inquiry = await prisma.inquiry.create({
       data: {
@@ -47,21 +63,23 @@ export async function POST(request: Request) {
         contactPhone: validatedData.phone,
         message: validatedData.message || `Inquiry about ${property.name}`,
         inquirySource: 'WEBSITE',
-        inquiryType: 'BOOKING',
+        inquiryType,
         status: 'NEW',
         checkInDate: validatedData.preferredMoveIn ? new Date(validatedData.preferredMoveIn) : null,
+        checkOutDate: validatedData.preferredMoveOut
+          ? new Date(validatedData.preferredMoveOut)
+          : null,
+        numberOfGuests: validatedData.numberOfGuests || null,
       },
     });
 
-    // TODO: Send email notification to property owner
-    // This would integrate with an email service like SendGrid, Resend, etc.
-    // For now, we'll just log it
-    console.log(`New inquiry for property ${property.name}:`, {
-      inquiryId: inquiry.id,
-      from: validatedData.name,
-      email: validatedData.email,
-      ownerEmail: property.user.email,
-    });
+    // Send notification to property owner
+    try {
+      await notifyNewInquiry(property.userId, validatedData.name, property.name, inquiry.id);
+    } catch (notificationError) {
+      console.error('Failed to send inquiry notification:', notificationError);
+      // Don't fail the request if notification fails
+    }
 
     return NextResponse.json({
       success: true,

@@ -17,6 +17,7 @@ import {
   XCircle,
   Loader2,
   Clock,
+  UserPlus,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
@@ -123,6 +124,20 @@ export default function InquiryDetailPage({ params }: { params: Promise<{ id: st
     router.push(`/bookings/new?${params.toString()}`);
   };
 
+  const handleConvertToTenant = () => {
+    updateMutation.mutate({ status: 'CONVERTED' });
+    // Redirect to create tenant with pre-filled data
+    const params = new URLSearchParams();
+    params.set('firstName', inquiry.contactName.split(' ')[0] || inquiry.contactName);
+    params.set('lastName', inquiry.contactName.split(' ').slice(1).join(' ') || '');
+    params.set('email', inquiry.contactEmail);
+    if (inquiry.contactPhone) params.set('phone', inquiry.contactPhone);
+    if (inquiry.propertyId) params.set('propertyId', inquiry.propertyId);
+    if (inquiry.checkInDate) params.set('leaseStartDate', inquiry.checkInDate.split('T')[0]);
+    if (inquiry.checkOutDate) params.set('leaseEndDate', inquiry.checkOutDate.split('T')[0]);
+    router.push(`/tenants/new?${params.toString()}`);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -212,6 +227,17 @@ export default function InquiryDetailPage({ params }: { params: Promise<{ id: st
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Convert to Booking
+                  </Button>
+                )}
+                {inquiry.inquiryType === 'VIEWING' && inquiry.status !== 'CONVERTED' && (
+                  <Button
+                    size="sm"
+                    onClick={handleConvertToTenant}
+                    disabled={updateMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Convert to Tenant
                   </Button>
                 )}
                 {inquiry.status !== 'CLOSED' && inquiry.status !== 'SPAM' && (
