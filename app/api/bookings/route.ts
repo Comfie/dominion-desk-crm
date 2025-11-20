@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { notifyNewBooking } from '@/lib/notifications';
 
 const bookingSchema = z.object({
   propertyId: z.string().min(1, 'Property is required'),
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
     });
 
     // Transform for frontend compatibility
-    const transformedBookings = bookings.map((booking) => ({
+    const transformedBookings = bookings.map((booking: (typeof bookings)[number]) => ({
       ...booking,
       source: booking.bookingSource,
       notes: booking.internalNotes,
@@ -225,6 +226,14 @@ export async function POST(request: Request) {
       notes: booking.internalNotes,
       specialRequests: booking.guestNotes,
     };
+
+    // Create notification for new booking
+    try {
+      await notifyNewBooking(session.user.id, validatedData.guestName, property.name, booking.id);
+    } catch (notifyError) {
+      console.error('Failed to create notification:', notifyError);
+      // Don't fail the booking creation if notification fails
+    }
 
     return NextResponse.json(transformedBooking, { status: 201 });
   } catch (error) {

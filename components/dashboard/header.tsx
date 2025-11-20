@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Bell, Search, LogOut, Settings, HelpCircle, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, Bell, Search, LogOut, Settings, HelpCircle, User, Check } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/hooks';
+import { useNotifications } from '@/hooks/use-notifications';
 import { getInitials } from '@/lib/utils';
 
 interface HeaderProps {
@@ -24,6 +27,24 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications({
+    limit: 5,
+    refetchInterval: 30000,
+  });
+
+  const handleNotificationClick = (notification: {
+    id: string;
+    linkUrl: string | null;
+    isRead: boolean;
+  }) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+    if (notification.linkUrl) {
+      router.push(notification.linkUrl);
+    }
+  };
 
   return (
     <header className="bg-background sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-6">
@@ -52,32 +73,51 @@ export function Header({ onMenuClick }: HeaderProps) {
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>
               {/* Notification badge */}
-              <span className="bg-destructive text-destructive-foreground absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="bg-destructive text-destructive-foreground absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-80" align="end" forceMount>
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <div className="flex items-center justify-between px-2">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-2 py-1 text-xs"
+                  onClick={() => markAllAsRead()}
+                >
+                  <Check className="mr-1 h-3 w-3" />
+                  Mark all read
+                </Button>
+              )}
+            </div>
             <DropdownMenuSeparator />
             <div className="max-h-80 overflow-y-auto">
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-                <p className="text-sm font-medium">New booking request</p>
-                <p className="text-muted-foreground text-xs">
-                  John Doe requested to book Beach House
-                </p>
-                <p className="text-muted-foreground text-xs">2 hours ago</p>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-                <p className="text-sm font-medium">Payment received</p>
-                <p className="text-muted-foreground text-xs">$1,500 payment from Sarah Smith</p>
-                <p className="text-muted-foreground text-xs">5 hours ago</p>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-                <p className="text-sm font-medium">Maintenance request</p>
-                <p className="text-muted-foreground text-xs">New maintenance request for Unit 4B</p>
-                <p className="text-muted-foreground text-xs">1 day ago</p>
-              </DropdownMenuItem>
+              {notifications.length === 0 ? (
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem
+                    key={notification.id}
+                    className={`flex cursor-pointer flex-col items-start gap-1 p-3 ${
+                      !notification.isRead ? 'bg-muted/50' : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <p className="text-sm font-medium">{notification.title}</p>
+                    <p className="text-muted-foreground text-xs">{notification.message}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                    </p>
+                  </DropdownMenuItem>
+                ))
+              )}
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="justify-center">

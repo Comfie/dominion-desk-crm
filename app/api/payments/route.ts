@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
+import { notifyPaymentReceived } from '@/lib/notifications';
 
 // GET /api/payments - List all payments
 export async function GET(request: Request) {
@@ -178,6 +179,22 @@ export async function POST(request: Request) {
           },
         });
       }
+    }
+
+    // Create notification for payment received
+    try {
+      const payerName = payment.tenant
+        ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
+        : payment.booking?.guestName || 'Unknown';
+
+      await notifyPaymentReceived(
+        session.user.id,
+        `R${Number(payment.amount).toLocaleString()}`,
+        payerName,
+        payment.id
+      );
+    } catch (notifyError) {
+      console.error('Failed to create notification:', notifyError);
     }
 
     return NextResponse.json(payment, { status: 201 });

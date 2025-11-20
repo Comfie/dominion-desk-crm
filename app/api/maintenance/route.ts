@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { notifyMaintenanceRequest } from '@/lib/notifications';
 
 const maintenanceSchema = z.object({
   propertyId: z.string().min(1, 'Property is required'),
@@ -164,6 +165,18 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Create notification for new maintenance request
+    try {
+      await notifyMaintenanceRequest(
+        session.user.id,
+        validatedData.title,
+        property.name,
+        maintenanceRequest.id
+      );
+    } catch (notifyError) {
+      console.error('Failed to create notification:', notifyError);
+    }
 
     return NextResponse.json(maintenanceRequest, { status: 201 });
   } catch (error) {

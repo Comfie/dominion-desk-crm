@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { notifyNewInquiry } from '@/lib/notifications';
 
 const inquirySchema = z.object({
   propertyId: z.string().optional().nullable(),
@@ -143,6 +144,18 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Create notification for new inquiry
+    try {
+      await notifyNewInquiry(
+        session.user.id,
+        validatedData.contactName,
+        inquiry.property?.name || null,
+        inquiry.id
+      );
+    } catch (notifyError) {
+      console.error('Failed to create notification:', notifyError);
+    }
 
     return NextResponse.json(inquiry, { status: 201 });
   } catch (error) {
