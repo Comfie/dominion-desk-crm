@@ -175,7 +175,12 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
 
               <div className="space-y-2">
                 <Label htmlFor="numberOfGuests">Number of Guests *</Label>
-                <Input id="numberOfGuests" type="number" min="1" {...register('numberOfGuests')} />
+                <Input
+                  id="numberOfGuests"
+                  type="number"
+                  min="1"
+                  {...register('numberOfGuests', { valueAsNumber: true })}
+                />
                 {errors.numberOfGuests && (
                   <p className="text-destructive text-sm">{errors.numberOfGuests.message}</p>
                 )}
@@ -272,7 +277,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
                   type="number"
                   min="0"
                   step="0.01"
-                  {...register('totalAmount')}
+                  {...register('totalAmount', { valueAsNumber: true })}
                 />
                 {errors.totalAmount && (
                   <p className="text-destructive text-sm">{errors.totalAmount.message}</p>

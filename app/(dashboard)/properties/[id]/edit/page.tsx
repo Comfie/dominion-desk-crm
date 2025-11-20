@@ -370,22 +370,53 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
             <div className="grid gap-4 sm:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="bedrooms">Bedrooms *</Label>
-                <Input id="bedrooms" type="number" min="0" {...register('bedrooms')} />
+                <Input
+                  id="bedrooms"
+                  type="number"
+                  min="0"
+                  {...register('bedrooms', { valueAsNumber: true })}
+                />
+                {errors.bedrooms && (
+                  <p className="text-destructive text-sm">{errors.bedrooms.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="bathrooms">Bathrooms *</Label>
-                <Input id="bathrooms" type="number" min="0" step="0.5" {...register('bathrooms')} />
+                <Input
+                  id="bathrooms"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  {...register('bathrooms', { valueAsNumber: true })}
+                />
+                {errors.bathrooms && (
+                  <p className="text-destructive text-sm">{errors.bathrooms.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="parkingSpaces">Parking</Label>
-                <Input id="parkingSpaces" type="number" min="0" {...register('parkingSpaces')} />
+                <Input
+                  id="parkingSpaces"
+                  type="number"
+                  min="0"
+                  {...register('parkingSpaces', { valueAsNumber: true })}
+                />
+                {errors.parkingSpaces && (
+                  <p className="text-destructive text-sm">{errors.parkingSpaces.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="size">Size (m²)</Label>
-                <Input id="size" type="number" min="0" {...register('size')} />
+                <Input
+                  id="size"
+                  type="number"
+                  min="0"
+                  {...register('size', { valueAsNumber: true })}
+                />
+                {errors.size && <p className="text-destructive text-sm">{errors.size.message}</p>}
               </div>
             </div>
 
@@ -439,8 +470,11 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
                     type="number"
                     min="0"
                     placeholder="15000"
-                    {...register('monthlyRent')}
+                    {...register('monthlyRent', { valueAsNumber: true })}
                   />
+                  {errors.monthlyRent && (
+                    <p className="text-destructive text-sm">{errors.monthlyRent.message}</p>
+                  )}
                 </div>
               )}
 
@@ -452,8 +486,11 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
                     type="number"
                     min="0"
                     placeholder="800"
-                    {...register('dailyRate')}
+                    {...register('dailyRate', { valueAsNumber: true })}
                   />
+                  {errors.dailyRate && (
+                    <p className="text-destructive text-sm">{errors.dailyRate.message}</p>
+                  )}
                 </div>
               )}
 
@@ -464,8 +501,11 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
                   type="number"
                   min="0"
                   placeholder="15000"
-                  {...register('securityDeposit')}
+                  {...register('securityDeposit', { valueAsNumber: true })}
                 />
+                {errors.securityDeposit && (
+                  <p className="text-destructive text-sm">{errors.securityDeposit.message}</p>
+                )}
               </div>
             </div>
           </CardContent>

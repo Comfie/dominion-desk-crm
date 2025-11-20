@@ -12,7 +12,7 @@ import {
   Building2,
 } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
+import { PageHeader, Loading } from '@/components/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
@@ -81,6 +81,12 @@ export default function FinancialReportsPage() {
 
       {isLoading ? (
         <div className="space-y-6">
+          <Loading
+            size="xl"
+            text="Loading financial reports..."
+            submessage="Compiling income and expense data"
+            className="py-12"
+          />
           <div className="grid gap-4 md:grid-cols-4">
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-32" />

@@ -149,7 +149,7 @@ export default function NewExpensePage() {
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  {...register('amount')}
+                  {...register('amount', { valueAsNumber: true })}
                 />
                 {errors.amount && (
                   <p className="text-destructive text-sm">{errors.amount.message}</p>
