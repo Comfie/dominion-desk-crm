@@ -110,7 +110,15 @@ export default function NewTenantPage() {
 
   const onSubmit = (data: TenantFormData) => {
     setError(null);
-    createMutation.mutate(data);
+    // Filter out NaN values before sending to API
+    const cleanedData = {
+      ...data,
+      monthlyIncome:
+        data.monthlyIncome !== undefined && !isNaN(data.monthlyIncome)
+          ? data.monthlyIncome
+          : undefined,
+    };
+    createMutation.mutate(cleanedData);
   };
 
   return (

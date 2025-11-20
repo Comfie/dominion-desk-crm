@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
@@ -170,7 +171,9 @@ export async function POST(request: Request) {
         employmentStatus: validatedData.employmentStatus,
         employer: validatedData.employer,
         employerPhone: validatedData.employerPhone,
-        monthlyIncome: validatedData.monthlyIncome,
+        monthlyIncome: validatedData.monthlyIncome
+          ? new Prisma.Decimal(validatedData.monthlyIncome)
+          : null,
         emergencyContactName: validatedData.emergencyContactName,
         emergencyContactPhone: validatedData.emergencyContactPhone,
         emergencyContactRelation: validatedData.emergencyContactRelation,
