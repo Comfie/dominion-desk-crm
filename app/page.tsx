@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Bed, Bath, MapPin, Search, ArrowRight } from 'lucide-react';
+import { Building2, Bed, Bath, MapPin, Search, ArrowRight, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,10 +47,23 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b bg-white dark:bg-gray-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-blue-600" />
-            <span className="text-lg font-semibold">Property CRM</span>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-blue-600" />
+              <span className="text-lg font-semibold">Property CRM</span>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              asChild
+            >
+              <Link href="/pitch">
+                <Sparkles className="mr-1 h-4 w-4" />
+                Pitch
+              </Link>
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link href="/portal/login">Tenant Login</Link>

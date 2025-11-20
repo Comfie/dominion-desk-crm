@@ -15,6 +15,7 @@ export default withAuth(
         if (
           pathname === '/' ||
           pathname.startsWith('/p/') ||
+          pathname.startsWith('/pitch') ||
           pathname.startsWith('/login') ||
           pathname.startsWith('/register') ||
           pathname.startsWith('/forgot-password') ||
