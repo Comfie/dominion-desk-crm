@@ -126,6 +126,7 @@ export default function NewTenantPage() {
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
   } = useForm<TenantFormData>({
     resolver: zodResolver(tenantSchema),
     defaultValues: {
@@ -472,7 +473,7 @@ export default function NewTenantPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="propertyId">Property *</Label>
-                  <Select {...register('propertyId')}>
+                  <Select onValueChange={(value) => setValue('propertyId', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a property" />
                     </SelectTrigger>
