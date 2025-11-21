@@ -18,6 +18,9 @@ import {
   HelpCircle,
   BookOpen,
   ChevronRight,
+  Mail,
+  CheckSquare,
+  Receipt,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -30,11 +33,14 @@ const sections = [
   { id: 'properties', title: 'Property Management', icon: Building2 },
   { id: 'tenants', title: 'Tenant Management', icon: Users },
   { id: 'bookings', title: 'Booking System', icon: Calendar },
+  { id: 'inquiries', title: 'Inquiry Management', icon: Mail },
   { id: 'payments', title: 'Payment Tracking', icon: CreditCard },
+  { id: 'expenses', title: 'Expense Tracking', icon: Receipt },
   { id: 'maintenance', title: 'Maintenance Requests', icon: Wrench },
+  { id: 'tasks', title: 'Tasks & Calendar', icon: CheckSquare },
   { id: 'documents', title: 'Document Storage', icon: FileText },
   { id: 'messages', title: 'Communication', icon: MessageSquare },
-  { id: 'reports', title: 'Financial Reports', icon: BarChart3 },
+  { id: 'reports', title: 'Reports & Analytics', icon: BarChart3 },
   { id: 'settings', title: 'Settings', icon: Settings },
   { id: 'public-pages', title: 'Public Pages & Tenant Portal', icon: Globe },
   { id: 'security', title: 'Security & Privacy', icon: Shield },
@@ -43,21 +49,26 @@ const sections = [
 
 export default function DocumentationPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-background min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur dark:bg-gray-800/95">
+      <header className="bg-gradient-header sticky top-0 z-50 border-b border-white/10 shadow-md backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Building2 className="h-6 w-6 text-blue-600" />
+            <Link href="/dashboard" className="flex items-center gap-2 text-white">
+              <Building2 className="h-6 w-6" />
               <span className="text-lg font-semibold">Property CRM</span>
             </Link>
-            <Badge variant="outline">Documentation</Badge>
+            <Badge variant="secondary">Documentation</Badge>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+            asChild
+          >
+            <Link href="/dashboard">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
+              Back to Dashboard
             </Link>
           </Button>
         </div>
@@ -74,7 +85,7 @@ export default function DocumentationPage() {
                   <a
                     key={section.id}
                     href={`#${section.id}`}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                    className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
                   >
                     <section.icon className="h-4 w-4" />
                     {section.title}
@@ -87,12 +98,12 @@ export default function DocumentationPage() {
           {/* Main Content */}
           <main className="min-w-0">
             {/* Hero */}
-            <div className="mb-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white">
+            <div className="bg-gradient-blue-cyan mb-12 rounded-xl p-8 text-white shadow-lg">
               <h1 className="text-3xl font-bold sm:text-4xl">Property CRM User Guide</h1>
-              <p className="mt-2 text-blue-100">
+              <p className="mt-2 text-white/90">
                 Complete documentation to help you manage your properties efficiently
               </p>
-              <p className="mt-4 text-sm text-blue-200">
+              <p className="mt-4 text-sm text-white/80">
                 Version 1.0 • Last updated:{' '}
                 {new Date().toLocaleDateString('en-ZA', {
                   year: 'numeric',
@@ -105,7 +116,7 @@ export default function DocumentationPage() {
             {/* Getting Started */}
             <section id="getting-started" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <BookOpen className="h-6 w-6 text-blue-600" />
+                <BookOpen className="text-primary h-6 w-6" />
                 Getting Started
               </h2>
 
@@ -113,42 +124,47 @@ export default function DocumentationPage() {
                 <CardHeader>
                   <CardTitle>Welcome to Property CRM</CardTitle>
                 </CardHeader>
-                <CardContent className="prose dark:prose-invert max-w-none">
-                  <p>
+                <CardContent className="docs-content space-y-4">
+                  <p className="text-muted-foreground leading-relaxed">
                     Property CRM is a comprehensive property management platform designed
                     specifically for South African landlords and property managers. This guide will
                     help you get started and make the most of all available features.
                   </p>
 
-                  <h4>Quick Start Steps:</h4>
-                  <ol>
-                    <li>
-                      <strong>Create an Account</strong> - Sign up at the registration page with
-                      your email and business details
-                    </li>
-                    <li>
-                      <strong>Add Your First Property</strong> - Navigate to Properties → Add
-                      Property and fill in the details
-                    </li>
-                    <li>
-                      <strong>Set Up Tenants</strong> - Add your tenants and link them to properties
-                    </li>
-                    <li>
-                      <strong>Configure Settings</strong> - Customize your preferences in the
-                      Settings page
-                    </li>
-                    <li>
-                      <strong>Start Managing</strong> - Use the dashboard to track everything in one
-                      place
-                    </li>
-                  </ol>
+                  <div>
+                    <h4 className="mb-3 font-semibold">Quick Start Steps:</h4>
+                    <ol className="text-muted-foreground ml-5 list-decimal space-y-2">
+                      <li>
+                        <strong className="text-foreground">Create an Account</strong> - Sign up at
+                        the registration page with your email and business details
+                      </li>
+                      <li>
+                        <strong className="text-foreground">Add Your First Property</strong> -
+                        Navigate to Properties → Add Property and fill in the details
+                      </li>
+                      <li>
+                        <strong className="text-foreground">Set Up Tenants</strong> - Add your
+                        tenants and link them to properties
+                      </li>
+                      <li>
+                        <strong className="text-foreground">Configure Settings</strong> - Customize
+                        your preferences in the Settings page
+                      </li>
+                      <li>
+                        <strong className="text-foreground">Start Managing</strong> - Use the
+                        dashboard to track everything in one place
+                      </li>
+                    </ol>
+                  </div>
 
-                  <h4>System Requirements:</h4>
-                  <ul>
-                    <li>Modern web browser (Chrome, Firefox, Safari, Edge)</li>
-                    <li>Internet connection</li>
-                    <li>Mobile device or computer</li>
-                  </ul>
+                  <div>
+                    <h4 className="mb-3 font-semibold">System Requirements:</h4>
+                    <ul className="text-muted-foreground ml-5 list-disc space-y-1">
+                      <li>Modern web browser (Chrome, Firefox, Safari, Edge)</li>
+                      <li>Internet connection</li>
+                      <li>Mobile device or computer</li>
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
             </section>
@@ -156,12 +172,12 @@ export default function DocumentationPage() {
             {/* Dashboard */}
             <section id="dashboard" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Home className="h-6 w-6 text-blue-600" />
+                <Home className="text-primary h-6 w-6" />
                 Dashboard Overview
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <p>
                     The dashboard is your central hub for monitoring all property management
                     activities. It provides a quick overview of your portfolio's performance.
@@ -220,12 +236,12 @@ export default function DocumentationPage() {
             {/* Properties */}
             <section id="properties" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Building2 className="h-6 w-6 text-blue-600" />
+                <Building2 className="text-primary h-6 w-6" />
                 Property Management
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Adding a New Property</h4>
                   <ol>
                     <li>
@@ -308,12 +324,12 @@ export default function DocumentationPage() {
             {/* Tenants */}
             <section id="tenants" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Users className="h-6 w-6 text-blue-600" />
+                <Users className="text-primary h-6 w-6" />
                 Tenant Management
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Adding a New Tenant</h4>
                   <ol>
                     <li>
@@ -385,12 +401,12 @@ export default function DocumentationPage() {
             {/* Bookings */}
             <section id="bookings" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Calendar className="h-6 w-6 text-blue-600" />
+                <Calendar className="text-primary h-6 w-6" />
                 Booking System
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Understanding Booking Types</h4>
                   <p>The system supports two rental types:</p>
                   <ul>
@@ -440,12 +456,96 @@ export default function DocumentationPage() {
                       <strong>Cancelled</strong> - Booking was cancelled
                     </li>
                   </ul>
+                </CardContent>
+              </Card>
+            </section>
 
-                  <h4>Handling Inquiries</h4>
+            {/* Inquiries */}
+            <section id="inquiries" className="mb-12 scroll-mt-24">
+              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+                <Mail className="text-primary h-6 w-6" />
+                Inquiry Management
+              </h2>
+
+              <Card className="mb-6">
+                <CardContent className="docs-content space-y-4">
+                  <h4>Understanding Inquiries</h4>
                   <p>
-                    Inquiries from potential tenants appear in the Inquiries section. You can view
-                    contact details, respond via email/phone, and convert inquiries into tenants
-                    once approved.
+                    Inquiries are submitted through your public property listing pages. The system
+                    automatically categorizes them based on property type:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Booking Inquiries</strong> - For short-term rental properties
+                    </li>
+                    <li>
+                      <strong>Viewing Requests</strong> - For long-term rental properties
+                    </li>
+                    <li>
+                      <strong>General Inquiries</strong> - For properties accepting both types
+                    </li>
+                  </ul>
+
+                  <h4>Managing Inquiries</h4>
+                  <ol>
+                    <li>
+                      Navigate to <strong>Inquiries</strong> in the sidebar
+                    </li>
+                    <li>View all pending and responded inquiries</li>
+                    <li>
+                      Click on an inquiry to see:
+                      <ul>
+                        <li>Contact information (name, email, phone)</li>
+                        <li>Property they're interested in</li>
+                        <li>Preferred dates (if applicable)</li>
+                        <li>Number of guests</li>
+                        <li>Special requests or questions</li>
+                      </ul>
+                    </li>
+                  </ol>
+
+                  <h4>Inquiry Statuses:</h4>
+                  <ul>
+                    <li>
+                      <strong>New</strong> - Just received, awaiting review
+                    </li>
+                    <li>
+                      <strong>In Progress</strong> - You've started processing it
+                    </li>
+                    <li>
+                      <strong>Responded</strong> - You've sent a response
+                    </li>
+                    <li>
+                      <strong>Converted</strong> - Turned into a booking or tenant
+                    </li>
+                    <li>
+                      <strong>Closed</strong> - No longer being pursued
+                    </li>
+                    <li>
+                      <strong>Spam</strong> - Marked as spam
+                    </li>
+                  </ul>
+
+                  <h4>Converting Inquiries</h4>
+                  <p>
+                    Once you've confirmed details with the inquirer, you can convert inquiries
+                    directly:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Convert to Booking</strong> - For short-term stays, automatically
+                      pre-fills booking form with inquiry details
+                    </li>
+                    <li>
+                      <strong>Convert to Tenant</strong> - For long-term rentals, pre-fills tenant
+                      form with contact and lease information
+                    </li>
+                  </ul>
+
+                  <h4>Responding to Inquiries</h4>
+                  <p>
+                    You can send responses directly from the inquiry detail page. The system records
+                    your response and notifies you of any follow-up inquiries.
                   </p>
                 </CardContent>
               </Card>
@@ -454,12 +554,12 @@ export default function DocumentationPage() {
             {/* Payments */}
             <section id="payments" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <CreditCard className="h-6 w-6 text-blue-600" />
+                <CreditCard className="text-primary h-6 w-6" />
                 Payment Tracking
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Recording Payments</h4>
                   <ol>
                     <li>
@@ -529,15 +629,147 @@ export default function DocumentationPage() {
               </Card>
             </section>
 
+            {/* Expenses */}
+            <section id="expenses" className="mb-12 scroll-mt-24">
+              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+                <Receipt className="text-primary h-6 w-6" />
+                Expense Tracking
+              </h2>
+
+              <Card className="mb-6">
+                <CardContent className="docs-content space-y-4">
+                  <h4>Recording Expenses</h4>
+                  <ol>
+                    <li>
+                      Navigate to <strong>Expenses</strong> in the sidebar
+                    </li>
+                    <li>
+                      Click <strong>Add Expense</strong>
+                    </li>
+                    <li>Select the property the expense relates to</li>
+                    <li>
+                      Enter expense details:
+                      <ul>
+                        <li>Description of the expense</li>
+                        <li>Category (Maintenance, Utilities, Insurance, etc.)</li>
+                        <li>Amount paid</li>
+                        <li>Date of expense</li>
+                        <li>Payment method</li>
+                        <li>Vendor/Supplier name</li>
+                        <li>Receipt/Invoice number</li>
+                        <li>Notes (optional)</li>
+                      </ul>
+                    </li>
+                    <li>Attach receipts or invoices (optional)</li>
+                    <li>
+                      Click <strong>Save Expense</strong>
+                    </li>
+                  </ol>
+
+                  <h4>Expense Categories:</h4>
+                  <ul>
+                    <li>
+                      <strong>Maintenance</strong> - Repairs, painting, plumbing, electrical work
+                    </li>
+                    <li>
+                      <strong>Utilities</strong> - Water, electricity, gas, internet bills
+                    </li>
+                    <li>
+                      <strong>Insurance</strong> - Property insurance premiums
+                    </li>
+                    <li>
+                      <strong>Property Tax</strong> - Municipal and property taxes
+                    </li>
+                    <li>
+                      <strong>Mortgage</strong> - Mortgage or bond payments
+                    </li>
+                    <li>
+                      <strong>Management Fees</strong> - Property management costs
+                    </li>
+                    <li>
+                      <strong>Advertising</strong> - Marketing and listing costs
+                    </li>
+                    <li>
+                      <strong>Legal & Professional</strong> - Attorney, accountant fees
+                    </li>
+                    <li>
+                      <strong>Supplies</strong> - Cleaning supplies, keys, minor items
+                    </li>
+                    <li>
+                      <strong>HOA Fees</strong> - Homeowners association fees
+                    </li>
+                    <li>
+                      <strong>Other</strong> - Miscellaneous expenses
+                    </li>
+                  </ul>
+
+                  <h4>Linking to Maintenance Requests</h4>
+                  <p>
+                    When you resolve maintenance requests, you can record associated costs directly.
+                    These expenses are automatically categorized as Maintenance and linked to the
+                    specific request and property for accurate tracking.
+                  </p>
+
+                  <h4>Expense Reports</h4>
+                  <p>
+                    Access comprehensive expense reports from the <strong>Reports</strong> section:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>By Property</strong> - See all expenses for each property
+                    </li>
+                    <li>
+                      <strong>By Category</strong> - Understand where your money is going
+                    </li>
+                    <li>
+                      <strong>By Time Period</strong> - Monthly, quarterly, or yearly expense
+                      analysis
+                    </li>
+                    <li>
+                      <strong>Tax Reports</strong> - Generate reports for tax deduction purposes
+                    </li>
+                  </ul>
+
+                  <h4>Financial Impact</h4>
+                  <p>Expenses are automatically included in your financial reports:</p>
+                  <ul>
+                    <li>
+                      <strong>Net Income Calculation</strong> - Revenue minus expenses shows true
+                      profitability
+                    </li>
+                    <li>
+                      <strong>ROI Analysis</strong> - Track return on investment per property
+                    </li>
+                    <li>
+                      <strong>Budget vs. Actual</strong> - Compare planned vs. actual expenses
+                    </li>
+                    <li>
+                      <strong>Maintenance Cost Trends</strong> - Identify properties with high
+                      maintenance costs
+                    </li>
+                  </ul>
+
+                  <h4>Best Practices:</h4>
+                  <ul>
+                    <li>Record expenses immediately to avoid forgetting</li>
+                    <li>Always attach receipts for accurate record-keeping</li>
+                    <li>Use consistent vendor names for better reporting</li>
+                    <li>Review expense reports monthly to identify cost-saving opportunities</li>
+                    <li>Keep separate categories for tax-deductible expenses</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </section>
+
             {/* Maintenance */}
             <section id="maintenance" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Wrench className="h-6 w-6 text-blue-600" />
+                <Wrench className="text-primary h-6 w-6" />
                 Maintenance Requests
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>How Maintenance Requests Work</h4>
                   <p>
                     Tenants can submit maintenance requests through their tenant portal. You receive
@@ -607,15 +839,193 @@ export default function DocumentationPage() {
               </Card>
             </section>
 
+            {/* Tasks */}
+            <section id="tasks" className="mb-12 scroll-mt-24">
+              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+                <CheckSquare className="text-primary h-6 w-6" />
+                Tasks & Calendar
+              </h2>
+
+              <Card className="mb-6">
+                <CardContent className="docs-content space-y-4">
+                  <h4>Understanding Tasks</h4>
+                  <p>
+                    Tasks help you organize and track your property management activities. You can
+                    create tasks for various purposes like property inspections, lease renewals,
+                    preventive maintenance, rent collection, and general follow-ups.
+                  </p>
+
+                  <h4>Creating a Task</h4>
+                  <ol>
+                    <li>
+                      Navigate to <strong>Tasks</strong> in the sidebar
+                    </li>
+                    <li>
+                      Click <strong>Create Task</strong>
+                    </li>
+                    <li>
+                      Enter task details:
+                      <ul>
+                        <li>Task title and description</li>
+                        <li>Select related property (optional)</li>
+                        <li>Select related tenant (optional)</li>
+                        <li>Set priority (Low, Medium, High, Urgent)</li>
+                        <li>Choose category (Inspection, Maintenance, Administrative, etc.)</li>
+                        <li>Set due date and time</li>
+                        <li>Add reminder notifications</li>
+                      </ul>
+                    </li>
+                    <li>
+                      Click <strong>Create Task</strong>
+                    </li>
+                  </ol>
+
+                  <h4>Task Priorities:</h4>
+                  <ul>
+                    <li>
+                      <strong>Urgent</strong> - Requires immediate attention, overdue or critical
+                    </li>
+                    <li>
+                      <strong>High</strong> - Important tasks with approaching deadlines
+                    </li>
+                    <li>
+                      <strong>Medium</strong> - Standard priority tasks
+                    </li>
+                    <li>
+                      <strong>Low</strong> - Can be completed when time allows
+                    </li>
+                  </ul>
+
+                  <h4>Task Categories:</h4>
+                  <ul>
+                    <li>
+                      <strong>Inspection</strong> - Property inspections, move-in/out walkthroughs
+                    </li>
+                    <li>
+                      <strong>Maintenance</strong> - Preventive maintenance, repairs
+                    </li>
+                    <li>
+                      <strong>Administrative</strong> - Paperwork, lease renewals, documentation
+                    </li>
+                    <li>
+                      <strong>Financial</strong> - Rent collection, payment follow-ups
+                    </li>
+                    <li>
+                      <strong>Tenant</strong> - Tenant communication, requests, issues
+                    </li>
+                    <li>
+                      <strong>Marketing</strong> - Property listings, showings, photography
+                    </li>
+                    <li>
+                      <strong>Legal</strong> - Compliance, contracts, legal matters
+                    </li>
+                    <li>
+                      <strong>Other</strong> - General tasks
+                    </li>
+                  </ul>
+
+                  <h4>Task Statuses:</h4>
+                  <ul>
+                    <li>
+                      <strong>Pending</strong> - Not yet started
+                    </li>
+                    <li>
+                      <strong>In Progress</strong> - Currently working on it
+                    </li>
+                    <li>
+                      <strong>Completed</strong> - Task finished
+                    </li>
+                    <li>
+                      <strong>Cancelled</strong> - No longer needed
+                    </li>
+                  </ul>
+
+                  <h4>Using the Calendar View</h4>
+                  <p>
+                    The calendar view provides a visual overview of all your tasks and appointments:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Month View</strong> - See all tasks across the month
+                    </li>
+                    <li>
+                      <strong>Week View</strong> - Detailed weekly task schedule
+                    </li>
+                    <li>
+                      <strong>Day View</strong> - Hour-by-hour task breakdown
+                    </li>
+                    <li>
+                      <strong>List View</strong> - All tasks in a sortable list format
+                    </li>
+                  </ul>
+
+                  <h4>Task Management Features:</h4>
+                  <ul>
+                    <li>
+                      <strong>Filtering</strong> - Filter by property, tenant, priority, category,
+                      or status
+                    </li>
+                    <li>
+                      <strong>Sorting</strong> - Sort by due date, priority, or creation date
+                    </li>
+                    <li>
+                      <strong>Search</strong> - Quickly find specific tasks
+                    </li>
+                    <li>
+                      <strong>Reminders</strong> - Get notified before tasks are due
+                    </li>
+                    <li>
+                      <strong>Recurring Tasks</strong> - Set up tasks that repeat (monthly
+                      inspections, quarterly reviews)
+                    </li>
+                    <li>
+                      <strong>Task Notes</strong> - Add progress notes and updates to tasks
+                    </li>
+                  </ul>
+
+                  <h4>Common Task Examples:</h4>
+                  <ul>
+                    <li>Monthly property inspection for 123 Main St</li>
+                    <li>Lease renewal reminder - John Smith (30 days before expiry)</li>
+                    <li>Schedule HVAC maintenance for all properties</li>
+                    <li>Follow up on late rent payment - Apartment 4B</li>
+                    <li>Take property photos for new listing</li>
+                    <li>Review and update insurance policies</li>
+                    <li>Submit tax documents to accountant</li>
+                  </ul>
+
+                  <h4>Notifications & Reminders</h4>
+                  <p>Stay on top of your tasks with automated notifications:</p>
+                  <ul>
+                    <li>Email notifications for upcoming tasks</li>
+                    <li>Dashboard alerts for overdue tasks</li>
+                    <li>Daily digest of today's tasks</li>
+                    <li>Custom reminder times (1 day, 1 week, custom)</li>
+                  </ul>
+
+                  <h4>Best Practices:</h4>
+                  <ul>
+                    <li>Create tasks immediately when you think of them</li>
+                    <li>Set realistic due dates and priorities</li>
+                    <li>Link tasks to properties and tenants for better organization</li>
+                    <li>Use recurring tasks for regular maintenance and inspections</li>
+                    <li>Review your task list at the start of each week</li>
+                    <li>Mark tasks complete promptly to keep your list current</li>
+                    <li>Use task notes to document what was done</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </section>
+
             {/* Documents */}
             <section id="documents" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <FileText className="h-6 w-6 text-blue-600" />
+                <FileText className="text-primary h-6 w-6" />
                 Document Storage
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Uploading Documents</h4>
                   <ol>
                     <li>
@@ -666,12 +1076,12 @@ export default function DocumentationPage() {
             {/* Messages */}
             <section id="messages" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
+                <MessageSquare className="text-primary h-6 w-6" />
                 Communication
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Sending Messages</h4>
                   <ol>
                     <li>
@@ -717,51 +1127,177 @@ export default function DocumentationPage() {
             {/* Reports */}
             <section id="reports" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <BarChart3 className="h-6 w-6 text-blue-600" />
-                Financial Reports
+                <BarChart3 className="text-primary h-6 w-6" />
+                Reports & Analytics
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
+                  <h4>Understanding Reports</h4>
+                  <p>
+                    The system provides comprehensive reporting and analytics to help you understand
+                    your property portfolio's performance, track financial metrics, and make
+                    data-driven decisions.
+                  </p>
+
                   <h4>Available Reports</h4>
 
-                  <h5>Income Report</h5>
+                  <h5>Revenue Report</h5>
                   <p>
-                    View all income by property, tenant, or time period. Includes rent payments,
-                    deposits, and other income.
+                    Track all income streams including rent payments, booking revenue, deposits, and
+                    other income. View trends over time and compare performance across properties.
+                    The report includes:
                   </p>
+                  <ul>
+                    <li>Total revenue by month/quarter/year</li>
+                    <li>Revenue breakdown by property</li>
+                    <li>Income source distribution (rent, bookings, utilities, etc.)</li>
+                    <li>Year-over-year growth comparisons</li>
+                  </ul>
 
                   <h5>Expense Report</h5>
                   <p>
-                    Track all property-related expenses including maintenance, taxes, insurance, and
-                    utilities.
+                    Track all property-related expenses including maintenance, taxes, insurance,
+                    utilities, and more. Analyze spending patterns and identify cost-saving
+                    opportunities. Includes:
                   </p>
+                  <ul>
+                    <li>Total expenses by category</li>
+                    <li>Expense trends over time</li>
+                    <li>Cost breakdown by property</li>
+                    <li>Maintenance cost analysis</li>
+                    <li>Tax-deductible expense summaries</li>
+                  </ul>
 
-                  <h5>Profit & Loss</h5>
+                  <h5>Profit & Loss Statement</h5>
                   <p>
-                    Calculate net profit by comparing income against expenses for each property or
-                    your entire portfolio.
+                    Calculate net profit by comparing total income against all expenses for each
+                    property or your entire portfolio. This report shows:
                   </p>
+                  <ul>
+                    <li>Gross revenue and total expenses</li>
+                    <li>Net profit/loss by property</li>
+                    <li>Profit margins and ROI calculations</li>
+                    <li>Portfolio-wide financial performance</li>
+                    <li>Month-over-month and year-over-year comparisons</li>
+                  </ul>
 
                   <h5>Occupancy Report</h5>
-                  <p>Monitor vacancy rates and occupancy trends over time.</p>
+                  <p>
+                    Monitor vacancy rates, occupancy trends, and booking patterns. Essential for
+                    understanding property utilization:
+                  </p>
+                  <ul>
+                    <li>Current occupancy rate by property</li>
+                    <li>Average occupancy over time</li>
+                    <li>Vacancy periods and duration</li>
+                    <li>Booking rate for short-term rentals</li>
+                    <li>Tenant turnover statistics</li>
+                  </ul>
 
                   <h5>Payment Aging Report</h5>
-                  <p>Identify overdue payments and outstanding balances by tenant.</p>
+                  <p>
+                    Identify overdue payments and outstanding balances. Critical for cash flow
+                    management:
+                  </p>
+                  <ul>
+                    <li>Overdue payments by tenant</li>
+                    <li>Aging categories (0-30, 31-60, 61-90, 90+ days)</li>
+                    <li>Total outstanding balances</li>
+                    <li>Payment history and trends</li>
+                  </ul>
+
+                  <h4>Analytics Dashboard</h4>
+                  <p>
+                    The Analytics page provides real-time insights into your property portfolio with
+                    interactive charts and visualizations:
+                  </p>
+                  <ul>
+                    <li>
+                      <strong>Revenue Overview</strong> - Monthly revenue trends with line charts
+                    </li>
+                    <li>
+                      <strong>Expense Breakdown</strong> - Category-wise expense distribution
+                    </li>
+                    <li>
+                      <strong>Property Performance</strong> - Compare revenue across properties
+                    </li>
+                    <li>
+                      <strong>Occupancy Metrics</strong> - Visual occupancy rate tracking
+                    </li>
+                    <li>
+                      <strong>Booking Statistics</strong> - Short-term rental performance metrics
+                    </li>
+                    <li>
+                      <strong>Inquiry Conversion</strong> - Track how inquiries convert to bookings
+                    </li>
+                    <li>
+                      <strong>Top Performers</strong> - Identify your most profitable properties
+                    </li>
+                  </ul>
 
                   <h4>Generating Reports</h4>
                   <ol>
                     <li>
                       Navigate to <strong>Reports</strong> in the sidebar
                     </li>
-                    <li>Select report type</li>
-                    <li>Set date range</li>
-                    <li>Filter by property (optional)</li>
+                    <li>Select report type (Revenue, Expenses, Profit & Loss, etc.)</li>
+                    <li>
+                      Set date range:
+                      <ul>
+                        <li>This Month / Last Month</li>
+                        <li>This Quarter / Last Quarter</li>
+                        <li>This Year / Last Year</li>
+                        <li>Custom date range</li>
+                      </ul>
+                    </li>
+                    <li>Filter by property (optional) - View single property or all properties</li>
                     <li>
                       Click <strong>Generate Report</strong>
                     </li>
-                    <li>Export to PDF or Excel</li>
+                    <li>
+                      Export options:
+                      <ul>
+                        <li>PDF - Professional formatted reports</li>
+                        <li>Excel - For further analysis and manipulation</li>
+                        <li>CSV - For importing into other systems</li>
+                      </ul>
+                    </li>
                   </ol>
+
+                  <h4>Report Features:</h4>
+                  <ul>
+                    <li>
+                      <strong>Automated Scheduling</strong> - Receive reports via email on a regular
+                      schedule
+                    </li>
+                    <li>
+                      <strong>Comparative Analysis</strong> - Compare current period vs. previous
+                      period
+                    </li>
+                    <li>
+                      <strong>Visual Charts</strong> - Easy-to-understand graphs and visualizations
+                    </li>
+                    <li>
+                      <strong>Drill-Down Details</strong> - Click on summary data to see detailed
+                      transactions
+                    </li>
+                    <li>
+                      <strong>Tax Preparation</strong> - Generate tax-ready reports with deductible
+                      expenses
+                    </li>
+                  </ul>
+
+                  <h4>Best Practices:</h4>
+                  <ul>
+                    <li>Review financial reports monthly to track performance</li>
+                    <li>Use year-over-year comparisons to identify trends</li>
+                    <li>Monitor occupancy rates to optimize pricing</li>
+                    <li>Track expense categories to find cost-saving opportunities</li>
+                    <li>Export reports regularly for accounting and tax purposes</li>
+                    <li>Compare property performance to identify top performers</li>
+                    <li>Use analytics to make data-driven pricing decisions</li>
+                  </ul>
                 </CardContent>
               </Card>
             </section>
@@ -769,12 +1305,12 @@ export default function DocumentationPage() {
             {/* Settings */}
             <section id="settings" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Settings className="h-6 w-6 text-blue-600" />
+                <Settings className="text-primary h-6 w-6" />
                 Settings
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Account Settings</h4>
                   <ul>
                     <li>
@@ -827,12 +1363,12 @@ export default function DocumentationPage() {
             {/* Public Pages */}
             <section id="public-pages" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Globe className="h-6 w-6 text-blue-600" />
+                <Globe className="text-primary h-6 w-6" />
                 Public Pages & Tenant Portal
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Public Property Listings</h4>
                   <p>
                     Properties marked as Active or Occupied are automatically displayed on the
@@ -859,15 +1395,76 @@ export default function DocumentationPage() {
                   </ol>
 
                   <h4>Tenant Portal</h4>
-                  <p>Tenants can access their own portal to:</p>
+                  <p>
+                    Each tenant has access to their own secure portal where they can manage their
+                    tenancy, communicate with you, and access important information.
+                  </p>
+
+                  <h5>Portal Access</h5>
+                  <p>
+                    Tenants log into the portal at <strong>/portal/auth/signin</strong> using the
+                    email address you have registered for them in the system. They can set up their
+                    own password on first login.
+                  </p>
+
+                  <h5>Portal Features for Tenants:</h5>
                   <ul>
-                    <li>View their lease details</li>
-                    <li>See payment history</li>
-                    <li>Submit maintenance requests</li>
-                    <li>Upload documents</li>
-                    <li>Communicate with you</li>
+                    <li>
+                      <strong>Dashboard Overview</strong> - See property details, lease information,
+                      and upcoming payments at a glance
+                    </li>
+                    <li>
+                      <strong>Lease Information</strong> - View lease start/end dates, rental
+                      amount, deposit paid, and lease terms
+                    </li>
+                    <li>
+                      <strong>Property Details</strong> - Access property information, amenities,
+                      and house rules
+                    </li>
+                    <li>
+                      <strong>Payment History</strong> - Review all past payments, outstanding
+                      balances, and payment receipts
+                    </li>
+                    <li>
+                      <strong>Maintenance Requests</strong> - Submit new maintenance requests with
+                      photos and descriptions, track request status
+                    </li>
+                    <li>
+                      <strong>Document Access</strong> - View and download important documents like
+                      lease agreements and receipts
+                    </li>
+                    <li>
+                      <strong>Messages</strong> - Communicate directly with you through the portal
+                    </li>
+                    <li>
+                      <strong>Notifications</strong> - Receive updates about maintenance, payments,
+                      and announcements
+                    </li>
                   </ul>
-                  <p>Tenants log in using the email address you have on file for them.</p>
+
+                  <h5>Submitting Maintenance Requests</h5>
+                  <p>Tenants can easily submit maintenance requests through their portal:</p>
+                  <ol>
+                    <li>Click "Submit Request" on the dashboard</li>
+                    <li>Select the issue category (Plumbing, Electrical, etc.)</li>
+                    <li>Set priority level (Emergency, High, Medium, Low)</li>
+                    <li>Describe the issue in detail</li>
+                    <li>Upload photos of the problem (optional)</li>
+                    <li>Submit the request</li>
+                  </ol>
+                  <p>
+                    You'll be notified immediately, and tenants can track the progress of their
+                    request through the portal.
+                  </p>
+
+                  <h5>Benefits of the Tenant Portal:</h5>
+                  <ul>
+                    <li>24/7 access to information - no need to contact you for basic details</li>
+                    <li>Easy maintenance reporting - issues are documented with photos</li>
+                    <li>Transparent payment history - tenants can see all transactions</li>
+                    <li>Reduced communication overhead - less phone calls and emails</li>
+                    <li>Professional tenant experience - modern, user-friendly interface</li>
+                  </ul>
                 </CardContent>
               </Card>
             </section>
@@ -875,12 +1472,12 @@ export default function DocumentationPage() {
             {/* Security */}
             <section id="security" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <Shield className="h-6 w-6 text-blue-600" />
+                <Shield className="text-primary h-6 w-6" />
                 Security & Privacy
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Data Security</h4>
                   <ul>
                     <li>All data is encrypted in transit and at rest</li>
@@ -915,12 +1512,12 @@ export default function DocumentationPage() {
             {/* Support */}
             <section id="support" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
-                <HelpCircle className="h-6 w-6 text-blue-600" />
+                <HelpCircle className="text-primary h-6 w-6" />
                 Support & FAQ
               </h2>
 
               <Card className="mb-6">
-                <CardContent className="prose dark:prose-invert max-w-none pt-6">
+                <CardContent className="docs-content space-y-4">
                   <h4>Getting Help</h4>
                   <ul>
                     <li>
@@ -971,7 +1568,7 @@ export default function DocumentationPage() {
             </section>
 
             {/* Quick Reference */}
-            <Card className="mb-6 bg-blue-50 dark:bg-blue-900/20">
+            <Card className="bg-muted/50 mb-6">
               <CardHeader>
                 <CardTitle>Quick Reference - Keyboard Shortcuts</CardTitle>
               </CardHeader>
@@ -981,22 +1578,22 @@ export default function DocumentationPage() {
                     <h4 className="mb-2 font-semibold">Navigation</h4>
                     <ul className="space-y-1 text-sm">
                       <li>
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">G</kbd>{' '}
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">G</kbd>{' '}
                         then{' '}
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">D</kbd>{' '}
-                        - Go to Dashboard
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">D</kbd> -
+                        Go to Dashboard
                       </li>
                       <li>
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">G</kbd>{' '}
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">G</kbd>{' '}
                         then{' '}
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">P</kbd>{' '}
-                        - Go to Properties
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">P</kbd> -
+                        Go to Properties
                       </li>
                       <li>
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">G</kbd>{' '}
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">G</kbd>{' '}
                         then{' '}
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">T</kbd>{' '}
-                        - Go to Tenants
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">T</kbd> -
+                        Go to Tenants
                       </li>
                     </ul>
                   </div>
@@ -1004,16 +1601,16 @@ export default function DocumentationPage() {
                     <h4 className="mb-2 font-semibold">Actions</h4>
                     <ul className="space-y-1 text-sm">
                       <li>
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">N</kbd>{' '}
-                        - New item
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">N</kbd> -
+                        New item
                       </li>
                       <li>
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">S</kbd>{' '}
-                        - Save
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">S</kbd> -
+                        Save
                       </li>
                       <li>
-                        <kbd className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">/</kbd>{' '}
-                        - Search
+                        <kbd className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">/</kbd> -
+                        Search
                       </li>
                     </ul>
                   </div>
@@ -1025,12 +1622,12 @@ export default function DocumentationPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t bg-white py-8 dark:bg-gray-800">
-        <div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
+      <footer className="bg-card border-t py-8">
+        <div className="text-muted-foreground mx-auto max-w-6xl px-4 text-center text-sm">
           <p>© {new Date().getFullYear()} Property CRM. All rights reserved.</p>
           <p className="mt-2">
             Need help? Contact us at{' '}
-            <a href="mailto:support@propertycrm.co.za" className="text-blue-600 hover:underline">
+            <a href="mailto:support@propertycrm.co.za" className="text-primary hover:underline">
               support@propertycrm.co.za
             </a>
           </p>

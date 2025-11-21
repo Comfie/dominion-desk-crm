@@ -26,7 +26,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page content */}
         <main
           id="main-content"
-          className="bg-muted/30 flex-1 overflow-y-auto p-4 pb-20 md:p-6 lg:pb-6"
+          className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 lg:pb-6"
           tabIndex={-1}
         >
           {children}

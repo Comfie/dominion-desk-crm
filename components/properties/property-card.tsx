@@ -37,6 +37,7 @@ interface PropertyCardProps {
     };
   };
   onDelete?: (id: string) => void;
+  variant?: 'grid' | 'list';
 }
 
 const statusColors: Record<string, string> = {
@@ -60,7 +61,7 @@ const propertyTypeLabels: Record<string, string> = {
   OTHER: 'Other',
 };
 
-export function PropertyCard({ property, onDelete }: PropertyCardProps) {
+export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyCardProps) {
   const displayPrice =
     property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH'
       ? property.dailyRate
@@ -68,6 +69,134 @@ export function PropertyCard({ property, onDelete }: PropertyCardProps) {
 
   const priceLabel =
     property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH' ? '/night' : '/month';
+
+  if (variant === 'list') {
+    return (
+      <Card className="group overflow-hidden transition-all hover:shadow-md">
+        <CardContent className="p-0">
+          <div className="flex gap-4">
+            {/* Image */}
+            <div className="bg-muted relative aspect-[4/3] w-48 shrink-0 overflow-hidden">
+              {property.primaryImageUrl ? (
+                <Image
+                  src={property.primaryImageUrl}
+                  alt={property.name}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <Home className="text-muted-foreground/50 h-12 w-12" />
+                </div>
+              )}
+              {/* Status Badge */}
+              <div className="absolute top-2 left-2">
+                <Badge className={statusColors[property.status] || statusColors.ACTIVE}>
+                  {property.status}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-1 flex-col justify-between py-4 pr-4">
+              <div>
+                <div className="mb-2 flex items-start justify-between">
+                  <div className="flex-1">
+                    <Link
+                      href={`/properties/${property.id}`}
+                      className="hover:text-primary text-lg font-semibold transition-colors"
+                    >
+                      {property.name}
+                    </Link>
+                    <p className="text-muted-foreground text-sm">
+                      {propertyTypeLabels[property.propertyType] || property.propertyType}
+                    </p>
+                  </div>
+                  {/* Actions Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/properties/${property.id}`}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/properties/${property.id}/edit`}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => onDelete?.(property.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Location */}
+                <div className="text-muted-foreground mb-3 flex items-center gap-1 text-sm">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    {property.address}, {property.city}, {property.province}
+                  </span>
+                </div>
+
+                {/* Features */}
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Bed className="text-muted-foreground h-4 w-4" />
+                    <span>{property.bedrooms} bed</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Bath className="text-muted-foreground h-4 w-4" />
+                    <span>{property.bathrooms} bath</span>
+                  </div>
+                  {property.parkingSpaces > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Car className="text-muted-foreground h-4 w-4" />
+                      <span>{property.parkingSpaces} parking</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Price & Stats */}
+              <div className="flex items-center justify-between border-t pt-3">
+                <div>
+                  {displayPrice ? (
+                    <p className="text-xl font-semibold">
+                      {formatCurrency(Number(displayPrice))}
+                      <span className="text-muted-foreground text-sm font-normal">
+                        {priceLabel}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Price not set</p>
+                  )}
+                </div>
+                {property._count && (
+                  <div className="text-muted-foreground text-sm">
+                    {property._count.bookings} bookings • {property._count.tenants} tenants
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">

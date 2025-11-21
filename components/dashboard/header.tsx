@@ -47,20 +47,25 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-background sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-6">
+    <header className="bg-gradient-header sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-white/10 px-4 shadow-md backdrop-blur-sm md:px-6">
       {/* Mobile menu button */}
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-white hover:bg-white/10 lg:hidden"
+        onClick={onMenuClick}
+      >
         <Menu className="h-5 w-5" />
         <span className="sr-only">Toggle menu</span>
       </Button>
 
       {/* Search */}
       <div className="relative flex-1 md:max-w-md">
-        <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-400" />
         <Input
           type="search"
           placeholder="Search properties, bookings, tenants..."
-          className="w-full pl-8"
+          className="w-full border-white/20 bg-white/10 pl-8 text-white placeholder:text-gray-300 focus-visible:ring-white/30"
         />
       </div>
 
@@ -69,12 +74,12 @@ export function Header({ onMenuClick }: HeaderProps) {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>
               {/* Notification badge */}
               {unreadCount > 0 && (
-                <span className="bg-destructive text-destructive-foreground absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium">
+                <span className="bg-accent absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium text-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -129,21 +134,32 @@ export function Header({ onMenuClick }: HeaderProps) {
         </DropdownMenu>
 
         {/* Help */}
-        <Button variant="ghost" size="icon" className="hidden md:inline-flex">
-          <HelpCircle className="h-5 w-5" />
-          <span className="sr-only">Help</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden text-white hover:bg-white/10 md:inline-flex"
+          asChild
+        >
+          <Link href="/docs">
+            <HelpCircle className="h-5 w-5" />
+            <span className="sr-only">Help & Documentation</span>
+          </Link>
         </Button>
 
         {/* Theme toggle */}
-        <ThemeToggle />
+        <div className="text-white [&_button]:text-white [&_button:hover]:bg-white/10">
+          <ThemeToggle />
+        </div>
 
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/10">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={user?.image || ''} alt={user?.name || 'User'} />
-                <AvatarFallback>{user?.name ? getInitials(user.name) : 'U'}</AvatarFallback>
+                <AvatarFallback className="bg-primary text-white">
+                  {user?.name ? getInitials(user.name) : 'U'}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

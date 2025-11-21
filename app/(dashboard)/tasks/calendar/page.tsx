@@ -299,7 +299,7 @@ export default function TaskCalendarPage() {
                 .slice(0, 10)
                 .map((task: Task) => (
                   <Link key={task.id} href={`/tasks/${task.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50">
+                    <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors">
                       <div className="flex items-center gap-3">
                         {statusIcons[task.status]}
                         <div>

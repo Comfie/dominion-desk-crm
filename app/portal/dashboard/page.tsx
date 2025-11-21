@@ -114,7 +114,7 @@ export default function TenantDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="bg-background min-h-screen">
         <div className="mx-auto max-w-4xl px-4 py-8">
           <Skeleton className="mb-6 h-8 w-48" />
           <div className="grid gap-6 md:grid-cols-2">
@@ -128,12 +128,12 @@ export default function TenantDashboardPage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
-            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+            <AlertCircle className="text-destructive mx-auto mb-4 h-12 w-12" />
             <h2 className="mb-2 text-xl font-semibold">Unable to Load Dashboard</h2>
-            <p className="mb-4 text-gray-500">
+            <p className="text-muted-foreground mb-4">
               {error instanceof Error ? error.message : 'No tenant record found for this account'}
             </p>
             <Button onClick={() => signOut({ callbackUrl: '/' })}>Sign Out</Button>
@@ -146,19 +146,24 @@ export default function TenantDashboardPage() {
   const { tenant, maintenanceRequests, recentPayments } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-background min-h-screen">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-gray-800">
+      <header className="bg-gradient-header border-b border-white/10 shadow-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <Link href="/portal/dashboard" className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-blue-600" />
+          <Link href="/portal/dashboard" className="flex items-center gap-2 text-white">
+            <Building2 className="h-6 w-6" />
             <span className="text-lg font-semibold">Tenant Portal</span>
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-white/80">
               {tenant.firstName} {tenant.lastName}
             </span>
-            <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+              onClick={() => signOut({ callbackUrl: '/' })}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>
@@ -182,20 +187,20 @@ export default function TenantDashboardPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-lg font-semibold">{tenant.property.name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-muted-foreground text-sm">
                     {tenant.property.address}, {tenant.property.city}
                   </p>
                 </div>
                 <div className="text-sm">
                   {tenant.leaseStart && tenant.leaseEnd && (
                     <p className="mb-1">
-                      <span className="text-gray-500">Lease: </span>
+                      <span className="text-muted-foreground">Lease: </span>
                       {formatDate(tenant.leaseStart)} - {formatDate(tenant.leaseEnd)}
                     </p>
                   )}
                   {tenant.rentAmount && (
                     <p>
-                      <span className="text-gray-500">Rent: </span>
+                      <span className="text-muted-foreground">Rent: </span>
                       <span className="font-semibold">
                         {formatCurrency(Number(tenant.rentAmount))}/month
                       </span>
@@ -316,7 +321,9 @@ export default function TenantDashboardPage() {
                     >
                       <div>
                         <p className="font-medium">{request.title}</p>
-                        <p className="text-xs text-gray-500">{formatDate(request.createdAt)}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {formatDate(request.createdAt)}
+                        </p>
                       </div>
                       <Badge
                         variant={
@@ -333,7 +340,7 @@ export default function TenantDashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-6 text-center text-gray-500">
+                <div className="text-muted-foreground py-6 text-center">
                   <CheckCircle className="mx-auto mb-2 h-8 w-8" />
                   <p>No maintenance requests</p>
                 </div>
@@ -360,7 +367,9 @@ export default function TenantDashboardPage() {
                     >
                       <div>
                         <p className="font-medium">{formatCurrency(Number(payment.amount))}</p>
-                        <p className="text-xs text-gray-500">{formatDate(payment.paymentDate)}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {formatDate(payment.paymentDate)}
+                        </p>
                       </div>
                       <Badge variant={payment.status === 'PAID' ? 'default' : 'secondary'}>
                         {payment.status}
@@ -369,7 +378,7 @@ export default function TenantDashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-6 text-center text-gray-500">
+                <div className="text-muted-foreground py-6 text-center">
                   <Clock className="mx-auto mb-2 h-8 w-8" />
                   <p>No payment history</p>
                 </div>

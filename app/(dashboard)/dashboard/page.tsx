@@ -116,10 +116,10 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Properties</p>
+                <p className="text-muted-foreground text-sm">Properties</p>
                 <p className="text-2xl font-bold">{stats?.totalProperties || 0}</p>
               </div>
-              <Building2 className="h-8 w-8 text-blue-500" />
+              <Building2 className="text-primary h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -128,10 +128,10 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Active Bookings</p>
+                <p className="text-muted-foreground text-sm">Active Bookings</p>
                 <p className="text-2xl font-bold">{stats?.activeBookings || 0}</p>
               </div>
-              <Calendar className="h-8 w-8 text-green-500" />
+              <Calendar className="text-accent h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -140,10 +140,10 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Tenants</p>
+                <p className="text-muted-foreground text-sm">Tenants</p>
                 <p className="text-2xl font-bold">{stats?.totalTenants || 0}</p>
               </div>
-              <Users className="h-8 w-8 text-purple-500" />
+              <Users className="text-secondary h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Monthly Revenue</p>
+                <p className="text-muted-foreground text-sm">Monthly Revenue</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats?.monthlyRevenue || 0)}</p>
                 {stats?.revenueChange !== 0 && (
                   <div
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <DollarSign className="h-8 w-8 text-emerald-500" />
+              <DollarSign className="text-primary h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -176,11 +176,11 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Inquiries</p>
+                <p className="text-muted-foreground text-sm">Inquiries</p>
                 <p className="text-2xl font-bold">{stats?.pendingInquiries || 0}</p>
-                <p className="text-xs text-gray-400">Pending</p>
+                <p className="text-muted-foreground/70 text-xs">Pending</p>
               </div>
-              <MessageSquare className="h-8 w-8 text-orange-500" />
+              <MessageSquare className="text-accent h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -189,11 +189,11 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Maintenance</p>
+                <p className="text-muted-foreground text-sm">Maintenance</p>
                 <p className="text-2xl font-bold">{stats?.activeMaintenance || 0}</p>
-                <p className="text-xs text-gray-400">Open</p>
+                <p className="text-muted-foreground/70 text-xs">Open</p>
               </div>
-              <Wrench className="h-8 w-8 text-red-500" />
+              <Wrench className="text-destructive h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -205,14 +205,12 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Occupancy Rate</p>
+                <p className="text-muted-foreground text-sm">Occupancy Rate</p>
                 <p className="text-2xl font-bold">{stats?.occupancyRate || 0}%</p>
-                <p className="text-xs text-gray-400">This month</p>
+                <p className="text-muted-foreground/70 text-xs">This month</p>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                <span className="text-sm font-bold text-blue-600">
-                  {stats?.occupancyRate || 0}%
-                </span>
+              <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
+                <span className="text-sm font-bold">{stats?.occupancyRate || 0}%</span>
               </div>
             </div>
           </CardContent>
@@ -222,13 +220,13 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Outstanding Payments</p>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-muted-foreground text-sm">Outstanding Payments</p>
+                <p className="text-destructive text-2xl font-bold">
                   {formatCurrency(stats?.outstandingPayments || 0)}
                 </p>
-                <p className="text-xs text-gray-400">To collect</p>
+                <p className="text-muted-foreground/70 text-xs">To collect</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-orange-500" />
+              <AlertCircle className="text-destructive h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -255,21 +253,23 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {data.upcomingCheckIns.map((booking) => (
                   <Link key={booking.id} href={`/bookings/${booking.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50">
+                    <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors">
                       <div>
                         <p className="font-medium">{booking.guestName}</p>
-                        <p className="text-sm text-gray-500">{booking.property.name}</p>
+                        <p className="text-muted-foreground text-sm">{booking.property.name}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium">{formatDate(booking.checkInDate)}</p>
-                        <p className="text-xs text-gray-500">{booking.numberOfGuests} guest(s)</p>
+                        <p className="text-muted-foreground text-xs">
+                          {booking.numberOfGuests} guest(s)
+                        </p>
                       </div>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500">
+              <div className="text-muted-foreground py-8 text-center">
                 <Calendar className="mx-auto mb-2 h-8 w-8" />
                 <p>No upcoming check-ins</p>
               </div>
@@ -296,10 +296,10 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {data.recentBookings.map((booking) => (
                   <Link key={booking.id} href={`/bookings/${booking.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50">
+                    <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors">
                       <div>
                         <p className="font-medium">{booking.property.name}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-muted-foreground text-sm">
                           {formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}
                         </p>
                       </div>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500">
+              <div className="text-muted-foreground py-8 text-center">
                 <CheckCircle className="mx-auto mb-2 h-8 w-8" />
                 <p>No recent bookings</p>
               </div>
@@ -351,10 +351,12 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {data.upcomingTasks.map((task) => (
                   <Link key={task.id} href={`/tasks/${task.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50">
+                    <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors">
                       <div>
                         <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-gray-500">Due: {formatDate(task.dueDate)}</p>
+                        <p className="text-muted-foreground text-sm">
+                          Due: {formatDate(task.dueDate)}
+                        </p>
                       </div>
                       <Badge
                         variant={
@@ -372,7 +374,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500">
+              <div className="text-muted-foreground py-8 text-center">
                 <CheckCircle className="mx-auto mb-2 h-8 w-8" />
                 <p>No upcoming tasks</p>
               </div>

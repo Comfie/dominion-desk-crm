@@ -10,6 +10,14 @@ import { PropertyCard } from '@/components/properties/property-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 async function fetchProperties(search?: string, status?: string, type?: string) {
   const params = new URLSearchParams();
@@ -32,10 +40,12 @@ export default function PropertiesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
 
   const { data: properties, isLoading } = useQuery({
-    queryKey: ['properties', search],
-    queryFn: () => fetchProperties(search),
+    queryKey: ['properties', search, statusFilter, typeFilter],
+    queryFn: () => fetchProperties(search, statusFilter.join(','), typeFilter.join(',')),
   });
 
   const deleteMutation = useMutation({
@@ -50,6 +60,25 @@ export default function PropertiesPage() {
       deleteMutation.mutate(id);
     }
   };
+
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilter((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  };
+
+  const toggleTypeFilter = (type: string) => {
+    setTypeFilter((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  };
+
+  const clearFilters = () => {
+    setStatusFilter([]);
+    setTypeFilter([]);
+  };
+
+  const hasActiveFilters = statusFilter.length > 0 || typeFilter.length > 0;
 
   return (
     <div className="space-y-6">
@@ -75,9 +104,67 @@ export default function PropertiesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="relative">
+                <Filter className="h-4 w-4" />
+                {hasActiveFilters && (
+                  <span className="bg-primary absolute -top-1 -right-1 h-4 w-4 rounded-full text-[10px] font-medium text-white">
+                    {statusFilter.length + typeFilter.length}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={statusFilter.includes('ACTIVE')}
+                onCheckedChange={() => toggleStatusFilter('ACTIVE')}
+              >
+                Active
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={statusFilter.includes('INACTIVE')}
+                onCheckedChange={() => toggleStatusFilter('INACTIVE')}
+              >
+                Inactive
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={statusFilter.includes('MAINTENANCE')}
+                onCheckedChange={() => toggleStatusFilter('MAINTENANCE')}
+              >
+                Maintenance
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Rental Type</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={typeFilter.includes('SHORT_TERM')}
+                onCheckedChange={() => toggleTypeFilter('SHORT_TERM')}
+              >
+                Short-term
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={typeFilter.includes('LONG_TERM')}
+                onCheckedChange={() => toggleTypeFilter('LONG_TERM')}
+              >
+                Long-term
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={typeFilter.includes('BOTH')}
+                onCheckedChange={() => toggleTypeFilter('BOTH')}
+              >
+                Both
+              </DropdownMenuCheckboxItem>
+              {hasActiveFilters && (
+                <>
+                  <DropdownMenuSeparator />
+                  <Button variant="ghost" size="sm" className="w-full" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="flex rounded-lg border p-1">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
@@ -99,9 +186,15 @@ export default function PropertiesPage() {
         </div>
       </div>
 
-      {/* Properties Grid */}
+      {/* Properties Display */}
       {isLoading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              : 'space-y-4'
+          }
+        >
           {[...Array(8)].map((_, i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="aspect-[4/3] w-full rounded-lg" />
@@ -123,10 +216,21 @@ export default function PropertiesPage() {
             </Link>
           </Button>
         </EmptyState>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {properties?.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
             <PropertyCard key={property.id} property={property} onDelete={handleDelete} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {properties?.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
+            <PropertyCard
+              key={property.id}
+              property={property}
+              onDelete={handleDelete}
+              variant="list"
+            />
           ))}
         </div>
       )}

@@ -54,6 +54,7 @@ export async function GET(request: Request) {
         province: true,
         bedrooms: true,
         bathrooms: true,
+        parkingSpaces: true,
         monthlyRent: true,
         dailyRate: true,
         primaryImageUrl: true,

@@ -55,29 +55,31 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const type = searchParams.get('type');
+    const statusParam = searchParams.get('status');
+    const typeParam = searchParams.get('type');
     const search = searchParams.get('search');
+
+    // Handle multiple statuses (comma-separated)
+    const statusFilter = statusParam ? statusParam.split(',').filter(Boolean) : undefined;
+
+    // Handle multiple rental types (comma-separated)
+    const typeFilter = typeParam ? typeParam.split(',').filter(Boolean) : undefined;
 
     const properties = await prisma.property.findMany({
       where: {
         userId: session.user.id,
-        ...(status && {
-          status: status as 'ACTIVE' | 'INACTIVE' | 'OCCUPIED' | 'MAINTENANCE' | 'ARCHIVED',
-        }),
-        ...(type && {
-          propertyType: type as
-            | 'APARTMENT'
-            | 'HOUSE'
-            | 'TOWNHOUSE'
-            | 'COTTAGE'
-            | 'ROOM'
-            | 'STUDIO'
-            | 'DUPLEX'
-            | 'PENTHOUSE'
-            | 'VILLA'
-            | 'OTHER',
-        }),
+        ...(statusFilter &&
+          statusFilter.length > 0 && {
+            status: {
+              in: statusFilter as Array<
+                'ACTIVE' | 'INACTIVE' | 'OCCUPIED' | 'MAINTENANCE' | 'ARCHIVED'
+              >,
+            },
+          }),
+        ...(typeFilter &&
+          typeFilter.length > 0 && {
+            rentalType: { in: typeFilter as Array<'LONG_TERM' | 'SHORT_TERM' | 'BOTH'> },
+          }),
         ...(search && {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },

@@ -338,7 +338,7 @@ export default function AnalyticsDashboardPage() {
               <div className="space-y-3">
                 {data.recentActivity.bookings.map((booking) => (
                   <Link key={booking.id} href={`/bookings/${booking.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50">
+                    <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors">
                       <div>
                         <p className="font-medium">{booking.guestName}</p>
                         <p className="text-muted-foreground text-sm">{booking.property.name}</p>
@@ -386,7 +386,7 @@ export default function AnalyticsDashboardPage() {
               <div className="space-y-3">
                 {data.recentActivity.inquiries.map((inquiry) => (
                   <Link key={inquiry.id} href={`/inquiries/${inquiry.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50">
+                    <div className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors">
                       <div>
                         <p className="font-medium">{inquiry.contactName}</p>
                         <p className="text-muted-foreground text-sm">
@@ -435,9 +435,9 @@ export default function AnalyticsDashboardPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <Link href="/reports/occupancy">
-              <Card className="cursor-pointer transition-colors hover:bg-gray-50">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
                 <CardContent className="flex items-center gap-3 p-4">
-                  <Calendar className="h-8 w-8 text-blue-600" />
+                  <Calendar className="text-primary h-8 w-8" />
                   <div>
                     <p className="font-medium">Occupancy Report</p>
                     <p className="text-muted-foreground text-sm">View occupancy by property</p>
@@ -446,9 +446,9 @@ export default function AnalyticsDashboardPage() {
               </Card>
             </Link>
             <Link href="/reports/revenue">
-              <Card className="cursor-pointer transition-colors hover:bg-gray-50">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
                 <CardContent className="flex items-center gap-3 p-4">
-                  <DollarSign className="h-8 w-8 text-green-600" />
+                  <DollarSign className="text-accent h-8 w-8" />
                   <div>
                     <p className="font-medium">Revenue Report</p>
                     <p className="text-muted-foreground text-sm">Income and expense analysis</p>
@@ -457,9 +457,9 @@ export default function AnalyticsDashboardPage() {
               </Card>
             </Link>
             <Link href="/financials/income">
-              <Card className="cursor-pointer transition-colors hover:bg-gray-50">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
                 <CardContent className="flex items-center gap-3 p-4">
-                  <Wrench className="h-8 w-8 text-orange-600" />
+                  <Wrench className="text-primary h-8 w-8" />
                   <div>
                     <p className="font-medium">Financial Details</p>
                     <p className="text-muted-foreground text-sm">View all transactions</p>
