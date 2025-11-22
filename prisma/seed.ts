@@ -9,7 +9,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // Create demo user
+  // Create demo landlord user
   const hashedPassword = await bcrypt.hash('Demo@123', 10);
 
   const user = await prisma.user.upsert({
@@ -21,10 +21,31 @@ async function main() {
       firstName: 'Demo',
       lastName: 'User',
       phone: '+27821234567',
+      accountType: 'INDIVIDUAL',
       subscriptionTier: SubscriptionTier.PROFESSIONAL,
       subscriptionStatus: 'ACTIVE',
       emailVerified: true,
       propertyLimit: 20,
+    },
+  });
+
+  // Create demo tenant user
+  const tenantHashedPassword = await bcrypt.hash('Tenant@123', 10);
+
+  const tenantUser = await prisma.user.upsert({
+    where: { email: 'john.smith@example.com' },
+    update: {},
+    create: {
+      email: 'john.smith@example.com',
+      password: tenantHashedPassword,
+      firstName: 'John',
+      lastName: 'Smith',
+      phone: '+27829876543',
+      accountType: 'TENANT',
+      subscriptionTier: SubscriptionTier.FREE,
+      subscriptionStatus: 'ACTIVE',
+      emailVerified: true,
+      propertyLimit: 0,
     },
   });
 
@@ -207,14 +228,19 @@ async function main() {
 
   console.log('Database seeded successfully!');
   console.log('');
-  console.log('Demo Credentials:');
+  console.log('Demo Landlord Credentials:');
   console.log('Email: demo@propertycrm.com');
   console.log('Password: Demo@123');
   console.log('');
+  console.log('Demo Tenant Credentials:');
+  console.log('Email: john.smith@example.com');
+  console.log('Password: Tenant@123');
+  console.log('');
   console.log('Created:');
-  console.log(`- 1 User`);
+  console.log(`- 1 Landlord User`);
+  console.log(`- 1 Tenant User`);
   console.log(`- 2 Properties`);
-  console.log(`- 1 Tenant`);
+  console.log(`- 1 Tenant Record`);
   console.log(`- 1 Booking`);
   console.log(`- 1 Inquiry`);
   console.log(`- 1 Maintenance Request`);

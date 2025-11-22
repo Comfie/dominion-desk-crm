@@ -112,6 +112,15 @@ export default function TenantLoginPage() {
               </Button>
             </form>
 
+            <div className="bg-muted/50 mt-4 space-y-2 rounded-lg border p-4 text-sm">
+              <p className="font-medium">Demo Tenant Credentials</p>
+              <p className="text-muted-foreground">
+                Email: john.smith@example.com
+                <br />
+                Password: Tenant@123
+              </p>
+            </div>
+
             <div className="mt-6 text-center text-sm">
               <p className="text-gray-500">
                 Don't have an account?{' '}

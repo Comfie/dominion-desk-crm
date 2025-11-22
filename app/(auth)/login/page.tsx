@@ -134,13 +134,23 @@ function LoginForm() {
       </div>
 
       {/* Demo credentials hint */}
-      <div className="bg-muted/50 rounded-lg border p-4 text-sm">
-        <p className="font-medium">Demo Credentials</p>
-        <p className="text-muted-foreground mt-1">
-          Email: demo@propertycrm.com
-          <br />
-          Password: Demo@123
-        </p>
+      <div className="bg-muted/50 space-y-3 rounded-lg border p-4 text-sm">
+        <div>
+          <p className="font-medium">Demo Landlord</p>
+          <p className="text-muted-foreground mt-1">
+            Email: demo@propertycrm.com
+            <br />
+            Password: Demo@123
+          </p>
+        </div>
+        <div>
+          <p className="font-medium">Demo Tenant</p>
+          <p className="text-muted-foreground mt-1">
+            Email: john.smith@example.com
+            <br />
+            Password: Tenant@123
+          </p>
+        </div>
       </div>
     </>
   );
