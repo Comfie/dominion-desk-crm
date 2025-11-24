@@ -22,6 +22,8 @@ import {
   Loader2,
   Plus,
   Trash2,
+  FileText,
+  FolderOpen,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
@@ -357,8 +359,9 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
           {/* Tabs for different sections */}
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
             </TabsList>
@@ -530,6 +533,49 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="documents">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Document Management</CardTitle>
+                    <Button asChild>
+                      <Link href={`/tenants/${tenant.id}/documents`}>
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        Open Document Manager
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center space-y-4 py-12 text-center">
+                    <div className="rounded-full bg-blue-100 p-6">
+                      <FileText className="h-12 w-12 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="mb-2 text-lg font-semibold">
+                        Folder-Based Document Organization
+                      </h3>
+                      <p className="max-w-md text-sm text-gray-500">
+                        Manage all tenant documents in organized folders. Upload, view, and organize
+                        documents like lease agreements, ID documents, bank statements, and more.
+                      </p>
+                    </div>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <Button asChild size="lg">
+                        <Link href={`/tenants/${tenant.id}/documents`}>
+                          <FolderOpen className="mr-2 h-5 w-5" />
+                          Open Document Manager
+                        </Link>
+                      </Button>
+                      <p className="text-xs text-gray-400">
+                        View and manage documents with folder organization
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="bookings">
@@ -755,6 +801,27 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                Manage tenant documents in organized folders
+              </p>
+              <Button asChild variant="outline" className="w-full">
+                <Link href={`/tenants/${tenant.id}/documents`}>
+                  <FolderOpen className="mr-2 h-4 w-4" />
+                  View Documents
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 

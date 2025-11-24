@@ -149,23 +149,24 @@ export default function TenantDashboardPage() {
     <div className="bg-background min-h-screen">
       {/* Header */}
       <header className="bg-gradient-header border-b border-white/10 shadow-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-4">
           <Link href="/portal/dashboard" className="flex items-center gap-2 text-white">
-            <Building2 className="h-6 w-6" />
-            <span className="text-lg font-semibold">Tenant Portal</span>
+            <Building2 className="h-6 w-6 flex-shrink-0" />
+            <span className="hidden text-lg font-semibold sm:inline">Tenant Portal</span>
+            <span className="text-lg font-semibold sm:hidden">Portal</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-white/80">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden max-w-[150px] truncate text-sm text-white/80 md:inline">
               {tenant.firstName} {tenant.lastName}
             </span>
             <Button
               variant="outline"
               size="sm"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+              className="flex-shrink-0 border-white/20 bg-white/10 text-white hover:bg-white/20"
               onClick={() => signOut({ callbackUrl: '/' })}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
@@ -212,104 +213,106 @@ export default function TenantDashboardPage() {
           </Card>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Maintenance Requests */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5" />
-                  Maintenance
-                </CardTitle>
-                <CardDescription>Your maintenance requests</CardDescription>
+            <CardHeader>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <Wrench className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">Maintenance</span>
+                  </CardTitle>
+                  <CardDescription className="mt-1">Your maintenance requests</CardDescription>
+                </div>
+                <Dialog open={maintenanceDialogOpen} onOpenChange={setMaintenanceDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="flex-shrink-0">
+                      <Plus className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">New</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Submit Maintenance Request</DialogTitle>
+                      <DialogDescription>
+                        Describe the issue and we'll address it as soon as possible
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Issue Title *</Label>
+                        <Input
+                          id="title"
+                          name="title"
+                          required
+                          placeholder="e.g., Leaking faucet in bathroom"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category *</Label>
+                        <select
+                          id="category"
+                          name="category"
+                          required
+                          className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
+                        >
+                          <option value="PLUMBING">Plumbing</option>
+                          <option value="ELECTRICAL">Electrical</option>
+                          <option value="APPLIANCE">Appliance</option>
+                          <option value="HVAC">HVAC</option>
+                          <option value="STRUCTURAL">Structural</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="priority">Priority *</Label>
+                        <select
+                          id="priority"
+                          name="priority"
+                          required
+                          className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
+                        >
+                          <option value="LOW">Low - Not urgent</option>
+                          <option value="MEDIUM">Medium - Needs attention soon</option>
+                          <option value="HIGH">High - Urgent</option>
+                          <option value="URGENT">Emergency</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description *</Label>
+                        <textarea
+                          id="description"
+                          name="description"
+                          required
+                          rows={4}
+                          className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm"
+                          placeholder="Please describe the issue in detail..."
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setMaintenanceDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={maintenanceMutation.isPending}>
+                          {maintenanceMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            'Submit Request'
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
-              <Dialog open={maintenanceDialogOpen} onOpenChange={setMaintenanceDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    New Request
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Submit Maintenance Request</DialogTitle>
-                    <DialogDescription>
-                      Describe the issue and we'll address it as soon as possible
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Issue Title *</Label>
-                      <Input
-                        id="title"
-                        name="title"
-                        required
-                        placeholder="e.g., Leaking faucet in bathroom"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category *</Label>
-                      <select
-                        id="category"
-                        name="category"
-                        required
-                        className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                      >
-                        <option value="PLUMBING">Plumbing</option>
-                        <option value="ELECTRICAL">Electrical</option>
-                        <option value="APPLIANCE">Appliance</option>
-                        <option value="HVAC">HVAC</option>
-                        <option value="STRUCTURAL">Structural</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="priority">Priority *</Label>
-                      <select
-                        id="priority"
-                        name="priority"
-                        required
-                        className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                      >
-                        <option value="LOW">Low - Not urgent</option>
-                        <option value="MEDIUM">Medium - Needs attention soon</option>
-                        <option value="HIGH">High - Urgent</option>
-                        <option value="URGENT">Emergency</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description *</Label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        required
-                        rows={4}
-                        className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                        placeholder="Please describe the issue in detail..."
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setMaintenanceDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={maintenanceMutation.isPending}>
-                        {maintenanceMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting...
-                          </>
-                        ) : (
-                          'Submit Request'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
             </CardHeader>
             <CardContent>
               {maintenanceRequests.length > 0 ? (
@@ -383,6 +386,30 @@ export default function TenantDashboardPage() {
                   <p>No payment history</p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Documents */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </CardTitle>
+              <CardDescription>View your documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-muted-foreground space-y-4 py-6 text-center">
+                <FileText className="mx-auto mb-2 h-8 w-8" />
+                <p className="text-sm">
+                  Access your lease agreements, identification, and other important documents
+                </p>
+                <Link href="/portal/documents">
+                  <Button variant="outline" size="sm" className="w-full">
+                    View All Documents
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

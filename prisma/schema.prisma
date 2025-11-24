@@ -62,6 +62,7 @@ model User {
   expenses        Expense[]
   payments        Payment[]
   documents       Document[]
+  documentFolders DocumentFolder[]
   messages        Message[]
   messageTemplates MessageTemplate[]
   notifications   Notification[]
@@ -223,6 +224,7 @@ model Property {
   maintenanceRequests MaintenanceRequest[]
   expenses        Expense[]
   documents       Document[]
+  documentFolders DocumentFolder[]
   reviews         Review[]
 }
 
@@ -427,6 +429,7 @@ model Tenant {
   maintenanceRequests MaintenanceRequest[]
   messages        Message[]
   documents       Document[]
+  documentFolders DocumentFolder[]
 }
 
 enum EmploymentStatus {
@@ -758,6 +761,42 @@ enum ExpenseStatus {
 
 // ============== DOCUMENT MANAGEMENT ==============
 
+model DocumentFolder {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId        String?
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyId      String?
+  property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // Folder Details
+  name            String
+  description     String?   @db.Text
+  color           String?   // Hex color for UI visual distinction
+  icon            String?   // Icon identifier (e.g., "file-text", "user", "dollar-sign")
+
+  // Hierarchy
+  parentFolderId  String?
+  parentFolder    DocumentFolder?  @relation("FolderHierarchy", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  subFolders      DocumentFolder[] @relation("FolderHierarchy")
+
+  // Order
+  sortOrder       Int       @default(0)
+
+  // Relations
+  documents       Document[]
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([parentFolderId])
+}
+
 model Document {
   id              String    @id @default(cuid())
   userId          String
@@ -766,6 +805,8 @@ model Document {
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  folderId        String?
+  folder          DocumentFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   // Document Details
   title           String
@@ -793,6 +834,8 @@ model Document {
   uploadedBy      String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([folderId])
 }
 
 enum DocumentType {

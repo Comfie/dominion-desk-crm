@@ -48,11 +48,11 @@ const navigation = [
     href: '/tenants',
     icon: Users,
   },
-  {
-    name: 'Inquiries',
-    href: '/inquiries',
-    icon: MessageSquare,
-  },
+  // {
+  //   name: 'Inquiries',
+  //   href: '/inquiries',
+  //   icon: MessageSquare,
+  // },
   {
     name: 'Maintenance',
     href: '/maintenance',
@@ -160,7 +160,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="border-sidebar-border border-t p-4">
           <div className="text-sidebar-foreground/50 text-xs">
             <p>Property CRM v0.1.0</p>
-            <p>© 2024 All rights reserved</p>
+            <p>© 2025 All rights reserved</p>
           </div>
         </div>
       </aside>

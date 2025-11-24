@@ -47,7 +47,7 @@ export default withAuth(
     // Tenant trying to access admin or customer routes
     if (role === 'TENANT') {
       if (pathname.startsWith('/admin')) {
-        return NextResponse.redirect(new URL('/tenant/dashboard', req.url));
+        return NextResponse.redirect(new URL('/portal/dashboard', req.url));
       }
       if (
         pathname.startsWith('/dashboard') ||
@@ -61,7 +61,7 @@ export default withAuth(
         pathname.startsWith('/reports') ||
         pathname.startsWith('/settings')
       ) {
-        return NextResponse.redirect(new URL('/tenant/dashboard', req.url));
+        return NextResponse.redirect(new URL('/portal/dashboard', req.url));
       }
     }
 

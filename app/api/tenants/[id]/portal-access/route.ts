@@ -74,6 +74,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             lastName: tenant.lastName,
             phone: tenant.phone || '',
             accountType: 'TENANT',
+            role: 'TENANT',
             isActive: true,
             emailVerified: false,
             propertyLimit: 0,

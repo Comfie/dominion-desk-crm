@@ -3,6 +3,7 @@ import { PrismaClient, SubscriptionTier } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
+import { createDefaultFoldersForTenant } from '../lib/document-folders';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -172,6 +173,9 @@ async function main() {
       status: 'ACTIVE',
     },
   });
+
+  console.log('📁 Creating default document folders for tenant...');
+  await createDefaultFoldersForTenant(prisma, landlordId, tenantProfile.id, property1.id);
 
   console.log('📅 Creating Bookings & Maintenance...');
 

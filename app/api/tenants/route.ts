@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { createDefaultFoldersForTenant } from '@/lib/document-folders';
 
 const tenantSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -203,6 +204,7 @@ export async function POST(request: Request) {
           lastName: validatedData.lastName,
           phone: validatedData.phone,
           accountType: 'TENANT',
+          role: 'TENANT',
           isActive: true,
           emailVerified: false,
           propertyLimit: 0, // Tenants don't own properties
@@ -266,6 +268,19 @@ export async function POST(request: Request) {
           isActive: true,
         },
       });
+    }
+
+    // Create default document folders for the tenant
+    try {
+      await createDefaultFoldersForTenant(
+        prisma,
+        session.user.id,
+        tenant.id,
+        validatedData.propertyId || undefined
+      );
+    } catch (folderError) {
+      console.error('Error creating default folders:', folderError);
+      // Don't fail the entire request if folder creation fails
     }
 
     return NextResponse.json(tenant, { status: 201 });

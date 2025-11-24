@@ -1021,53 +1021,212 @@ export default function DocumentationPage() {
             <section id="documents" className="mb-12 scroll-mt-24">
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
                 <FileText className="text-primary h-6 w-6" />
-                Document Storage
+                Document Management
               </h2>
 
               <Card className="mb-6">
                 <CardContent className="docs-content space-y-4">
-                  <h4>Uploading Documents</h4>
+                  <p className="text-muted-foreground">
+                    The document management system provides folder-based organization with real file
+                    uploads powered by UploadThing. Organize documents for your business,
+                    properties, and tenants.
+                  </p>
+
+                  <h4>Personal Documents (Landlord)</h4>
+                  <p>
+                    Navigate to <strong>Documents</strong> in the sidebar to manage your personal
+                    business documents:
+                  </p>
+                  <ul>
+                    <li>Tax records and financial statements</li>
+                    <li>Business contracts and agreements</li>
+                    <li>Insurance policies</li>
+                    <li>Legal documents</li>
+                    <li>Any other business-related files</li>
+                  </ul>
+
+                  <h4>Tenant Documents</h4>
+                  <p>Manage tenant-specific documents from the tenant detail page:</p>
                   <ol>
                     <li>
-                      Navigate to <strong>Documents</strong> in the sidebar
+                      Navigate to <strong>Tenants</strong> and select a tenant
+                    </li>
+                    <li>
+                      Click the <strong>Documents</strong> tab or sidebar card
+                    </li>
+                    <li>View the tenant's document library with pre-organized folders</li>
+                  </ol>
+                  <p>Each tenant gets 5 default folders automatically:</p>
+                  <ul>
+                    <li>
+                      <strong>Lease Agreements</strong> - Signed contracts and addendums
+                    </li>
+                    <li>
+                      <strong>Personal Documents</strong> - ID, passport, driver's license
+                    </li>
+                    <li>
+                      <strong>Financial Documents</strong> - Bank statements, payslips, tax returns
+                    </li>
+                    <li>
+                      <strong>Proof of Residence</strong> - Utility bills, previous lease agreements
+                    </li>
+                    <li>
+                      <strong>Other Documents</strong> - Miscellaneous files
+                    </li>
+                  </ul>
+
+                  <h4>Uploading Documents</h4>
+                  <ol>
+                    <li>Open the document library (personal or tenant-specific)</li>
+                    <li>
+                      Click <strong>Upload Document</strong>
+                    </li>
+                    <li>Select a file (PDF, images, Word, Excel up to 16MB)</li>
+                    <li>
+                      Fill in document details:
+                      <ul>
+                        <li>
+                          <strong>Title</strong> - Descriptive name
+                        </li>
+                        <li>
+                          <strong>Type</strong> - Lease Agreement, ID Document, Bank Statement, etc.
+                        </li>
+                        <li>
+                          <strong>Folder</strong> - Choose destination folder (optional)
+                        </li>
+                        <li>
+                          <strong>Description</strong> - Additional notes
+                        </li>
+                        <li>
+                          <strong>Issue/Expiry Date</strong> - For tracking renewals
+                        </li>
+                      </ul>
                     </li>
                     <li>
                       Click <strong>Upload Document</strong>
                     </li>
-                    <li>Select the file (PDF, DOC, JPG, PNG supported)</li>
-                    <li>
-                      Choose document type:
-                      <ul>
-                        <li>Lease Agreement</li>
-                        <li>ID Document</li>
-                        <li>Property Title Deed</li>
-                        <li>Insurance Policy</li>
-                        <li>Inspection Report</li>
-                        <li>Receipt</li>
-                        <li>Other</li>
-                      </ul>
-                    </li>
-                    <li>Link to property or tenant (optional)</li>
-                    <li>Add description</li>
-                    <li>
-                      Click <strong>Upload</strong>
-                    </li>
+                    <li>File is uploaded to cloud storage and saved to the selected folder</li>
                   </ol>
 
-                  <h4>Document Organization</h4>
+                  <h4>Folder Management</h4>
+                  <p>Organize documents efficiently with custom folders:</p>
                   <ul>
-                    <li>Filter by document type, property, or tenant</li>
-                    <li>Search documents by name or description</li>
-                    <li>View upload date and file size</li>
-                    <li>Download or delete documents</li>
+                    <li>
+                      <strong>Create Folder</strong> - Click "Create Folder" button
+                      <ul>
+                        <li>Choose a name</li>
+                        <li>Pick a color for visual distinction</li>
+                        <li>Select an icon</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Edit Folder</strong> - Click the menu (⋮) next to folder name
+                      <ul>
+                        <li>Rename folder</li>
+                        <li>Change color or icon</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Delete Folder</strong> - Remove folders you no longer need
+                      <ul>
+                        <li>Documents can be moved to another folder before deletion</li>
+                        <li>Or set to uncategorized</li>
+                      </ul>
+                    </li>
                   </ul>
 
-                  <h4>Best Practices:</h4>
+                  <h4>Document Actions</h4>
+                  <p>Manage documents with these actions:</p>
                   <ul>
-                    <li>Use descriptive names for easy searching</li>
-                    <li>Keep lease agreements linked to both property and tenant</li>
-                    <li>Regularly backup important documents</li>
-                    <li>Set reminders for document renewals (insurance, compliance)</li>
+                    <li>
+                      <strong>View</strong> - Open document in new tab
+                    </li>
+                    <li>
+                      <strong>Download</strong> - Save file to your computer
+                    </li>
+                    <li>
+                      <strong>Move to Folder</strong> - Reorganize into different folder
+                    </li>
+                    <li>
+                      <strong>Delete</strong> - Remove document permanently
+                    </li>
+                    <li>
+                      <strong>Multi-select</strong> - Checkbox select for bulk operations
+                    </li>
+                  </ul>
+
+                  <h4>View Modes</h4>
+                  <ul>
+                    <li>
+                      <strong>Grid View</strong> - Card-based layout with file type icons
+                    </li>
+                    <li>
+                      <strong>List View</strong> - Compact table view with detailed information
+                    </li>
+                  </ul>
+
+                  <h4>Search & Filter</h4>
+                  <ul>
+                    <li>Real-time search across document titles and descriptions</li>
+                    <li>Filter by folder using the left sidebar</li>
+                    <li>Click "All Documents" to view everything</li>
+                  </ul>
+
+                  <h4>Tenant Portal Access</h4>
+                  <p>Tenants can view and download their documents from the tenant portal:</p>
+                  <ul>
+                    <li>
+                      Login at <strong>/portal/login</strong>
+                    </li>
+                    <li>
+                      Navigate to <strong>Documents</strong>
+                    </li>
+                    <li>Browse folders and view/download files</li>
+                    <li>
+                      <strong>Read-only</strong> - Tenants cannot upload, edit, or delete
+                    </li>
+                  </ul>
+
+                  <h4>File Upload Technology</h4>
+                  <p>Documents are uploaded using UploadThing:</p>
+                  <ul>
+                    <li>
+                      <strong>Real cloud storage</strong> - Files are actually uploaded (not mock
+                      URLs)
+                    </li>
+                    <li>
+                      <strong>Secure</strong> - Only authenticated landlords can upload
+                    </li>
+                    <li>
+                      <strong>File size limits</strong> - PDFs/Office: 16MB, Images: 8MB
+                    </li>
+                    <li>
+                      <strong>Supported formats</strong> - PDF, JPG, PNG, DOC, DOCX, XLS, XLSX
+                    </li>
+                    <li>
+                      <strong>Progress tracking</strong> - Real-time upload status
+                    </li>
+                  </ul>
+
+                  <h4>Best Practices</h4>
+                  <ul>
+                    <li>Use descriptive document titles for easy searching</li>
+                    <li>Organize documents into appropriate folders immediately</li>
+                    <li>Set expiry dates for time-sensitive documents (leases, insurance)</li>
+                    <li>Use custom folders for special document categories</li>
+                    <li>Regularly review and archive old documents</li>
+                    <li>Add descriptions to provide context for future reference</li>
+                    <li>Link documents to properties when relevant</li>
+                  </ul>
+
+                  <h4>Migration to AWS S3 (Production)</h4>
+                  <p>Currently using UploadThing for development. When moving to production:</p>
+                  <ul>
+                    <li>Switch to AWS S3 for cost-effective scaling</li>
+                    <li>Configuration is already prepared in environment variables</li>
+                    <li>
+                      See <code>UPLOADTHING_SETUP.md</code> for migration guide
+                    </li>
                   </ul>
                 </CardContent>
               </Card>
