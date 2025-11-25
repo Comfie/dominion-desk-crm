@@ -2,10 +2,11 @@ import { S3Client } from '@aws-sdk/client-s3';
 
 // S3 Configuration - Uses validated environment variables
 const S3_CONFIG = {
-  region: process.env.AWS_REGION  || 'us-east-1',
+  region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID  || 'AKIAIOSFODNN7EXAMPLE',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'AKIAIOSFODNN7EXAMPLE',
+    secretAccessKey:
+      process.env.AWS_SECRET_ACCESS_KEY || 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
   },
 };
 
