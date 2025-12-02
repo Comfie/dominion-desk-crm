@@ -27,7 +27,13 @@ export async function GET(request: Request) {
         ...(bookingId && { bookingId }),
         ...(tenantId && { tenantId }),
         ...(status && {
-          status: status as 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'REFUNDED' | 'FAILED',
+          status: status as
+            | 'PENDING'
+            | 'PARTIALLY_PAID'
+            | 'PAID'
+            | 'OVERDUE'
+            | 'REFUNDED'
+            | 'FAILED',
         }),
         ...(paymentType && {
           paymentType: paymentType as
@@ -49,7 +55,28 @@ export async function GET(request: Request) {
             },
           }),
       },
-      include: {
+      select: {
+        id: true,
+        paymentReference: true,
+        paymentType: true,
+        amount: true,
+        currency: true,
+        paymentMethod: true,
+        paymentDate: true,
+        dueDate: true,
+        status: true,
+        description: true,
+        notes: true,
+        reminderSent: true,
+        reminderSentAt: true,
+        propertyId: true,
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
         booking: {
           select: {
             id: true,
@@ -67,6 +94,19 @@ export async function GET(request: Request) {
             id: true,
             firstName: true,
             lastName: true,
+            email: true,
+            properties: {
+              select: {
+                property: {
+                  select: {
+                    id: true,
+                    name: true,
+                    address: true,
+                  },
+                },
+              },
+              take: 1,
+            },
           },
         },
       },
@@ -113,12 +153,30 @@ export async function POST(request: Request) {
     });
     const paymentReference = `PAY-${Date.now()}-${(paymentCount + 1).toString().padStart(4, '0')}`;
 
+    // Determine propertyId from tenant if not provided
+    let propertyId = data.propertyId || null;
+    if (!propertyId && data.tenantId) {
+      const tenantProperty = await prisma.propertyTenant.findFirst({
+        where: {
+          tenantId: data.tenantId,
+          isActive: true,
+        },
+        select: {
+          propertyId: true,
+        },
+      });
+      if (tenantProperty) {
+        propertyId = tenantProperty.propertyId;
+      }
+    }
+
     const payment = await prisma.payment.create({
       data: {
         userId: session.user.id,
         paymentReference,
         bookingId: data.bookingId || null,
         tenantId: data.tenantId || null,
+        propertyId: propertyId,
         paymentType: data.paymentType,
         amount: data.amount,
         currency: data.currency || 'ZAR',
@@ -182,6 +240,41 @@ export async function POST(request: Request) {
           },
         });
       }
+    }
+
+    // Automatically advance nextPaymentDue when a RENT payment is created as PAID
+    if (payment.paymentType === 'RENT' && payment.status === 'PAID' && payment.tenantId) {
+      // Get user's rental due day setting
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { rentalDueDay: true },
+      });
+
+      const rentalDueDay = user?.rentalDueDay || 1;
+
+      // Calculate next payment due date based on payment date
+      const paymentDate = new Date(data.paymentDate);
+      let nextMonth = paymentDate.getMonth() + 1;
+      let nextYear = paymentDate.getFullYear();
+
+      if (nextMonth > 11) {
+        nextMonth = 0;
+        nextYear++;
+      }
+
+      // Cap at 28 to avoid month-end issues
+      const dueDay = Math.min(rentalDueDay, 28);
+      const nextPaymentDue = new Date(nextYear, nextMonth, dueDay, 9, 0, 0);
+
+      // Update tenant's nextPaymentDue
+      await prisma.tenant.update({
+        where: { id: payment.tenantId },
+        data: { nextPaymentDue },
+      });
+
+      console.log(
+        `Advanced nextPaymentDue for tenant ${payment.tenant?.firstName} ${payment.tenant?.lastName} to ${nextPaymentDue.toDateString()}`
+      );
     }
 
     // Create notification for payment received

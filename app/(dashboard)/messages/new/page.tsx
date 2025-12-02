@@ -41,14 +41,14 @@ async function fetchBookings() {
   const response = await fetch('/api/bookings?limit=100');
   if (!response.ok) throw new Error('Failed to fetch bookings');
   const data = await response.json();
-  return data.bookings || [];
+  return Array.isArray(data) ? data : [];
 }
 
 async function fetchTenants() {
   const response = await fetch('/api/tenants?limit=100');
   if (!response.ok) throw new Error('Failed to fetch tenants');
   const data = await response.json();
-  return data.tenants || [];
+  return Array.isArray(data) ? data : [];
 }
 
 function ComposeMessageForm() {

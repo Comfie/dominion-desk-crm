@@ -152,6 +152,43 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }
     }
 
+    // Automatically advance nextPaymentDue when a RENT payment is marked as PAID
+    if (payment.paymentType === 'RENT' && data.status === 'PAID' && payment.tenantId) {
+      // Get user's rental due day setting
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { rentalDueDay: true },
+      });
+
+      const rentalDueDay = user?.rentalDueDay || 1;
+
+      // Calculate next payment due date based on payment date
+      const paymentDate = data.paymentDate
+        ? new Date(data.paymentDate)
+        : new Date(payment.paymentDate);
+      let nextMonth = paymentDate.getMonth() + 1;
+      let nextYear = paymentDate.getFullYear();
+
+      if (nextMonth > 11) {
+        nextMonth = 0;
+        nextYear++;
+      }
+
+      // Cap at 28 to avoid month-end issues
+      const dueDay = Math.min(rentalDueDay, 28);
+      const nextPaymentDue = new Date(nextYear, nextMonth, dueDay, 9, 0, 0);
+
+      // Update tenant's nextPaymentDue
+      await prisma.tenant.update({
+        where: { id: payment.tenantId },
+        data: { nextPaymentDue },
+      });
+
+      console.log(
+        `Advanced nextPaymentDue for tenant ${payment.tenant?.firstName} ${payment.tenant?.lastName} to ${nextPaymentDue.toDateString()}`
+      );
+    }
+
     return NextResponse.json(payment);
   } catch (error) {
     console.error('Error updating payment:', error);

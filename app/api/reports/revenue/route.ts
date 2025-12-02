@@ -32,12 +32,32 @@ export async function GET(request: NextRequest) {
     const payments = await prisma.payment.findMany({
       where: paymentWhere,
       include: {
+        property: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         booking: {
           select: {
             propertyId: true,
             bookingSource: true,
             property: {
-              select: { name: true },
+              select: { id: true, name: true },
+            },
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            properties: {
+              where: { isActive: true },
+              select: {
+                property: {
+                  select: { id: true, name: true },
+                },
+              },
+              take: 1,
             },
           },
         },
@@ -149,9 +169,12 @@ export async function GET(request: NextRequest) {
     });
 
     const revenueByProperty = properties.map((property: (typeof properties)[number]) => {
-      const propertyPayments = payments.filter(
-        (p: (typeof payments)[number]) => p.booking?.propertyId === property.id
-      );
+      const propertyPayments = payments.filter((p: (typeof payments)[number]) => {
+        // Check multiple sources for property ID
+        const propId =
+          p.propertyId || p.booking?.propertyId || p.tenant?.properties?.[0]?.property.id;
+        return propId === property.id;
+      });
       const propertyExpenses = expenses.filter(
         (e: (typeof expenses)[number]) => e.propertyId === property.id
       );

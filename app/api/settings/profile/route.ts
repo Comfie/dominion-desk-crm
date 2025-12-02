@@ -25,6 +25,7 @@ export async function GET() {
         timezone: true,
         currency: true,
         language: true,
+        rentalDueDay: true,
         subscriptionTier: true,
         subscriptionStatus: true,
         trialEndsAt: true,
@@ -76,6 +77,7 @@ export async function PATCH(request: NextRequest) {
       timezone,
       currency,
       language,
+      rentalDueDay,
     } = data;
 
     const updated = await prisma.user.update({
@@ -90,6 +92,7 @@ export async function PATCH(request: NextRequest) {
         ...(timezone && { timezone }),
         ...(currency && { currency }),
         ...(language && { language }),
+        ...(rentalDueDay !== undefined && { rentalDueDay }),
       },
       select: {
         id: true,
@@ -103,6 +106,7 @@ export async function PATCH(request: NextRequest) {
         timezone: true,
         currency: true,
         language: true,
+        rentalDueDay: true,
       },
     });
 

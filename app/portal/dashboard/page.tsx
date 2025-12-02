@@ -50,6 +50,7 @@ interface TenantPortalData {
     leaseStart: string | null;
     leaseEnd: string | null;
     rentAmount: number | null;
+    nextPaymentDue: string | null;
   };
   maintenanceRequests: Array<{
     id: string;
@@ -200,12 +201,25 @@ export default function TenantDashboardPage() {
                     </p>
                   )}
                   {tenant.rentAmount && (
-                    <p>
+                    <p className="mb-1">
                       <span className="text-muted-foreground">Rent: </span>
                       <span className="font-semibold">
                         {formatCurrency(Number(tenant.rentAmount))}/month
                       </span>
                     </p>
+                  )}
+                  {tenant.nextPaymentDue && (
+                    <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 flex-shrink-0 text-yellow-600" />
+                        <div>
+                          <p className="text-xs font-medium text-yellow-800">Next Payment Due</p>
+                          <p className="text-xs font-semibold text-yellow-700">
+                            {formatDate(tenant.nextPaymentDue)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -363,7 +377,7 @@ export default function TenantDashboardPage() {
             <CardContent>
               {recentPayments.length > 0 ? (
                 <div className="space-y-3">
-                  {recentPayments.map((payment) => (
+                  {recentPayments.slice(0, 3).map((payment) => (
                     <div
                       key={payment.id}
                       className="flex items-center justify-between border-b pb-3"
@@ -379,11 +393,21 @@ export default function TenantDashboardPage() {
                       </Badge>
                     </div>
                   ))}
+                  <Link href="/portal/payments">
+                    <Button variant="outline" size="sm" className="w-full">
+                      View All Payments
+                    </Button>
+                  </Link>
                 </div>
               ) : (
-                <div className="text-muted-foreground py-6 text-center">
+                <div className="text-muted-foreground space-y-4 py-6 text-center">
                   <Clock className="mx-auto mb-2 h-8 w-8" />
                   <p>No payment history</p>
+                  <Link href="/portal/payments">
+                    <Button variant="outline" size="sm" className="w-full">
+                      View Payments
+                    </Button>
+                  </Link>
                 </div>
               )}
             </CardContent>

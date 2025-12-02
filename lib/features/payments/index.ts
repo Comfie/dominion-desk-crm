@@ -13,14 +13,11 @@ export { paymentService, PaymentService } from './services/payment.service';
 export {
   createPaymentSchema,
   updatePaymentSchema,
-  listPaymentsSchema,
-  paymentIdSchema,
-  refundPaymentSchema,
-  markFailedSchema,
+  generateMonthlyPaymentsSchema,
   type CreatePaymentDTO,
   type UpdatePaymentDTO,
-  type ListPaymentsDTO,
-  type PaymentIdDTO,
-  type RefundPaymentDTO,
-  type MarkFailedDTO,
+  type GenerateMonthlyPaymentsDTO,
 } from './dtos/payment.dto';
+
+// Invoice Service
+export { invoiceService, InvoiceService } from './services/invoice.service';

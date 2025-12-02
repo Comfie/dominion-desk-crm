@@ -59,7 +59,7 @@ function LoginForm() {
       if (session?.user?.role === 'SUPER_ADMIN') {
         redirectUrl = '/admin/users';
       } else if (session?.user?.role === 'TENANT') {
-        redirectUrl = '/tenant/dashboard';
+        redirectUrl = '/portal/dashboard';
       } else if (session?.user?.role === 'CUSTOMER') {
         redirectUrl = '/dashboard';
       }

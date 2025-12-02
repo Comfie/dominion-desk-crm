@@ -49,6 +49,7 @@ const updatePropertySchema = z.object({
   houseRules: z.string().nullable().optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'OCCUPIED', 'MAINTENANCE', 'ARCHIVED']).optional(),
   isAvailable: z.boolean().optional(),
+  primaryImageUrl: z.string().nullable().optional(),
 });
 
 // GET - Get a single property

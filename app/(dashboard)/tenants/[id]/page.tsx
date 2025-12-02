@@ -105,6 +105,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
   // Property assignment states
   const [showAssignPropertyDialog, setShowAssignPropertyDialog] = useState(false);
+  const [showEditPropertyDialog, setShowEditPropertyDialog] = useState(false);
   const [showTerminateLeaseDialog, setShowTerminateLeaseDialog] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState('');
   const [leaseStartDate, setLeaseStartDate] = useState('');
@@ -114,6 +115,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const [moveInDate, setMoveInDate] = useState('');
   const [moveOutDate, setMoveOutDate] = useState('');
   const [propertyToTerminate, setPropertyToTerminate] = useState<string | null>(null);
+  const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
 
   const {
     data: tenant,
@@ -242,6 +244,38 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
     },
   });
 
+  const editPropertyMutation = useMutation({
+    mutationFn: async (data: {
+      propertyId: string;
+      leaseStartDate: string;
+      leaseEndDate?: string;
+      monthlyRent: number;
+      depositPaid?: number;
+      moveInDate?: string;
+    }) => {
+      const response = await fetch(`/api/tenants/${id}/properties/${data.propertyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update property assignment');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', id] });
+      setShowEditPropertyDialog(false);
+      setPropertyToEdit(null);
+      setLeaseStartDate('');
+      setLeaseEndDate('');
+      setMonthlyRent('');
+      setDepositPaid('');
+      setMoveInDate('');
+    },
+  });
+
   const handleAssignProperty = () => {
     setShowAssignPropertyDialog(true);
   };
@@ -258,6 +292,34 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       leaseEndDate: leaseEndDate || undefined,
       monthlyRent: parseFloat(monthlyRent),
       depositPaid: depositPaid ? parseFloat(depositPaid) : 0,
+      moveInDate: moveInDate || undefined,
+    });
+  };
+
+  const handleEditProperty = (pt: any) => {
+    setPropertyToEdit(pt);
+    setLeaseStartDate(
+      pt.leaseStartDate ? new Date(pt.leaseStartDate).toISOString().split('T')[0] : ''
+    );
+    setLeaseEndDate(pt.leaseEndDate ? new Date(pt.leaseEndDate).toISOString().split('T')[0] : '');
+    setMonthlyRent(pt.monthlyRent?.toString() || '');
+    setDepositPaid(pt.depositPaid?.toString() || '');
+    setMoveInDate(pt.moveInDate ? new Date(pt.moveInDate).toISOString().split('T')[0] : '');
+    setShowEditPropertyDialog(true);
+  };
+
+  const handleEditPropertySubmit = () => {
+    if (!propertyToEdit || !leaseStartDate || !monthlyRent) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    editPropertyMutation.mutate({
+      propertyId: propertyToEdit.property.id,
+      leaseStartDate,
+      leaseEndDate: leaseEndDate || undefined,
+      monthlyRent: parseFloat(monthlyRent),
+      depositPaid: depositPaid ? parseFloat(depositPaid) : undefined,
       moveInDate: moveInDate || undefined,
     });
   };
@@ -615,28 +677,65 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
             <TabsContent value="payments">
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Payments</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Payments</CardTitle>
+                    {tenant.nextPaymentDue && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Next Due: </span>
+                        <span className="font-medium">{formatDate(tenant.nextPaymentDue)}</span>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {tenant.payments && tenant.payments.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {tenant.payments.map((payment: any) => (
                         <div
                           key={payment.id}
-                          className="flex items-center justify-between border-b pb-4 last:border-0"
+                          className="hover:bg-muted/50 rounded-lg border p-3 transition-colors"
                         >
-                          <div>
-                            <p className="font-medium">{formatCurrency(Number(payment.amount))}</p>
-                            <p className="text-muted-foreground text-sm">
-                              {formatDate(payment.paymentDate)}
-                            </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="mb-1 flex items-center gap-2">
+                                <p className="font-semibold">
+                                  {formatCurrency(Number(payment.amount))}
+                                </p>
+                                <Badge
+                                  className={
+                                    payment.status === 'PAID'
+                                      ? 'bg-green-100 text-green-800'
+                                      : payment.status === 'OVERDUE'
+                                        ? 'bg-red-100 text-red-800'
+                                        : 'bg-yellow-100 text-yellow-800'
+                                  }
+                                >
+                                  {payment.status}
+                                </Badge>
+                              </div>
+                              <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                                <span>{payment.paymentType}</span>
+                                {payment.dueDate && <span>Due: {formatDate(payment.dueDate)}</span>}
+                                {payment.paymentDate && payment.status === 'PAID' && (
+                                  <span>Paid: {formatDate(payment.paymentDate)}</span>
+                                )}
+                              </div>
+                            </div>
+                            <Badge variant="outline">{payment.paymentMethod}</Badge>
                           </div>
-                          <Badge variant="outline">{payment.paymentMethod}</Badge>
                         </div>
                       ))}
+                      <div className="pt-2">
+                        <Button asChild variant="outline" size="sm" className="w-full">
+                          <Link href="/financials/income">View All Payments</Link>
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm">No payments found</p>
+                    <div className="py-8 text-center">
+                      <CreditCard className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
+                      <p className="text-muted-foreground text-sm">No payments found</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -765,22 +864,48 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                               Rent: {formatCurrency(Number(pt.monthlyRent))}
                             </p>
                           )}
+                          {pt.isActive && tenant.nextPaymentDue && (
+                            <div className="mt-2 rounded-md border border-yellow-200 bg-yellow-50 p-2">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-yellow-600" />
+                                <div>
+                                  <p className="text-xs font-medium text-yellow-800">
+                                    Next Payment Due
+                                  </p>
+                                  <p className="text-xs text-yellow-700">
+                                    {formatDate(tenant.nextPaymentDue)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {pt.isActive && (
                             <Badge className="mt-1 border-green-200 bg-green-100 text-green-800">
                               Active
                             </Badge>
                           )}
                         </div>
-                        {pt.isActive && (
-                          <Button
-                            onClick={() => handleTerminateLease(pt.property.id)}
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <div className="flex gap-1">
+                          {pt.isActive && (
+                            <>
+                              <Button
+                                onClick={() => handleEditProperty(pt)}
+                                size="sm"
+                                variant="ghost"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                onClick={() => handleTerminateLease(pt.property.id)}
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <Separator />
                     </div>
@@ -894,8 +1019,8 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           <DialogHeader>
             <DialogTitle>Revoke Portal Access</DialogTitle>
             <DialogDescription>
-              Are you sure you want to revoke this tenant's portal access? They will no longer be
-              able to log in to view their information.
+              Are you sure you want to revoke this tenant&apos;s portal access? They will no longer
+              be able to log in to view their information.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1038,6 +1163,101 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 </>
               ) : (
                 'Assign Property'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Property Assignment Dialog */}
+      <Dialog open={showEditPropertyDialog} onOpenChange={setShowEditPropertyDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Property Assignment</DialogTitle>
+            <DialogDescription>
+              Update lease details for {propertyToEdit?.property?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="editLeaseStartDate">Lease Start Date *</Label>
+                <Input
+                  id="editLeaseStartDate"
+                  type="date"
+                  value={leaseStartDate}
+                  onChange={(e) => setLeaseStartDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editLeaseEndDate">Lease End Date</Label>
+                <Input
+                  id="editLeaseEndDate"
+                  type="date"
+                  value={leaseEndDate}
+                  onChange={(e) => setLeaseEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="editMonthlyRent">Monthly Rent (R) *</Label>
+                <Input
+                  id="editMonthlyRent"
+                  type="number"
+                  placeholder="0.00"
+                  value={monthlyRent}
+                  onChange={(e) => setMonthlyRent(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editDepositPaid">Deposit Paid (R)</Label>
+                <Input
+                  id="editDepositPaid"
+                  type="number"
+                  placeholder="0.00"
+                  value={depositPaid}
+                  onChange={(e) => setDepositPaid(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editMoveInDate">Move-In Date</Label>
+              <Input
+                id="editMoveInDate"
+                type="date"
+                value={moveInDate}
+                onChange={(e) => setMoveInDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditPropertyDialog(false);
+                setPropertyToEdit(null);
+                setLeaseStartDate('');
+                setLeaseEndDate('');
+                setMonthlyRent('');
+                setDepositPaid('');
+                setMoveInDate('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditPropertySubmit} disabled={editPropertyMutation.isPending}>
+              {editPropertyMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Property'
               )}
             </Button>
           </DialogFooter>

@@ -21,6 +21,7 @@ export type AuditEntity =
   | 'inquiry'
   | 'task'
   | 'message'
+  | 'automation'
   | 'integration'
   | 'team_member'
   | 'user'

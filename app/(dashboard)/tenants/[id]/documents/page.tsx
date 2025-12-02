@@ -422,8 +422,8 @@ export default function TenantDocumentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedDocument?.title}"? This action cannot be
-              undone.
+              Are you sure you want to delete &quot;{selectedDocument?.title}&quot;? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

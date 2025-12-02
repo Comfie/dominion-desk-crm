@@ -10,6 +10,8 @@ import {
   type CreateBookingDTO,
   type ListBookingsDTO,
 } from '@/lib/features/bookings';
+import { messageSchedulerService } from '@/lib/features/messaging';
+import { AutomationTrigger } from '@prisma/client';
 
 /**
  * GET /api/bookings
@@ -110,6 +112,18 @@ export async function POST(request: Request) {
     } catch (notifyError) {
       // Don't fail the booking creation if notification fails
       // Error is already logged by notification service
+    }
+
+    // Schedule automation messages for this booking
+    try {
+      await messageSchedulerService.scheduleForBooking(
+        booking.id,
+        session.user.organizationId,
+        AutomationTrigger.BOOKING_CREATED
+      );
+    } catch (automationError) {
+      // Don't fail the booking creation if automation scheduling fails
+      console.error('Failed to schedule automation messages:', automationError);
     }
 
     return NextResponse.json(transformedBooking, { status: 201 });

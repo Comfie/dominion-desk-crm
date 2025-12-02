@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Building2, Globe, Save } from 'lucide-react';
+import { User, Building2, Globe, Save, Calendar } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ const profileSchema = z.object({
   timezone: z.string(),
   currency: z.string(),
   language: z.string(),
+  rentalDueDay: z.number().min(1).max(31),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -48,6 +49,7 @@ interface ProfileData {
     companyName: string | null;
     timezone: string;
     currency: string;
+    rentalDueDay: number;
     language: string;
     subscriptionTier: string;
     subscriptionStatus: string;
@@ -98,22 +100,39 @@ export default function ProfileSettingsPage() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    values: data?.user
-      ? {
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          phone: data.user.phone || '',
-          accountType: data.user.accountType as 'INDIVIDUAL' | 'COMPANY' | 'AGENCY',
-          companyName: data.user.companyName || '',
-          timezone: data.user.timezone,
-          currency: data.user.currency,
-          language: data.user.language,
-        }
-      : undefined,
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      accountType: 'INDIVIDUAL',
+      companyName: '',
+      timezone: 'Africa/Johannesburg',
+      currency: 'ZAR',
+      language: 'en',
+      rentalDueDay: 1,
+    },
   });
+
+  // Update form values when data loads
+  useEffect(() => {
+    if (data?.user && !isLoading) {
+      reset({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        phone: data.user.phone || '',
+        accountType: data.user.accountType as 'INDIVIDUAL' | 'COMPANY' | 'AGENCY',
+        companyName: data.user.companyName || '',
+        timezone: data.user.timezone,
+        currency: data.user.currency,
+        language: data.user.language,
+        rentalDueDay: data.user.rentalDueDay || 1,
+      });
+    }
+  }, [data, isLoading, reset]);
 
   const accountType = watch('accountType');
 
@@ -309,6 +328,50 @@ export default function ProfileSettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Payment Settings
+            </CardTitle>
+            <CardDescription>Configure rental payment preferences</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rentalDueDay">Rental Due Day</Label>
+              <Select
+                value={String(watch('rentalDueDay') || 1)}
+                onValueChange={(value) => {
+                  const numValue = parseInt(value, 10);
+                  if (!isNaN(numValue)) {
+                    setValue('rentalDueDay', numValue, { shouldValidate: true });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select day of month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day === 1 ? '1st' : day === 2 ? '2nd' : day === 3 ? '3rd' : `${day}th`} of
+                      each month
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-sm">
+                Default day of the month when rental payments are due. This will be used for
+                automated reminders and tenant portal displays.
+              </p>
+              {errors.rentalDueDay && (
+                <p className="text-sm text-red-500">{errors.rentalDueDay.message}</p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -109,6 +109,7 @@ export default function PaymentsPage() {
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
           <option value="PAID">Paid</option>
+          <option value="OVERDUE">Overdue</option>
           <option value="PARTIALLY_PAID">Partially Paid</option>
           <option value="REFUNDED">Refunded</option>
           <option value="FAILED">Failed</option>
@@ -171,7 +172,10 @@ export default function PaymentsPage() {
               amount: number;
               paymentMethod: string;
               paymentDate: string;
+              dueDate?: string | null;
               status: string;
+              reminderSent?: boolean;
+              reminderSentAt?: string | null;
               booking?: {
                 id: string;
                 guestName: string;
@@ -184,6 +188,7 @@ export default function PaymentsPage() {
                 id: string;
                 firstName: string;
                 lastName: string;
+                email?: string;
               } | null;
             }) => (
               <PaymentCard key={payment.id} payment={payment} />

@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-helpers';
+import { logAudit } from '@/lib/shared/audit';
 import { sendEmail, emailTemplates } from '@/lib/email';
 
 // POST /api/messages/send - Send a message (email/SMS)
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth();
 
     const data = await request.json();
 
@@ -105,7 +102,7 @@ export async function POST(request: Request) {
     // Create message record
     const message = await prisma.message.create({
       data: {
-        userId: session.user.id,
+        userId: session.user.organizationId,
         bookingId: data.bookingId || null,
         tenantId: data.tenantId || null,
         subject: emailContent.subject,
@@ -143,6 +140,9 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Audit log
+    await logAudit(session, 'created', 'message', message.id, undefined, request);
 
     if (!emailResult.success) {
       return NextResponse.json(

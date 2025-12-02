@@ -1,24 +1,21 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-helpers';
+import { logAudit } from '@/lib/shared/audit';
 
 // GET /api/messages/[id] - Get a single message
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth();
 
     const { id } = await params;
 
     const message = await prisma.message.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        userId: session.user.organizationId,
       },
       include: {
         booking: {
@@ -71,7 +68,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       threadMessages = await prisma.message.findMany({
         where: {
           threadId: message.threadId,
-          userId: session.user.id,
+          userId: session.user.organizationId,
           id: { not: id },
         },
         include: {
@@ -119,10 +116,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 // PUT /api/messages/[id] - Update a message
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth();
 
     const { id } = await params;
     const data = await request.json();
@@ -131,7 +125,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const existingMessage = await prisma.message.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        userId: session.user.organizationId,
       },
     });
 
@@ -186,6 +180,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
     });
 
+    // Audit log
+    await logAudit(
+      session,
+      'updated',
+      'message',
+      id,
+      { before: existingMessage, after: message },
+      request
+    );
+
     return NextResponse.json(message);
   } catch (error) {
     console.error('Error updating message:', error);
@@ -196,10 +200,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 // DELETE /api/messages/[id] - Delete a message
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth();
 
     const { id } = await params;
 
@@ -207,7 +208,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const existingMessage = await prisma.message.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        userId: session.user.organizationId,
       },
     });
 
@@ -218,6 +219,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await prisma.message.delete({
       where: { id },
     });
+
+    // Audit log
+    await logAudit(session, 'deleted', 'message', id, undefined, request);
 
     return NextResponse.json({ message: 'Message deleted successfully' });
   } catch (error) {

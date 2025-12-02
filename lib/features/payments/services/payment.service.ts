@@ -1,6 +1,7 @@
 import { PaymentStatus, PaymentMethod } from '@prisma/client';
 import { paymentRepository } from '@/lib/features/payments/repositories/payment.repository';
 import { bookingRepository } from '@/lib/features/bookings/repositories/booking.repository';
+import { invoiceService } from './invoice.service';
 import { logger } from '@/lib/shared/logger';
 import {
   ValidationError,
@@ -174,7 +175,7 @@ export class PaymentService {
    * Get payment by ID with ownership verification
    */
   async getById(paymentId: string, userId: string) {
-    const payment = await paymentRepository.findById(paymentId);
+    const payment = await paymentRepository.findById(paymentId, userId);
 
     if (!payment) {
       throw new NotFoundError('Payment', paymentId);
@@ -296,6 +297,93 @@ export class PaymentService {
     });
 
     return updated;
+  }
+
+  /**
+   * Generate monthly rent payments for all active tenants
+   */
+  async generateMonthlyPayments(userId: string, month?: number, year?: number) {
+    const now = new Date();
+    const targetMonth = month || now.getMonth() + 1;
+    const targetYear = year || now.getFullYear();
+
+    logger.info('Generating monthly payments', {
+      userId,
+      month: targetMonth,
+      year: targetYear,
+    });
+
+    const result = await paymentRepository.generateMonthlyPayments(userId, targetMonth, targetYear);
+
+    logger.info('Monthly payments generated', {
+      userId,
+      count: result.count,
+      month: targetMonth,
+      year: targetYear,
+    });
+
+    return result;
+  }
+
+  /**
+   * Get invoice HTML for a payment
+   */
+  async getInvoiceHTML(paymentId: string, userId: string) {
+    const payment = await this.getById(paymentId, userId);
+    return invoiceService.generateInvoiceHTML(payment);
+  }
+
+  /**
+   * Get invoice text for a payment
+   */
+  async getInvoiceText(paymentId: string, userId: string) {
+    const payment = await this.getById(paymentId, userId);
+    return invoiceService.generateInvoiceText(payment);
+  }
+
+  /**
+   * Get payment summary for a given period
+   */
+  async getPaymentSummary(userId: string, month?: number, year?: number) {
+    return paymentRepository.getPaymentSummary(userId, month, year);
+  }
+
+  /**
+   * Find payments due for reminders
+   */
+  async findDuePayments(userId: string, dueDate: Date) {
+    return paymentRepository.findDuePayments(userId, dueDate);
+  }
+
+  /**
+   * Find overdue payments
+   */
+  async findOverduePayments(userId: string) {
+    return paymentRepository.findOverduePayments(userId);
+  }
+
+  /**
+   * Mark payment reminder as sent
+   */
+  async markReminderSent(paymentId: string) {
+    await paymentRepository.markReminderSent(paymentId);
+    logger.info('Payment reminder marked as sent', { paymentId });
+  }
+
+  /**
+   * Mark payment as overdue
+   */
+  async markAsOverdue(paymentId: string) {
+    await paymentRepository.markAsOverdue(paymentId);
+    logger.info('Payment marked as overdue', { paymentId });
+  }
+
+  /**
+   * Update invoice URL for a payment
+   */
+  async updateInvoiceUrl(paymentId: string, invoiceUrl: string) {
+    await paymentRepository.updateInvoiceUrl(paymentId, invoiceUrl);
+    logger.info('Payment invoice URL updated', { paymentId, invoiceUrl });
   }
 }
 

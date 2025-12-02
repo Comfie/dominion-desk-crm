@@ -567,14 +567,15 @@ export default function DocumentationPage() {
                     <li>
                       Click <strong>Record Payment</strong>
                     </li>
-                    <li>Select the tenant</li>
+                    <li>Select the tenant or booking</li>
                     <li>
                       Enter payment details:
                       <ul>
+                        <li>Payment type (Rent, Deposit, Utilities, etc.)</li>
                         <li>Amount received</li>
                         <li>Payment date</li>
-                        <li>Payment method (EFT, Cash, Card, etc.)</li>
-                        <li>Reference number</li>
+                        <li>Payment method (EFT, Cash, Card, Debit Order, etc.)</li>
+                        <li>Bank reference number</li>
                         <li>Notes (optional)</li>
                       </ul>
                     </li>
@@ -592,31 +593,197 @@ export default function DocumentationPage() {
                       <strong>Deposit</strong> - Security deposit
                     </li>
                     <li>
-                      <strong>Utilities</strong> - Water, electricity, etc.
+                      <strong>Booking</strong> - Short-term rental booking payment
                     </li>
                     <li>
-                      <strong>Maintenance</strong> - Repair costs
+                      <strong>Cleaning Fee</strong> - Property cleaning charges
+                    </li>
+                    <li>
+                      <strong>Utilities</strong> - Water, electricity, gas, etc.
+                    </li>
+                    <li>
+                      <strong>Late Fee</strong> - Penalties for late payments
+                    </li>
+                    <li>
+                      <strong>Damage</strong> - Charges for property damage
+                    </li>
+                    <li>
+                      <strong>Refund</strong> - Returned payments
                     </li>
                     <li>
                       <strong>Other</strong> - Miscellaneous payments
                     </li>
                   </ul>
 
-                  <h4>Payment Features:</h4>
+                  <h4>Payment Status Tracking</h4>
+                  <p>Each payment has a clear status to track its lifecycle:</p>
                   <ul>
                     <li>
-                      <strong>Payment History</strong> - View all transactions by tenant or property
+                      <strong>Pending</strong> - Payment expected but not yet received
                     </li>
                     <li>
-                      <strong>Receipt Generation</strong> - Create professional receipts for tenants
+                      <strong>Paid</strong> - Payment received and confirmed
                     </li>
                     <li>
-                      <strong>Outstanding Balances</strong> - Track unpaid amounts
+                      <strong>Partially Paid</strong> - Partial amount received
                     </li>
                     <li>
-                      <strong>Payment Reminders</strong> - Send automated reminders for due payments
+                      <strong>Overdue</strong> - Payment past due date
+                    </li>
+                    <li>
+                      <strong>Failed</strong> - Payment attempt unsuccessful
+                    </li>
+                    <li>
+                      <strong>Refunded</strong> - Payment returned to payer
                     </li>
                   </ul>
+
+                  <h4>Automated Payment Features</h4>
+                  <p>The system includes powerful automation to reduce manual work:</p>
+
+                  <h5>Automatic Rental Due Date Advancement</h5>
+                  <p>
+                    When you record a RENT payment as PAID, the system automatically advances the
+                    tenant's next payment due date to the following month based on your configured
+                    rental due day. This keeps payment tracking accurate without manual updates.
+                  </p>
+
+                  <h5>Monthly Payment Generation</h5>
+                  <p>
+                    On the 25th of each month, the system automatically generates rent payment
+                    records for all active tenants with configured monthly rent. These payments are
+                    created with:
+                  </p>
+                  <ul>
+                    <li>Due date based on your rental due day setting</li>
+                    <li>Correct monthly rent amount</li>
+                    <li>Pending status for tracking</li>
+                    <li>Automatic linking to tenant and property</li>
+                  </ul>
+
+                  <h5>Payment Reminders</h5>
+                  <p>Automated reminder system helps ensure timely payments:</p>
+                  <ul>
+                    <li>
+                      <strong>7 Days Before Due</strong> - First reminder sent to tenants
+                    </li>
+                    <li>
+                      <strong>1 Day Before Due</strong> - Final reminder before due date
+                    </li>
+                    <li>
+                      <strong>1 Day After Due</strong> - Overdue notice sent
+                    </li>
+                    <li>Reminders sent via email and in-app notifications</li>
+                    <li>System tracks when reminders are sent</li>
+                  </ul>
+
+                  <h4>Configuring Rental Due Day</h4>
+                  <p>
+                    Set a global rental due day for all your properties to standardize payment
+                    collection:
+                  </p>
+                  <ol>
+                    <li>
+                      Navigate to <strong>Settings</strong> → <strong>Profile</strong>
+                    </li>
+                    <li>
+                      Scroll to the <strong>Payment Settings</strong> section
+                    </li>
+                    <li>Select your preferred day of the month (1-31)</li>
+                    <li>The system caps at the 28th to avoid month-end issues</li>
+                    <li>
+                      Click <strong>Save Changes</strong>
+                    </li>
+                  </ol>
+                  <p>This setting is used by:</p>
+                  <ul>
+                    <li>Automated monthly payment generation</li>
+                    <li>Payment reminder system</li>
+                    <li>Tenant portal next payment due display</li>
+                    <li>Next payment due date calculations</li>
+                  </ul>
+
+                  <h4>Payment History & Filtering</h4>
+                  <p>View and analyze all payments with powerful filtering options:</p>
+                  <ul>
+                    <li>
+                      <strong>Filter by Status</strong> - Paid, Pending, Overdue, etc.
+                    </li>
+                    <li>
+                      <strong>Filter by Type</strong> - Rent, Deposit, Utilities, etc.
+                    </li>
+                    <li>
+                      <strong>Filter by Tenant</strong> - View payments for specific tenants
+                    </li>
+                    <li>
+                      <strong>Filter by Date Range</strong> - Custom date periods
+                    </li>
+                    <li>
+                      <strong>Search</strong> - Find payments by reference or notes
+                    </li>
+                    <li>
+                      <strong>Summary Statistics</strong> - Total amounts by status
+                    </li>
+                  </ul>
+
+                  <h4>Receipt Generation</h4>
+                  <p>Generate professional payment receipts instantly:</p>
+                  <ul>
+                    <li>Click any payment to view details</li>
+                    <li>
+                      Click <strong>Generate Receipt</strong>
+                    </li>
+                    <li>Professional PDF receipt with your business details</li>
+                    <li>Includes payment reference, amount, date, and method</li>
+                    <li>Download or email directly to tenant</li>
+                  </ul>
+
+                  <h4>Tenant Portal Payment Visibility</h4>
+                  <p>Tenants can view their payment information through the tenant portal:</p>
+                  <ul>
+                    <li>
+                      <strong>Next Payment Due</strong> - Displayed prominently on dashboard
+                    </li>
+                    <li>
+                      <strong>Payment History</strong> - Complete list of all payments
+                    </li>
+                    <li>
+                      <strong>Outstanding Balance</strong> - Current amounts owed
+                    </li>
+                    <li>
+                      <strong>Receipt Downloads</strong> - Access to all payment receipts
+                    </li>
+                    <li>
+                      <strong>Payment Status</strong> - Real-time status updates
+                    </li>
+                  </ul>
+
+                  <h4>Editing Property Assignments</h4>
+                  <p>Update tenant property assignments and rental amounts:</p>
+                  <ol>
+                    <li>
+                      Navigate to <strong>Tenants</strong> and select a tenant
+                    </li>
+                    <li>
+                      Find the property card in the <strong>Properties</strong> section
+                    </li>
+                    <li>
+                      Click the <strong>Edit</strong> button (pencil icon)
+                    </li>
+                    <li>
+                      Update details:
+                      <ul>
+                        <li>Lease start and end dates</li>
+                        <li>Monthly rent amount</li>
+                        <li>Deposit paid</li>
+                        <li>Move-in and move-out dates</li>
+                      </ul>
+                    </li>
+                    <li>
+                      Click <strong>Update Property</strong>
+                    </li>
+                  </ol>
+                  <p>Changes to monthly rent automatically affect future payment generation.</p>
 
                   <h4>Tracking Expenses</h4>
                   <p>
@@ -624,6 +791,20 @@ export default function DocumentationPage() {
                     costs, property taxes, insurance, and other outgoings for accurate profit
                     calculation.
                   </p>
+
+                  <h4>Best Practices</h4>
+                  <ul>
+                    <li>Record payments immediately when received for accurate tracking</li>
+                    <li>Always include bank reference numbers for easy reconciliation</li>
+                    <li>Use consistent payment methods for better reporting</li>
+                    <li>Generate receipts for all paid amounts</li>
+                    <li>Review outstanding payments weekly</li>
+                    <li>
+                      Set your rental due day early in the month (1st-5th) for better cash flow
+                    </li>
+                    <li>Monitor automated reminders to ensure they're being sent</li>
+                    <li>Update monthly rent amounts when lease renewals occur</li>
+                  </ul>
                 </CardContent>
               </Card>
             </section>

@@ -45,6 +45,15 @@ model User {
   timezone        String    @default("Africa/Johannesburg")
   currency        String    @default("ZAR")
   language        String    @default("en")
+  rentalDueDay    Int       @default(1) // Day of month when rent is due (1-31)
+
+  // Banking Details (for invoices and payment instructions)
+  bankName            String?
+  bankAccountName     String?
+  bankAccountNumber   String?
+  bankBranchCode      String?
+  bankSwiftCode       String?
+  paymentInstructions String? @db.Text
 
   // Metadata
   lastLogin       DateTime?
@@ -65,6 +74,10 @@ model User {
   documentFolders DocumentFolder[]
   messages        Message[]
   messageTemplates MessageTemplate[]
+  messageAutomations MessageAutomation[]
+  scheduledMessages  ScheduledMessage[]
+  messageThreads     MessageThread[]
+  cannedResponses    CannedResponse[]
   notifications   Notification[]
   teamMembers     TeamMember[]
   auditLogs       AuditLog[]
@@ -223,9 +236,11 @@ model Property {
   inquiries       Inquiry[]
   maintenanceRequests MaintenanceRequest[]
   expenses        Expense[]
+  payments        Payment[]
   documents       Document[]
   documentFolders DocumentFolder[]
   reviews         Review[]
+  threads         MessageThread[]
 }
 
 enum PropertyType {
@@ -324,6 +339,8 @@ model Booking {
   payments        Payment[]
   messages        Message[]
   reviews         Review[]
+  scheduledMessages ScheduledMessage[]
+  threads           MessageThread[]
 }
 
 enum BookingType {
@@ -354,6 +371,7 @@ enum PaymentStatus {
   PENDING
   PARTIALLY_PAID
   PAID
+  OVERDUE
   REFUNDED
   FAILED
 }
@@ -415,6 +433,14 @@ model Tenant {
   // Status
   status          TenantStatus @default(ACTIVE)
 
+  // Payment Configuration (for long-term rentals)
+  monthlyRent         Decimal?  @db.Decimal(10, 2)
+  paymentDueDay       Int?      @default(1)  // Day of month (1-28)
+  nextPaymentDue      DateTime?
+  lastPaymentDate     DateTime?
+  reminderDaysBefore  Int?      @default(3)   // Days before due date to send reminder
+  autoSendReminder    Boolean   @default(true)
+
   // Notes
   notes           String?   @db.Text
 
@@ -430,6 +456,8 @@ model Tenant {
   messages        Message[]
   documents       Document[]
   documentFolders DocumentFolder[]
+  scheduledMessages ScheduledMessage[]
+  threads           MessageThread[]
 }
 
 enum EmploymentStatus {
@@ -655,6 +683,8 @@ model Payment {
   booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  propertyId      String?
+  property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   // Payment Details
   paymentReference String   @unique
@@ -665,15 +695,25 @@ model Payment {
   currency        String    @default("ZAR")
 
   // Payment Info
-  paymentMethod   PaymentMethod
-  paymentDate     DateTime
+  paymentMethod   PaymentMethod?
+  paymentDate     DateTime?
+  dueDate         DateTime?
 
   // Status
   status          PaymentStatus @default(PENDING)
 
-  // Receipt
-  receiptUrl      String?
+  // Invoice
+  invoiceNumber   String?   @unique
   invoiceUrl      String?
+  receiptUrl      String?
+
+  // Reminder Tracking
+  reminderSent    Boolean   @default(false)
+  reminderSentAt  DateTime?
+  reminderCount   Int       @default(0)
+
+  // Description
+  description     String?
 
   // Notes
   notes           String?   @db.Text
@@ -684,6 +724,10 @@ model Payment {
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([userId, tenantId])
+  @@index([dueDate, status])
+  @@index([status, reminderSent])
 }
 
 enum PaymentType {
@@ -890,11 +934,20 @@ model Message {
   readAt          DateTime?
 
   // Thread
-  threadId        String?   // For message threading
+  threadId        String?
+  thread          MessageThread? @relation(fields: [threadId], references: [id], onDelete: SetNull)
   replyTo         String?   // ID of message being replied to
 
   // Attachments
   attachments     Json?     // Array of attachment URLs
+
+  // AI features
+  aiGenerated     Boolean   @default(false)
+  aiTone          AiTone?
+
+  // Tracking
+  openedAt        DateTime?
+  clickedAt       DateTime?
 
   // Metadata
   createdAt       DateTime  @default(now())
@@ -919,6 +972,41 @@ enum MessageStatus {
   DELIVERED
   READ
   FAILED
+}
+
+enum AutomationTrigger {
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  CHECK_IN_REMINDER
+  CHECK_IN_INSTRUCTIONS
+  CHECK_OUT_REMINDER
+  CHECK_OUT_INSTRUCTIONS
+  BOOKING_COMPLETED
+  PAYMENT_REMINDER
+  PAYMENT_RECEIVED
+  PAYMENT_OVERDUE
+  MAINTENANCE_SCHEDULED
+  MAINTENANCE_COMPLETED
+  REVIEW_REQUEST
+  LEASE_RENEWAL_REMINDER
+  CUSTOM_DATE
+}
+
+enum AiTone {
+  PROFESSIONAL
+  FRIENDLY
+  CASUAL
+  FORMAL
+  WARM
+}
+
+enum ScheduledMessageStatus {
+  PENDING
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
 }
 
 model MessageTemplate {
@@ -947,6 +1035,171 @@ model MessageTemplate {
   updatedAt       DateTime  @updatedAt
 
   @@index([userId])
+}
+
+// ============== MESSAGING AUTOMATION ==============
+
+model MessageAutomation {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Automation Details
+  name            String
+  description     String?   @db.Text
+
+  // Trigger Configuration
+  triggerType     AutomationTrigger
+  triggerOffset   Int?      // Hours before/after trigger event
+  triggerTimeOfDay String?  // "09:00" - send at specific time
+
+  // Message Configuration
+  messageType     MessageType
+  subject         String?
+  bodyTemplate    String    @db.Text
+
+  // AI Configuration
+  useAiEnhancement Boolean  @default(false)
+  aiTone          AiTone?   @default(PROFESSIONAL)
+
+  // Targeting
+  applyToRentalType RentalType?
+  propertyIds     Json?     // Array of property IDs
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  // Analytics
+  totalSent       Int       @default(0)
+  totalOpened     Int       @default(0)
+  totalClicked    Int       @default(0)
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  scheduledMessages ScheduledMessage[]
+
+  @@index([userId, isActive])
+  @@index([triggerType])
+}
+
+model ScheduledMessage {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  automationId    String?
+  automation      MessageAutomation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
+
+  // Target
+  bookingId       String?
+  booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tenantId        String?
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Message Details
+  recipientEmail  String?
+  recipientPhone  String?
+  recipientName   String
+
+  messageType     MessageType
+  subject         String?
+  body            String    @db.Text
+
+  // Scheduling
+  scheduledFor    DateTime
+  sentAt          DateTime?
+
+  // Status
+  status          ScheduledMessageStatus @default(PENDING)
+  errorMessage    String?   @db.Text
+
+  // Tracking
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+
+  // Response
+  repliedAt       DateTime?
+  replyText       String?   @db.Text
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([scheduledFor, status])
+  @@index([userId])
+  @@index([bookingId])
+}
+
+model MessageThread {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Thread Context
+  bookingId       String?
+  booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  tenantId        String?
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  propertyId      String?
+  property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // Participant
+  participantName  String
+  participantEmail String?
+  participantPhone String?
+
+  // Thread Metadata
+  subject         String?
+  lastMessageAt   DateTime  @default(now())
+  lastMessagePreview String? @db.Text
+
+  // Status
+  isRead          Boolean   @default(true)
+  isArchived      Boolean   @default(false)
+  priority        Priority  @default(NORMAL)
+
+  // Tags
+  tags            Json?
+
+  // Relations
+  messages        Message[]
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, isRead, isArchived])
+  @@index([lastMessageAt])
+}
+
+model CannedResponse {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Response Details
+  title           String
+  shortcut        String?
+  content         String    @db.Text
+
+  // Categorization
+  category        String?
+
+  // Usage
+  useCount        Int       @default(0)
+  lastUsedAt      DateTime?
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, isActive])
 }
 
 // ============== TASK MANAGEMENT ==============

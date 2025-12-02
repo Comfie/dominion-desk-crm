@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-helpers';
+import { logAudit } from '@/lib/shared/audit';
 
 // GET /api/messages - Get all messages for the user
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const direction = searchParams.get('direction');
@@ -25,7 +22,7 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     const where = {
-      userId: session.user.id,
+      userId: session.user.organizationId,
       ...(direction && { direction: direction as 'INBOUND' | 'OUTBOUND' }),
       ...(messageType && { messageType: messageType as 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP' }),
       ...(status && { status: status as 'DRAFT' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' }),
@@ -74,17 +71,17 @@ export async function GET(request: Request) {
 
     // Get summary statistics
     const [totalMessages, unreadCount, sentToday, failedCount] = await Promise.all([
-      prisma.message.count({ where: { userId: session.user.id } }),
+      prisma.message.count({ where: { userId: session.user.organizationId } }),
       prisma.message.count({
         where: {
-          userId: session.user.id,
+          userId: session.user.organizationId,
           direction: 'INBOUND',
           status: { not: 'READ' },
         },
       }),
       prisma.message.count({
         where: {
-          userId: session.user.id,
+          userId: session.user.organizationId,
           direction: 'OUTBOUND',
           sentAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
@@ -93,7 +90,7 @@ export async function GET(request: Request) {
       }),
       prisma.message.count({
         where: {
-          userId: session.user.id,
+          userId: session.user.organizationId,
           status: 'FAILED',
         },
       }),
@@ -123,10 +120,7 @@ export async function GET(request: Request) {
 // POST /api/messages - Create a new message
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = await requireAuth();
 
     const data = await request.json();
 
@@ -160,7 +154,7 @@ export async function POST(request: Request) {
 
     const message = await prisma.message.create({
       data: {
-        userId: session.user.id,
+        userId: session.user.organizationId,
         bookingId: data.bookingId || null,
         tenantId: data.tenantId || null,
         subject: data.subject || null,
@@ -199,6 +193,9 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Audit log
+    await logAudit(session, 'created', 'message', message.id, undefined, request);
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {

@@ -28,9 +28,14 @@ export async function GET(request: Request) {
           lte: endDate,
         },
         ...(propertyId && {
-          booking: {
-            propertyId,
-          },
+          OR: [
+            {
+              booking: {
+                propertyId,
+              },
+            },
+            { propertyId },
+          ],
         }),
       },
       include: {
@@ -42,6 +47,29 @@ export async function GET(request: Request) {
                 id: true,
                 name: true,
               },
+            },
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            properties: {
+              where: { isActive: true },
+              select: {
+                property: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+              take: 1,
             },
           },
         },
@@ -171,12 +199,31 @@ export async function GET(request: Request) {
     > = {};
 
     payments.forEach((payment: (typeof payments)[number]) => {
-      if (payment.booking?.property) {
-        const propId = payment.booking.property.id;
+      // Check multiple sources for property information
+      let propId: string | null = null;
+      let propName: string | null = null;
+
+      // 1. Direct property link (preferred for rent payments)
+      if (payment.property) {
+        propId = payment.property.id;
+        propName = payment.property.name;
+      }
+      // 2. Booking property
+      else if (payment.booking?.property) {
+        propId = payment.booking.property.id;
+        propName = payment.booking.property.name;
+      }
+      // 3. Tenant's property
+      else if (payment.tenant?.properties?.[0]?.property) {
+        propId = payment.tenant.properties[0].property.id;
+        propName = payment.tenant.properties[0].property.name;
+      }
+
+      if (propId && propName) {
         if (!propertyPerformance[propId]) {
           propertyPerformance[propId] = {
             propertyId: propId,
-            propertyName: payment.booking.property.name,
+            propertyName: propName,
             income: 0,
             expenses: 0,
             profit: 0,

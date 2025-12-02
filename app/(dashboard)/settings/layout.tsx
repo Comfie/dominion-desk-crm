@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Bell, Shield, CreditCard, Link2 } from 'lucide-react';
+import { User, Bell, Shield, CreditCard, Link2, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const settingsNav = [
@@ -10,6 +10,12 @@ const settingsNav = [
     name: 'Profile',
     href: '/settings/profile',
     icon: User,
+  },
+  {
+    name: 'Banking',
+    href: '/settings/banking',
+    icon: Building2,
+    description: 'Payment & invoice details',
   },
   {
     name: 'Notifications',

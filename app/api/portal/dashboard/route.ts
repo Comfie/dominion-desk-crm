@@ -28,6 +28,7 @@ export async function GET() {
         email: true,
         phone: true,
         userId: true,
+        nextPaymentDue: true,
         properties: {
           where: { isActive: true },
           select: {
@@ -101,6 +102,7 @@ export async function GET() {
         leaseStart: activeProperty ? activeProperty.leaseStartDate.toISOString() : null,
         leaseEnd: activeProperty?.leaseEndDate ? activeProperty.leaseEndDate.toISOString() : null,
         rentAmount: activeProperty ? Number(activeProperty.monthlyRent) : null,
+        nextPaymentDue: tenant.nextPaymentDue ? tenant.nextPaymentDue.toISOString() : null,
       },
       maintenanceRequests,
       recentPayments,

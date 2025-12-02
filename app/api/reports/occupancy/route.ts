@@ -40,9 +40,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get bookings for each property
+    // Get bookings and tenants for each property
     const occupancyByProperty = await Promise.all(
       properties.map(async (property: (typeof properties)[number]) => {
+        // Get short-term bookings
         const bookings = await prisma.booking.findMany({
           where: {
             propertyId: property.id,
@@ -62,10 +63,37 @@ export async function GET(request: NextRequest) {
           },
         });
 
-        // Calculate occupied days
+        // Get long-term tenant leases
+        const tenantLeases = await prisma.propertyTenant.findMany({
+          where: {
+            propertyId: property.id,
+            isActive: true,
+            OR: [
+              {
+                // Lease started before or during the range and hasn't ended
+                leaseStartDate: { lte: endDate },
+                OR: [
+                  { leaseEndDate: { gte: startDate } },
+                  { leaseEndDate: null }, // No end date = still active
+                ],
+              },
+            ],
+          },
+          select: {
+            leaseStartDate: true,
+            leaseEndDate: true,
+            monthlyRent: true,
+            moveInDate: true,
+            moveOutDate: true,
+          },
+        });
+
+        // Calculate occupied days and revenue
         let occupiedDays = 0;
         let totalRevenue = 0;
+        let totalBookingsAndLeases = bookings.length;
 
+        // Add booking occupancy
         bookings.forEach((booking: (typeof bookings)[number]) => {
           const bookingStart = new Date(
             Math.max(booking.checkInDate.getTime(), startDate.getTime())
@@ -76,6 +104,29 @@ export async function GET(request: NextRequest) {
           );
           occupiedDays += Math.max(0, days);
           totalRevenue += parseFloat(booking.totalAmount.toString());
+        });
+
+        // Add tenant lease occupancy
+        tenantLeases.forEach((lease: (typeof tenantLeases)[number]) => {
+          const leaseStart = new Date(
+            Math.max(lease.leaseStartDate.getTime(), startDate.getTime())
+          );
+          const leaseEnd = lease.leaseEndDate
+            ? new Date(Math.min(lease.leaseEndDate.getTime(), endDate.getTime()))
+            : endDate;
+
+          const days = Math.ceil(
+            (leaseEnd.getTime() - leaseStart.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          occupiedDays += Math.max(0, days);
+
+          // Calculate revenue for this period (approximate based on monthly rent)
+          if (lease.monthlyRent) {
+            const months = days / 30;
+            totalRevenue += parseFloat(lease.monthlyRent.toString()) * months;
+          }
+
+          totalBookingsAndLeases++;
         });
 
         const occupancyRate = daysInRange > 0 ? (occupiedDays / daysInRange) * 100 : 0;
@@ -93,7 +144,7 @@ export async function GET(request: NextRequest) {
             occupiedDays,
             vacantDays: daysInRange - occupiedDays,
             occupancyRate: Math.round(occupancyRate * 10) / 10,
-            totalBookings: bookings.length,
+            totalBookings: totalBookingsAndLeases,
             totalRevenue,
             averageDailyRate: Math.round(averageDailyRate * 100) / 100,
             revPAR: Math.round(revPAR * 100) / 100,
@@ -124,7 +175,8 @@ export async function GET(request: NextRequest) {
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split('T')[0] ?? '';
 
-      const occupiedCount = await prisma.booking.count({
+      // Count bookings for this day
+      const bookingCount = await prisma.booking.count({
         where: {
           userId: session.user.id,
           ...(propertyId && { propertyId }),
@@ -133,6 +185,21 @@ export async function GET(request: NextRequest) {
           checkOutDate: { gt: currentDate },
         },
       });
+
+      // Count active tenant leases for this day
+      const tenantCount = await prisma.propertyTenant.count({
+        where: {
+          ...(propertyId && { propertyId }),
+          property: {
+            userId: session.user.id,
+          },
+          isActive: true,
+          leaseStartDate: { lte: currentDate },
+          OR: [{ leaseEndDate: { gte: currentDate } }, { leaseEndDate: null }],
+        },
+      });
+
+      const occupiedCount = bookingCount + tenantCount;
 
       dailyOccupancy.push({
         date: dateStr,
@@ -163,6 +230,7 @@ export async function GET(request: NextRequest) {
       let monthOccupiedDays = 0;
 
       for (const property of properties) {
+        // Get bookings for this month
         const bookings = await prisma.booking.findMany({
           where: {
             propertyId: property.id,
@@ -183,6 +251,34 @@ export async function GET(request: NextRequest) {
           const bookingEnd = new Date(Math.min(booking.checkOutDate.getTime(), monthEnd.getTime()));
           const days = Math.ceil(
             (bookingEnd.getTime() - bookingStart.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          monthOccupiedDays += Math.max(0, days);
+        });
+
+        // Get tenant leases for this month
+        const tenantLeases = await prisma.propertyTenant.findMany({
+          where: {
+            propertyId: property.id,
+            isActive: true,
+            leaseStartDate: { lte: monthEnd },
+            OR: [{ leaseEndDate: { gte: monthStart } }, { leaseEndDate: null }],
+          },
+          select: {
+            leaseStartDate: true,
+            leaseEndDate: true,
+          },
+        });
+
+        tenantLeases.forEach((lease: (typeof tenantLeases)[number]) => {
+          const leaseStart = new Date(
+            Math.max(lease.leaseStartDate.getTime(), monthStart.getTime())
+          );
+          const leaseEnd = lease.leaseEndDate
+            ? new Date(Math.min(lease.leaseEndDate.getTime(), monthEnd.getTime()))
+            : monthEnd;
+
+          const days = Math.ceil(
+            (leaseEnd.getTime() - leaseStart.getTime()) / (1000 * 60 * 60 * 24)
           );
           monthOccupiedDays += Math.max(0, days);
         });
