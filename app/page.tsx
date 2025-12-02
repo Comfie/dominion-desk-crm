@@ -1,620 +1,832 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Building2,
-  Bed,
-  Bath,
-  MapPin,
-  Search,
+  CheckCircle2,
   ArrowRight,
+  BarChart3,
+  Users,
+  Calendar,
+  CreditCard,
+  FileText,
+  Shield,
+  Star,
+  MessagesSquare,
+  AlertCircle,
+  Globe,
   Sparkles,
-  BookOpen,
-  Grid3x3,
-  List,
-  Filter,
-  X,
-  Home,
-  Car,
+  CheckCircle,
+  Menu,
+  X as XIcon,
+  Zap,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  PlayCircle,
 } from 'lucide-react';
+import { Button } from './components/Button';
+import { Card } from './components/Card';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { formatCurrency } from '@/lib/utils';
+// --- Types & Data ---
 
-interface Property {
-  id: string;
+interface Testimonial {
   name: string;
-  propertyType: string;
-  address: string;
-  city: string;
-  province: string;
-  bedrooms: number;
-  bathrooms: number;
-  parkingSpaces?: number;
-  monthlyRent: number | null;
-  dailyRate: number | null;
-  primaryImageUrl: string | null;
-  rentalType: string;
+  role: string;
+  properties: string;
+  content: string;
+  rating: number;
+  result: string;
 }
 
-const propertyTypes = [
-  { value: 'APARTMENT', label: 'Apartment' },
-  { value: 'HOUSE', label: 'House' },
-  { value: 'TOWNHOUSE', label: 'Townhouse' },
-  { value: 'COTTAGE', label: 'Cottage' },
-  { value: 'ROOM', label: 'Room' },
-  { value: 'STUDIO', label: 'Studio' },
-  { value: 'DUPLEX', label: 'Duplex' },
-  { value: 'PENTHOUSE', label: 'Penthouse' },
-  { value: 'VILLA', label: 'Villa' },
-  { value: 'OTHER', label: 'Other' },
+const testimonials: Testimonial[] = [
+  {
+    name: 'Michael T.',
+    role: 'Airbnb Host',
+    properties: '8 short-term rentals in Cape Town',
+    content:
+      'I was managing everything through WhatsApp and Google Calendar. The stress was unbearable. Since switching to VeldUnity, I have had ZERO double-bookings, and my 5-star ratings went from 73% to 96%.',
+    rating: 5,
+    result: '+23% in 5-star ratings',
+  },
+  {
+    name: 'Nombuso M.',
+    role: 'Residential Landlord',
+    properties: '12 long-term rentals in JHB',
+    content:
+      'Late rent payments were killing my cash flow. I spent hours chasing tenants. Now, automated reminders mean I get paid on time 9 out of 10 times. The system has paid for itself 10x over.',
+    rating: 5,
+    result: '90% on-time payments',
+  },
+  {
+    name: 'David K.',
+    role: 'Property Investor',
+    properties: '5 mixed portfolio in Durban',
+    content:
+      'We were drowning in paperwork. VeldUnity gave us our lives back. What used to take 15 hours a week now takes 2 hours. We have added 3 more properties because we can actually handle them now.',
+    rating: 5,
+    result: 'Saved 13 hours/week',
+  },
 ];
 
-const rentalTypes = [
-  { value: 'LONG_TERM', label: 'Long Term' },
-  { value: 'SHORT_TERM', label: 'Short Term' },
-  { value: 'BOTH', label: 'Both' },
-];
-
-export default function HomePage() {
-  const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  // Filters
-  const [propertyType, setPropertyType] = useState<string>('');
-  const [rentalType, setRentalType] = useState<string>('');
-  const [minPrice, setMinPrice] = useState<string>('');
-  const [maxPrice, setMaxPrice] = useState<string>('');
-  const [bedroomsFilter, setBedroomsFilter] = useState<string>('');
-
-  const { data: properties, isLoading } = useQuery<Property[]>({
-    queryKey: [
-      'public-properties',
-      search,
-      propertyType,
-      rentalType,
-      minPrice,
-      maxPrice,
-      bedroomsFilter,
-    ],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.set('city', search);
-      if (propertyType) params.set('type', propertyType);
-      if (minPrice) params.set('minPrice', minPrice);
-      if (maxPrice) params.set('maxPrice', maxPrice);
-      if (bedroomsFilter) params.set('bedrooms', bedroomsFilter);
-      const response = await fetch(`/api/public/properties?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+const featuresList = {
+  shortTerm: [
+    {
+      title: 'Unified Inbox',
+      desc: 'WhatsApp, Airbnb, Booking.com messages in one place.',
+      icon: MessagesSquare,
     },
-  });
+    {
+      title: 'Smart Calendar',
+      desc: 'Prevent double-bookings automatically across all platforms.',
+      icon: Calendar,
+    },
+    {
+      title: 'Auto-Reviews',
+      desc: 'Automatically review guests to boost your own profile.',
+      icon: Star,
+    },
+    {
+      title: 'Cleaner Scheduling',
+      desc: 'Auto-notify cleaning teams when guests check out.',
+      icon: Sparkles,
+    },
+  ],
+  longTerm: [
+    {
+      title: 'Rent Collection',
+      desc: 'Automated invoices and reminders via SMS/Email.',
+      icon: CreditCard,
+    },
+    {
+      title: 'Tenant Portal',
+      desc: 'Tenants can log maintenance issues and view leases.',
+      icon: Users,
+    },
+    {
+      title: 'Expense Tracking',
+      desc: 'Scan receipts and categorize for tax season.',
+      icon: BarChart3,
+    },
+    {
+      title: 'Document Vault',
+      desc: 'Securely store FICA docs, leases, and inspections.',
+      icon: FileText,
+    },
+  ],
+};
 
-  const hasActiveFilters = propertyType || rentalType || minPrice || maxPrice || bedroomsFilter;
+// --- Helper Components ---
 
-  const clearFilters = () => {
-    setPropertyType('');
-    setRentalType('');
-    setMinPrice('');
-    setMaxPrice('');
-    setBedroomsFilter('');
-  };
+const RevealOnScroll = ({
+  children,
+  className = '',
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-  const filteredProperties = properties?.filter((property) => {
-    if (rentalType && property.rentalType !== rentalType) return false;
-    return true;
-  });
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
 
-  const FilterContent = () => (
-    <div className="space-y-6">
-      {/* Property Type */}
-      <div>
-        <label className="mb-2 block text-sm font-medium">Property Type</label>
-        <Select value={propertyType} onValueChange={setPropertyType}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {propertyTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
 
-      {/* Rental Type */}
-      <div>
-        <label className="mb-2 block text-sm font-medium">Rental Type</label>
-        <Select value={rentalType} onValueChange={setRentalType}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Rentals" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Rentals</SelectItem>
-            {rentalTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Bedrooms */}
-      <div>
-        <label className="mb-2 block text-sm font-medium">Minimum Bedrooms</label>
-        <Select value={bedroomsFilter} onValueChange={setBedroomsFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="Any" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Any</SelectItem>
-            <SelectItem value="1">1+</SelectItem>
-            <SelectItem value="2">2+</SelectItem>
-            <SelectItem value="3">3+</SelectItem>
-            <SelectItem value="4">4+</SelectItem>
-            <SelectItem value="5">5+</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Price Range */}
-      <div>
-        <label className="mb-2 block text-sm font-medium">Price Range</label>
-        <div className="grid grid-cols-2 gap-2">
-          <Input
-            type="number"
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-          />
-          <Input
-            type="number"
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Clear Filters */}
-      {hasActiveFilters && (
-        <Button variant="outline" className="w-full" onClick={clearFilters}>
-          <X className="mr-2 h-4 w-4" />
-          Clear All Filters
-        </Button>
-      )}
-    </div>
-  );
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
-      {/* Header */}
-      <header className="border-b border-slate-200/50 bg-white/80 backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-900/80">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transform transition-all duration-1000 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
+
+const Badge = ({
+  children,
+  color = 'blue',
+}: {
+  children?: React.ReactNode;
+  color?: 'blue' | 'amber' | 'green';
+}) => {
+  const colors = {
+    blue: 'bg-blue-100 text-blue-800 border-blue-200',
+    amber: 'bg-amber-100 text-amber-800 border-amber-200',
+    green: 'bg-green-100 text-green-800 border-green-200',
+  };
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${colors[color]}`}
+    >
+      {children}
+    </span>
+  );
+};
+
+const FaqItem = ({ question, answer }: { question: string; answer: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="border-b border-slate-200 last:border-0">
+      <button
+        className="hover:text-brand-600 flex w-full items-center justify-between py-4 text-left font-medium text-slate-900 transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {question}
+        {isOpen ? (
+          <ChevronUp className="h-5 w-5 text-slate-500" />
+        ) : (
+          <ChevronDown className="h-5 w-5 text-slate-500" />
+        )}
+      </button>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] pb-4 opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+      >
+        <div className="overflow-hidden leading-relaxed text-slate-600">{answer}</div>
+      </div>
+    </div>
+  );
+};
+
+// --- Main App ---
+
+export default function App() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'shortTerm' | 'longTerm'>('shortTerm');
+  const [scrolled, setScrolled] = useState(false);
+  const [heroLoaded, setHeroLoaded] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    setHeroLoaded(true);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div className="selection:bg-brand-200 min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Navigation */}
+      <header
+        className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-slate-200 bg-white/90 shadow-sm backdrop-blur-md' : 'bg-transparent'}`}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="from-brand-600 to-brand-700 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm">
                 <Building2 className="h-5 w-5 text-white" />
               </div>
-              <span className="hidden text-lg font-semibold sm:inline">Property CRM</span>
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-slate-800"
-              asChild
+              <span
+                className={`text-xl font-bold tracking-tight ${scrolled ? 'text-slate-900' : 'text-slate-900 lg:text-white'}`}
+              >
+                VeldUnity
+              </span>
+            </div>
+
+            {/* Desktop Nav */}
+            <nav className="hidden items-center gap-8 md:flex">
+              {['Features', 'Pricing', 'Testimonials', 'FAQ'].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  className={`hover:text-brand-500 text-sm font-medium transition-colors ${scrolled ? 'text-slate-600' : 'text-slate-100 hover:text-white'}`}
+                >
+                  {item}
+                </a>
+              ))}
+            </nav>
+
+            <div className="hidden items-center gap-4 md:flex">
+              <a
+                href="/login"
+                className={`text-sm font-semibold ${scrolled ? 'text-slate-900' : 'text-white'}`}
+              >
+                Log in
+              </a>
+              <Button variant="accent" size="sm">
+                Start Free Trial
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="p-2 text-slate-600 md:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              <Link href="/pitch">
-                <Sparkles className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">Pitch</span>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-              asChild
-            >
-              <Link href="/docs">
-                <BookOpen className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">Docs</span>
-              </Link>
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex" asChild>
-              <Link href="/portal/login">Tenant Login</Link>
-            </Button>
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-              asChild
-            >
-              <Link href="/login">
-                <span className="hidden sm:inline">Manager Login</span>
-                <span className="sm:hidden">Login</span>
-              </Link>
-            </Button>
+              {isMobileMenuOpen ? (
+                <XIcon />
+              ) : (
+                <Menu className={scrolled ? 'text-slate-900' : 'text-slate-900 lg:text-white'} />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Nav Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="animate-in slide-in-from-top-5 absolute flex w-full flex-col gap-4 border-t border-slate-100 bg-white p-4 shadow-xl md:hidden">
+            {['Features', 'Pricing', 'Testimonials'].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="py-2 text-base font-medium text-slate-600"
+              >
+                {item}
+              </a>
+            ))}
+            <div className="my-2 h-px bg-slate-100" />
+            <Button fullWidth variant="primary">
+              Get Started Free
+            </Button>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 py-16 text-white sm:py-20 lg:py-24">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-white blur-3xl" />
-          <div className="absolute top-40 -right-20 h-80 w-80 rounded-full bg-white blur-3xl" />
-        </div>
+      <section className="relative overflow-hidden bg-slate-900 pt-32 pb-20 lg:pt-48 lg:pb-32">
+        {/* Dynamic Background */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-50"></div>
 
-        <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h1 className="mb-4 text-3xl font-bold sm:text-4xl md:text-5xl lg:text-6xl">
-            Find Your Perfect Rental
+        <div
+          className={`relative z-10 mx-auto max-w-7xl transform px-4 text-center transition-all duration-1000 ease-out sm:px-6 lg:px-8 ${heroLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+        >
+          <div className="bg-brand-500/10 border-brand-500/20 text-brand-300 mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium backdrop-blur-sm">
+            <Sparkles className="text-brand-400 h-4 w-4" />
+            <span>Trusted by 500+ SA Property Managers</span>
+          </div>
+
+          <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white md:text-6xl lg:text-7xl">
+            Stop Losing Money to <br className="hidden md:block" />
+            <span className="from-brand-300 bg-gradient-to-r to-white bg-clip-text text-transparent">
+              Chaos & Admin Work
+            </span>
           </h1>
-          <p className="mb-8 text-base text-blue-100 sm:text-lg lg:text-xl">
-            Browse available properties across South Africa
+
+          <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-slate-300 md:text-xl">
+            VeldUnity is the all-in-one CRM built specifically for South African{' '}
+            <span className="font-semibold text-white">landlords</span> and{' '}
+            <span className="font-semibold text-white">Airbnb hosts</span>. Automate rent, prevent
+            double-bookings, and get your weekends back.
           </p>
 
-          {/* Search */}
-          <div className="mx-auto flex max-w-2xl flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="Search by city..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-12 bg-white pl-10 text-slate-900 shadow-lg"
-              />
-            </div>
-            <Button size="lg" className="h-12 bg-white text-blue-600 shadow-lg hover:bg-slate-50">
-              Search
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button size="xl" variant="accent" className="group w-full sm:w-auto">
+              Start Your Free 14-Day Trial
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Button>
+            <Button size="xl" variant="outline" className="w-full gap-2 sm:w-auto">
+              <PlayCircle className="h-5 w-5" />
+              Watch 2-Min Demo
+            </Button>
+          </div>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-400">
+            <span className="flex items-center gap-2">
+              <CheckCircle className="text-brand-400 h-4 w-4" /> No credit card required
+            </span>
+            <span className="flex items-center gap-2">
+              <CheckCircle className="text-brand-400 h-4 w-4" /> Cancel anytime
+            </span>
+            <span className="flex items-center gap-2">
+              <CheckCircle className="text-brand-400 h-4 w-4" /> Built for SA Market
+            </span>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        {/* Filters and View Toggle */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-100">
-              Available Properties
-            </h2>
-            {filteredProperties && (
-              <Badge variant="secondary" className="text-sm">
-                {filteredProperties.length} found
-              </Badge>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Mobile Filter Button */}
-            <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="relative sm:hidden">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
-                      {
-                        [propertyType, rentalType, minPrice, maxPrice, bedroomsFilter].filter(
-                          Boolean
-                        ).length
-                      }
-                    </span>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-80">
-                <SheetHeader>
-                  <SheetTitle>Filter Properties</SheetTitle>
-                  <SheetDescription>
-                    Refine your search to find the perfect property
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6">
-                  <FilterContent />
+      {/* Social Proof / Stats Bar */}
+      <section className="relative z-20 mx-4 -mt-10 max-w-6xl md:mx-8 lg:mx-auto">
+        <RevealOnScroll delay={200}>
+          <div className="rounded-2xl border-b border-slate-200 bg-white p-8 shadow-xl lg:p-12">
+            <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
+              <div>
+                <div className="text-3xl font-bold text-slate-900 md:text-4xl">R4.2M+</div>
+                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
+                  Rent Processed
                 </div>
-              </SheetContent>
-            </Sheet>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-slate-900 md:text-4xl">98%</div>
+                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
+                  Occupancy Rate
+                </div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-slate-900 md:text-4xl">13hrs</div>
+                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
+                  Saved Per Week
+                </div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-slate-900 md:text-4xl">Zero</div>
+                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
+                  Double Bookings
+                </div>
+              </div>
+            </div>
+          </div>
+        </RevealOnScroll>
+      </section>
 
-            {/* Desktop Filters */}
-            <div className="hidden items-center gap-2 sm:flex">
-              <Select value={propertyType} onValueChange={setPropertyType}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Property Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {propertyTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
+      {/* Problem Section (Pain Points) */}
+      <section className="bg-slate-50 py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <RevealOnScroll>
+            <div className="mx-auto mb-16 max-w-3xl text-center">
+              <Badge color="amber">The Reality Check</Badge>
+              <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
+                Running Properties Shouldn't <br /> Feel Like a Full-Time Crisis.
+              </h2>
+              <p className="mt-4 text-lg text-slate-600">
+                If you're using Excel, WhatsApp, and mental notes to manage your portfolio, you're
+                bleeding time and money.
+              </p>
+            </div>
+          </RevealOnScroll>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:gap-12">
+            {/* Old Way */}
+            <RevealOnScroll delay={100}>
+              <div className="group relative h-full overflow-hidden rounded-2xl border border-red-100 bg-white p-8 shadow-sm">
+                <div className="absolute top-0 right-0 p-4 opacity-10 transition-opacity group-hover:opacity-20">
+                  <AlertCircle className="h-32 w-32 text-red-500" />
+                </div>
+                <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-red-600">
+                  <XIcon className="h-6 w-6" /> The Manual Way
+                </h3>
+                <ul className="space-y-4">
+                  {[
+                    'Drowning in WhatsApp groups & lost messages',
+                    'Late rent payments impacting cash flow',
+                    'Double-bookings killing Airbnb ratings',
+                    'Scrambling for receipts during tax season',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-slate-600">
+                      <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-400" />
+                      {item}
+                    </li>
                   ))}
-                </SelectContent>
-              </Select>
+                </ul>
+              </div>
+            </RevealOnScroll>
 
-              <Select value={bedroomsFilter} onValueChange={setBedroomsFilter}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Bedrooms" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any</SelectItem>
-                  <SelectItem value="1">1+</SelectItem>
-                  <SelectItem value="2">2+</SelectItem>
-                  <SelectItem value="3">3+</SelectItem>
-                  <SelectItem value="4">4+</SelectItem>
-                  <SelectItem value="5">5+</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="mr-1 h-4 w-4" />
-                  Clear
-                </Button>
-              )}
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                className="rounded-r-none"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3x3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                className="rounded-l-none"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* New Way */}
+            <RevealOnScroll delay={300}>
+              <div className="border-brand-100 ring-brand-200 relative h-full overflow-hidden rounded-2xl border bg-white p-8 shadow-lg ring-1">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <CheckCircle2 className="text-brand-500 h-32 w-32" />
+                </div>
+                <h3 className="text-brand-600 mb-6 flex items-center gap-2 text-xl font-bold">
+                  <CheckCircle className="h-6 w-6" /> The VeldUnity Way
+                </h3>
+                <ul className="space-y-4">
+                  {[
+                    'Unified inbox for all tenants & guests',
+                    'Automated rent reminders & invoice generation',
+                    'Sync calendars across Airbnb, Booking.com & Direct',
+                    'One-click financial reports & expense tracking',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 font-medium text-slate-800">
+                      <CheckCircle2 className="text-brand-500 h-5 w-5 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </RevealOnScroll>
           </div>
         </div>
+      </section>
 
-        {/* Properties Grid/List */}
-        {isLoading ? (
-          <div
-            className={
-              viewMode === 'grid' ? 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'
-            }
-          >
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-[4/3] w-full rounded-lg" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+      {/* Features by Persona (Tabbed) */}
+      <section id="features" className="bg-white py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <RevealOnScroll>
+            <div className="mb-12 text-center">
+              <Badge color="blue">Features</Badge>
+              <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
+                Tailored to Your Portfolio
+              </h2>
+            </div>
+          </RevealOnScroll>
+
+          {/* Tabs */}
+          <RevealOnScroll delay={100}>
+            <div className="mb-12 flex justify-center">
+              <div className="inline-flex rounded-xl bg-slate-100 p-1.5">
+                <button
+                  onClick={() => setActiveTab('shortTerm')}
+                  className={`rounded-lg px-6 py-3 text-sm font-bold transition-all ${activeTab === 'shortTerm' ? 'text-brand-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Airbnb & Short Term
+                </button>
+                <button
+                  onClick={() => setActiveTab('longTerm')}
+                  className={`rounded-lg px-6 py-3 text-sm font-bold transition-all ${activeTab === 'longTerm' ? 'text-brand-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Residential & Long Term
+                </button>
               </div>
+            </div>
+          </RevealOnScroll>
+
+          {/* Feature Grid */}
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {featuresList[activeTab].map((feature, idx) => (
+              <RevealOnScroll key={idx} delay={idx * 100}>
+                <Card className="hover:border-brand-200 h-full transition-colors">
+                  <div className="bg-brand-50 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
+                    <feature.icon className="text-brand-600 h-6 w-6" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold text-slate-900">{feature.title}</h3>
+                  <p className="text-sm leading-relaxed text-slate-600">{feature.desc}</p>
+                </Card>
+              </RevealOnScroll>
             ))}
           </div>
-        ) : filteredProperties && filteredProperties.length > 0 ? (
-          <div
-            className={
-              viewMode === 'grid' ? 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'
-            }
-          >
-            {filteredProperties.map((property) => {
-              const displayPrice =
-                property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH'
-                  ? property.dailyRate
-                  : property.monthlyRent;
-              const priceLabel =
-                property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH'
-                  ? '/night'
-                  : '/month';
+        </div>
+      </section>
 
-              if (viewMode === 'list') {
-                return (
-                  <Link key={property.id} href={`/p/${property.id}`}>
-                    <Card className="group overflow-hidden transition-all hover:shadow-xl">
-                      <CardContent className="p-0">
-                        <div className="flex flex-col sm:flex-row">
-                          {/* Image */}
-                          <div className="relative aspect-[4/3] w-full bg-slate-200 sm:w-64 sm:shrink-0 dark:bg-slate-700">
-                            {property.primaryImageUrl ? (
-                              <Image
-                                src={property.primaryImageUrl}
-                                alt={property.name}
-                                fill
-                                className="object-cover transition-transform group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center">
-                                <Home className="h-12 w-12 text-slate-400" />
-                              </div>
-                            )}
-                            <Badge className="absolute top-3 left-3 bg-white/90 text-slate-900 backdrop-blur-sm">
-                              {property.propertyType}
-                            </Badge>
-                          </div>
+      {/* SA Specific Benefits */}
+      <section className="relative overflow-hidden bg-slate-900 py-20 text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-10"></div>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <RevealOnScroll>
+              <div>
+                <h2 className="mb-6 text-3xl font-bold md:text-4xl">
+                  Built for the South African Reality
+                </h2>
+                <p className="mb-8 text-lg text-slate-300">
+                  Global tools don't understand our unique challenges. VeldUnity does.
+                </p>
 
-                          {/* Content */}
-                          <div className="flex flex-1 flex-col justify-between p-4 sm:p-6">
-                            <div>
-                              <h3 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                                {property.name}
-                              </h3>
-                              <div className="mb-3 flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                                <MapPin className="h-4 w-4" />
-                                <span>
-                                  {property.address}, {property.city}, {property.province}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                                <div className="flex items-center gap-1">
-                                  <Bed className="h-4 w-4" />
-                                  <span>{property.bedrooms} bed</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Bath className="h-4 w-4" />
-                                  <span>{property.bathrooms} bath</span>
-                                </div>
-                                {property.parkingSpaces && property.parkingSpaces > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <Car className="h-4 w-4" />
-                                    <span>{property.parkingSpaces} parking</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center justify-between border-t pt-4 dark:border-slate-700">
-                              <div>
-                                {displayPrice ? (
-                                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                                    {formatCurrency(Number(displayPrice))}
-                                    <span className="text-sm font-normal text-slate-500">
-                                      {priceLabel}
-                                    </span>
-                                  </p>
-                                ) : (
-                                  <p className="text-sm text-slate-500">Price on request</p>
-                                )}
-                              </div>
-                              <Button size="sm" className="gap-1">
-                                View Details
-                                <ArrowRight className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              }
-
-              return (
-                <Link key={property.id} href={`/p/${property.id}`}>
-                  <Card className="group overflow-hidden transition-all hover:shadow-xl">
-                    <div className="relative aspect-[4/3] bg-slate-200 dark:bg-slate-700">
-                      {property.primaryImageUrl ? (
-                        <Image
-                          src={property.primaryImageUrl}
-                          alt={property.name}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <Home className="h-12 w-12 text-slate-400" />
-                        </div>
-                      )}
-                      <Badge className="absolute top-3 left-3 bg-white/90 text-slate-900 backdrop-blur-sm">
-                        {property.propertyType}
-                      </Badge>
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800">
+                      <DollarSign className="text-brand-400 h-6 w-6" />
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="mb-1 line-clamp-1 font-semibold text-slate-900 dark:text-slate-100">
-                        {property.name}
-                      </h3>
-                      <div className="mb-3 flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span>
-                          {property.city}, {property.province}
-                        </span>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-bold">Native ZAR Support</h3>
+                      <p className="text-sm text-slate-400">
+                        No currency conversion headaches. Reports generated in Rand.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800">
+                      <Shield className="text-brand-400 h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold">POPIA Compliant</h3>
+                      <p className="text-sm text-slate-400">
+                        Secure local data handling to keep you on the right side of the law.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800">
+                      <Zap className="text-brand-400 h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold">Loadshedding Proof</h3>
+                      <p className="text-sm text-slate-400">
+                        Offline-first mobile app so you can access tenant info even when the grid is
+                        down.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </RevealOnScroll>
 
-                      <div className="mb-3 flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-1">
-                          <Bed className="h-4 w-4" />
-                          <span>{property.bedrooms}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Bath className="h-4 w-4" />
-                          <span>{property.bathrooms}</span>
-                        </div>
-                        {property.parkingSpaces && property.parkingSpaces > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Car className="h-4 w-4" />
-                            <span>{property.parkingSpaces}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between border-t pt-3 dark:border-slate-700">
-                        <div>
-                          {displayPrice ? (
-                            <p className="font-bold text-blue-600 dark:text-blue-400">
-                              {formatCurrency(Number(displayPrice))}
-                              <span className="text-xs font-normal text-slate-500">
-                                {priceLabel}
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="text-sm text-slate-500">Price on request</p>
-                          )}
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+            <RevealOnScroll delay={300}>
+              <div className="relative">
+                {/* Abstract Graphic Representation of SA Map or UI */}
+                <div className="from-brand-500 aspect-square rotate-2 rounded-2xl bg-gradient-to-br to-purple-600 p-1 shadow-2xl transition-transform duration-500 hover:rotate-0">
+                  <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-slate-900">
+                    <div className="bg-brand-500 absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 opacity-40 blur-[100px]"></div>
+                    <div className="z-10 p-8 text-center">
+                      <Globe className="text-brand-300 mx-auto mb-6 h-20 w-20" />
+                      <p className="text-2xl font-bold">
+                        Made in SA <br /> With ❤️
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </RevealOnScroll>
           </div>
-        ) : (
-          <div className="py-16 text-center sm:py-20">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-              <Building2 className="h-10 w-10 text-slate-400" />
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="bg-slate-50 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <RevealOnScroll>
+            <div className="mb-16 text-center">
+              <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
+                Don't Just Take Our Word For It
+              </h2>
+              <p className="mt-4 text-slate-600">
+                Join 500+ happy property managers across the country.
+              </p>
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-              No properties found
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400">
-              {search || hasActiveFilters
-                ? 'Try adjusting your filters or search term'
-                : 'Check back soon for new listings'}
-            </p>
-            {hasActiveFilters && (
-              <Button variant="outline" className="mt-4" onClick={clearFilters}>
-                Clear all filters
-              </Button>
-            )}
+          </RevealOnScroll>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <RevealOnScroll key={i} delay={i * 150}>
+                <Card className="relative h-full bg-white">
+                  <div className="mb-4 flex gap-1">
+                    {[...Array(t.rating)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="mb-6 text-slate-700 italic">"{t.content}"</p>
+                  <div className="mt-auto border-t border-slate-100 pt-6">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="font-bold text-slate-900">{t.name}</p>
+                        <p className="text-xs text-slate-500">{t.role}</p>
+                      </div>
+                      <div className="rounded bg-green-100 px-2 py-1 text-xs font-bold text-green-700">
+                        {t.result}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </RevealOnScroll>
+            ))}
           </div>
-        )}
-      </main>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="border-t border-slate-100 bg-white py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <RevealOnScroll>
+            <div className="mx-auto mb-16 max-w-3xl text-center">
+              <Badge color="green">Transparent Pricing</Badge>
+              <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
+                Pay for what you use
+              </h2>
+              <p className="mt-4 text-slate-600">
+                Simple monthly pricing in ZAR. No hidden fees. 14-day free trial.
+              </p>
+            </div>
+          </RevealOnScroll>
+
+          <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-3">
+            {/* Starter */}
+            <RevealOnScroll delay={100}>
+              <div className="h-full rounded-2xl border border-slate-200 p-8">
+                <h3 className="text-lg font-semibold text-slate-900">Starter</h3>
+                <div className="my-4 flex items-baseline">
+                  <span className="text-3xl font-bold tracking-tight text-slate-900">R299</span>
+                  <span className="text-sm text-slate-500">/month</span>
+                </div>
+                <p className="mb-6 text-sm text-slate-500">
+                  Perfect for getting started with up to 5 properties.
+                </p>
+                <Button fullWidth variant="secondary">
+                  Start Free Trial
+                </Button>
+                <ul className="mt-8 space-y-3 text-sm text-slate-600">
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 5 Properties
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Standard Support
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Basic Reports
+                  </li>
+                </ul>
+              </div>
+            </RevealOnScroll>
+
+            {/* Pro - Highlighted */}
+            <RevealOnScroll delay={200}>
+              <div className="border-brand-500 bg-brand-50/30 shadow-brand-100 relative h-full rounded-2xl border-2 p-8 shadow-2xl lg:-mt-4 lg:mb-4">
+                <div className="bg-brand-500 absolute top-0 right-0 translate-x-2 -translate-y-1/2 rounded-full px-3 py-1 text-xs font-bold tracking-wide text-white uppercase">
+                  Most Popular
+                </div>
+                <h3 className="text-brand-700 text-lg font-semibold">Professional</h3>
+                <div className="my-4 flex items-baseline">
+                  <span className="text-4xl font-bold tracking-tight text-slate-900">R599</span>
+                  <span className="text-sm text-slate-500">/month</span>
+                </div>
+                <p className="mb-6 text-sm text-slate-500">
+                  For growing portfolios (6-20 properties).
+                </p>
+                <Button fullWidth variant="primary">
+                  Start Free Trial
+                </Button>
+                <ul className="mt-8 space-y-3 text-sm text-slate-600">
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 20 Properties
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" />{' '}
+                    <strong>Automated Payment Reminders</strong>
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" />{' '}
+                    <strong>Smart Calendar Sync</strong>
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Tenant Portal Access
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Priority Email Support
+                  </li>
+                </ul>
+              </div>
+            </RevealOnScroll>
+
+            {/* Enterprise */}
+            <RevealOnScroll delay={300}>
+              <div className="h-full rounded-2xl border border-slate-200 p-8">
+                <h3 className="text-lg font-semibold text-slate-900">Enterprise</h3>
+                <div className="my-4 flex items-baseline">
+                  <span className="text-3xl font-bold tracking-tight text-slate-900">R999</span>
+                  <span className="text-sm text-slate-500">/month</span>
+                </div>
+                <p className="mb-6 text-sm text-slate-500">
+                  Unlimited properties and advanced team features.
+                </p>
+                <Button fullWidth variant="secondary">
+                  Contact Sales
+                </Button>
+                <ul className="mt-8 space-y-3 text-sm text-slate-600">
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Unlimited Properties
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Multi-user Management
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> API Access
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Phone Support
+                  </li>
+                </ul>
+              </div>
+            </RevealOnScroll>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="bg-slate-50 py-20">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <RevealOnScroll>
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold text-slate-900">Common Questions</h2>
+            </div>
+          </RevealOnScroll>
+
+          <div className="space-y-2">
+            {[
+              {
+                question: 'Do I need technical skills?',
+                answer:
+                  'None at all. If you can use WhatsApp or Facebook, you can use VeldUnity. Our interface is designed to be dead simple.',
+              },
+              {
+                question: 'Can I manage both Airbnb and Long-term rentals?',
+                answer:
+                  'Yes! That is exactly what it is built for. Manage short-term vacation rentals alongside traditional long-term leases. The system adapts to each property type automatically.',
+              },
+              {
+                question: 'What happens if I cancel?',
+                answer:
+                  'You can export all your data (leases, tenant info, expense history) at any time. We will never hold your information hostage.',
+              },
+              {
+                question: 'Is my data secure?',
+                answer:
+                  'Extremely. We use bank-level encryption and store data on secure servers that comply with SA POPIA regulations.',
+              },
+            ].map((faq, idx) => (
+              <RevealOnScroll key={idx} delay={idx * 50}>
+                <FaqItem question={faq.question} answer={faq.answer} />
+              </RevealOnScroll>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="bg-brand-600 relative overflow-hidden py-20">
+        <div className="bg-brand-500 absolute top-0 right-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-purple-500 opacity-50 blur-3xl"></div>
+
+        <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+          <RevealOnScroll>
+            <h2 className="mb-6 text-3xl font-bold text-white md:text-5xl">
+              Stop managing. Start growing.
+            </h2>
+            <p className="text-brand-100 mx-auto mb-10 max-w-2xl text-lg md:text-xl">
+              Join 500+ South African property managers who have reclaimed their time. Try VeldUnity
+              completely risk-free.
+            </p>
+            <Button
+              size="xl"
+              variant="accent"
+              className="shadow-2xl shadow-slate-900/20 transition-transform hover:scale-105"
+            >
+              Start Your Free 14-Day Trial
+              <ArrowRight className="ml-2 h-6 w-6" />
+            </Button>
+          </RevealOnScroll>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/50 bg-white/80 py-8 backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-900/80">
-        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-slate-500 sm:px-6 lg:px-8 dark:text-slate-400">
-          <p>© 2024 Property CRM. All rights reserved.</p>
+      <footer className="border-t border-slate-800 bg-slate-900 py-12 text-slate-400">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row lg:px-8">
+          <div className="flex items-center gap-2">
+            <div className="bg-brand-600 flex h-8 w-8 items-center justify-center rounded text-white">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <span className="text-lg font-bold text-white">VeldUnity</span>
+          </div>
+
+          <div className="flex gap-6 text-sm">
+            <a href="#" className="transition-colors hover:text-white">
+              Privacy Policy
+            </a>
+            <a href="#" className="transition-colors hover:text-white">
+              Terms of Service
+            </a>
+            <a href="#" className="transition-colors hover:text-white">
+              Contact Support
+            </a>
+          </div>
+
+          <div className="text-sm">© {new Date().getFullYear()} VeldUnity CRM.</div>
         </div>
       </footer>
     </div>
