@@ -129,8 +129,10 @@ export async function GET(request: Request) {
 
     // Aggregate income by month
     payments.forEach((payment: (typeof payments)[number]) => {
-      const month = new Date(payment.paymentDate).getMonth();
-      monthlyData[month]!.income += Number(payment.amount);
+      if (payment.paymentDate) {
+        const month = new Date(payment.paymentDate).getMonth();
+        monthlyData[month]!.income += Number(payment.amount);
+      }
     });
 
     // Aggregate expenses by month

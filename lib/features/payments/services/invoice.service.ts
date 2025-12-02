@@ -230,7 +230,7 @@ export class InvoiceService {
       <!-- To -->
       <div class="detail-section">
         <h3>Bill To</h3>
-        <p><strong>${tenant?.name || 'Tenant'}</strong></p>
+        <p><strong>${tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Tenant'}</strong></p>
         ${tenant?.email ? `<p>Email: ${tenant.email}</p>` : ''}
         ${tenant?.phone ? `<p>Phone: ${tenant.phone}</p>` : ''}
       </div>
@@ -428,7 +428,7 @@ ${organization?.email ? `Email: ${organization.email}` : ''}
 ${organization?.phone ? `Phone: ${organization.phone}` : ''}
 
 BILL TO:
-${tenant?.name || 'Tenant'}
+${tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Tenant'}
 ${tenant?.email ? `Email: ${tenant.email}` : ''}
 ${tenant?.phone ? `Phone: ${tenant.phone}` : ''}
 

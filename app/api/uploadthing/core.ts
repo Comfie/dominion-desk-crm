@@ -58,7 +58,7 @@ export const ourFileRouter = {
 
   // Image uploader - for property images, profile pictures, etc.
   imageUploader: f({
-    image: { maxFileSize: '10MB', maxFileCount: 1 },
+    image: { maxFileSize: '8MB', maxFileCount: 1 },
   })
     .middleware(async () => {
       // Authentication check

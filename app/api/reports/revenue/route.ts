@@ -130,9 +130,11 @@ export async function GET(request: NextRequest) {
     }
 
     payments.forEach((payment: (typeof payments)[number]) => {
-      const monthKey = payment.paymentDate.toISOString().slice(0, 7);
-      if (revenueByMonth[monthKey]) {
-        revenueByMonth[monthKey].revenue += parseFloat(payment.amount.toString());
+      if (payment.paymentDate) {
+        const monthKey = payment.paymentDate.toISOString().slice(0, 7);
+        if (revenueByMonth[monthKey]) {
+          revenueByMonth[monthKey].revenue += parseFloat(payment.amount.toString());
+        }
       }
     });
 

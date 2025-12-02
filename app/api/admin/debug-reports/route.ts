@@ -74,8 +74,8 @@ export async function GET(request: Request) {
 
     // Analyze each payment
     const analysis = payments.map((p) => {
-      let propId = null;
-      let propName = null;
+      let propId: string | null = null;
+      let propName: string | null = null;
       let source = 'none';
 
       if (p.property) {

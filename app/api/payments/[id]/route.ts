@@ -165,7 +165,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       // Calculate next payment due date based on payment date
       const paymentDate = data.paymentDate
         ? new Date(data.paymentDate)
-        : new Date(payment.paymentDate);
+        : payment.paymentDate
+          ? new Date(payment.paymentDate)
+          : new Date();
       let nextMonth = paymentDate.getMonth() + 1;
       let nextYear = paymentDate.getFullYear();
 

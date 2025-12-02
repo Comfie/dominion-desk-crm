@@ -36,7 +36,7 @@ async function debugPayments() {
       console.log(`  ID: ${p.id}`);
       console.log(`  Amount: R${p.amount.toString()}`);
       console.log(`  Type: ${p.paymentType}`);
-      console.log(`  Date: ${p.paymentDate.toISOString().split('T')[0]}`);
+      console.log(`  Date: ${p.paymentDate ? p.paymentDate.toISOString().split('T')[0] : 'null'}`);
       console.log(`  PropertyId (direct): ${p.propertyId || 'null'}`);
       console.log(`  Property name (direct): ${p.property?.name || 'null'}`);
       console.log(`  BookingId: ${p.bookingId || 'null'}`);
@@ -51,7 +51,9 @@ async function debugPayments() {
 
     // Check what year the payments are in
     if (payments.length > 0) {
-      const years = payments.map((p) => new Date(p.paymentDate).getFullYear());
+      const years = payments
+        .filter((p) => p.paymentDate)
+        .map((p) => new Date(p.paymentDate!).getFullYear());
       const uniqueYears = [...new Set(years)];
       console.log('Payment years found:', uniqueYears.join(', '));
     }

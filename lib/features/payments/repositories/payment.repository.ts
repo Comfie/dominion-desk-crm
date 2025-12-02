@@ -14,7 +14,19 @@ export type PaymentWithDetails = Prisma.PaymentGetPayload<{
     };
     property: true;
     user: true;
-    booking: true;
+    booking: {
+      select: {
+        id: true;
+        bookingReference: true;
+        guestName: true;
+        property: {
+          select: {
+            id: true;
+            name: true;
+          };
+        };
+      };
+    };
   };
 }>;
 
@@ -269,7 +281,19 @@ export class PaymentRepository {
         },
         property: true,
         user: true,
-        booking: true,
+        booking: {
+          select: {
+            id: true,
+            bookingReference: true,
+            guestName: true,
+            property: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -300,7 +324,19 @@ export class PaymentRepository {
         },
         property: true,
         user: true,
-        booking: true,
+        booking: {
+          select: {
+            id: true,
+            bookingReference: true,
+            guestName: true,
+            property: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
   }

@@ -154,9 +154,11 @@ export async function GET(request: NextRequest) {
 
     const revenueByMonth: Record<string, number> = {};
     monthlyPayments.forEach((payment: (typeof monthlyPayments)[number]) => {
-      const monthKey = payment.paymentDate.toISOString().slice(0, 7);
-      revenueByMonth[monthKey] =
-        (revenueByMonth[monthKey] || 0) + parseFloat(payment.amount.toString());
+      if (payment.paymentDate) {
+        const monthKey = payment.paymentDate.toISOString().slice(0, 7);
+        revenueByMonth[monthKey] =
+          (revenueByMonth[monthKey] || 0) + parseFloat(payment.amount.toString());
+      }
     });
 
     // Get booking sources breakdown
