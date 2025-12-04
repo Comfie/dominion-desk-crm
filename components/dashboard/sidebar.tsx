@@ -16,6 +16,8 @@ import {
   Settings,
   LayoutDashboard,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -24,6 +26,8 @@ import { Button } from '@/components/ui/button';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed?: boolean;
+  toggleCollapse?: () => void;
 }
 
 const navigation = [
@@ -94,7 +98,7 @@ const navigation = [
   },
 ];
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -111,15 +115,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-50 flex w-64 flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          'bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out lg:static lg:translate-x-0',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          isCollapsed ? 'w-20' : 'w-64'
         )}
       >
         {/* Logo and close button */}
-        <div className="border-sidebar-border flex h-16 items-center justify-between border-b px-4">
+        <div
+          className={cn(
+            'border-sidebar-border flex h-16 items-center border-b px-4',
+            isCollapsed ? 'justify-center' : 'justify-between'
+          )}
+        >
           <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
             <Building2 className="text-sidebar-primary h-6 w-6" />
-            <span className="text-lg font-semibold">Veld Unity</span>
+            {!isCollapsed && <span className="text-lg font-semibold">Veld Unity</span>}
           </Link>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -142,12 +152,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     className={cn(
                       'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors active:scale-[0.98]',
                       isActive
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                      isCollapsed && 'justify-center px-2'
                     )}
+                    title={isCollapsed ? item.name : undefined}
                   >
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {!isCollapsed && <span>{item.name}</span>}
                   </Link>
                 </li>
               );
@@ -157,10 +169,37 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="border-sidebar-border border-t p-4">
-          <div className="text-sidebar-foreground/50 text-xs">
-            <p>Veld Unity v0.1.0</p>
-            <p>© 2025 All rights reserved</p>
-          </div>
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between">
+              <div className="text-sidebar-foreground/50 text-xs">
+                <p>Veld Unity v0.1.0</p>
+                <p>© 2025 All rights reserved</p>
+              </div>
+              {toggleCollapse && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleCollapse}
+                  className="hidden h-6 w-6 lg:flex"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              {toggleCollapse && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleCollapse}
+                  className="hidden lg:flex"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </aside>
     </>

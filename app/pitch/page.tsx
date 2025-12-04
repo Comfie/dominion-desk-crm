@@ -314,7 +314,7 @@ export default function App() {
             <span>Trusted by 500+ SA Property Managers</span>
           </div>
 
-          <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white md:text-6xl lg:text-7xl">
+          <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
             Stop Losing Money to <br className="hidden md:block" />
             <span className="from-brand-300 bg-gradient-to-r to-white bg-clip-text text-transparent">
               Chaos & Admin Work
@@ -357,7 +357,7 @@ export default function App() {
       <section className="relative z-20 mx-4 -mt-10 max-w-6xl md:mx-8 lg:mx-auto">
         <RevealOnScroll delay={200}>
           <div className="rounded-2xl border-b border-slate-200 bg-white p-8 shadow-xl lg:p-12">
-            <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-8 text-center sm:grid-cols-2 md:grid-cols-4">
               <div>
                 <div className="text-3xl font-bold text-slate-900 md:text-4xl">R4.2M+</div>
                 <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
@@ -472,7 +472,7 @@ export default function App() {
           {/* Tabs */}
           <RevealOnScroll delay={100}>
             <div className="mb-12 flex justify-center">
-              <div className="inline-flex rounded-xl bg-slate-100 p-1.5">
+              <div className="inline-flex flex-col rounded-xl bg-slate-100 p-1.5 sm:flex-row">
                 <button
                   onClick={() => setActiveTab('shortTerm')}
                   className={`rounded-lg px-6 py-3 text-sm font-bold transition-all ${activeTab === 'shortTerm' ? 'text-brand-600 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -490,7 +490,7 @@ export default function App() {
           </RevealOnScroll>
 
           {/* Feature Grid */}
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             {featuresList[activeTab].map((feature, idx) => (
               <RevealOnScroll key={idx} delay={idx * 100}>
                 <Card className="hover:border-brand-200 h-full transition-colors">
@@ -593,7 +593,7 @@ export default function App() {
             </div>
           </RevealOnScroll>
 
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {testimonials.map((t, i) => (
               <RevealOnScroll key={i} delay={i * 150}>
                 <Card className="relative h-full bg-white">
@@ -636,7 +636,7 @@ export default function App() {
             </div>
           </RevealOnScroll>
 
-          <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-3">
+          <div className="mx-auto grid max-w-6xl items-start gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {/* Starter */}
             <RevealOnScroll delay={100}>
               <div className="h-full rounded-2xl border border-slate-200 p-8">

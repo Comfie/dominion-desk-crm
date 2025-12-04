@@ -47,39 +47,34 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-gradient-header sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-white/10 px-4 shadow-md backdrop-blur-sm md:px-6">
+    <header className="bg-background/80 sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 shadow-sm backdrop-blur-md md:px-6">
       {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="text-white hover:bg-white/10 lg:hidden"
-        onClick={onMenuClick}
-      >
+      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
         <Menu className="h-5 w-5" />
         <span className="sr-only">Toggle menu</span>
       </Button>
 
       {/* Search */}
-      <div className="relative flex-1 md:max-w-md">
-        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-400" />
+      {/* <div className="relative flex-1 md:max-w-md">
+        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           type="search"
           placeholder="Search properties, bookings, tenants..."
-          className="w-full border-white/20 bg-white/10 pl-8 text-white placeholder:text-gray-300 focus-visible:ring-white/30"
+          className="w-full bg-muted/50 pl-8 placeholder:text-muted-foreground focus-visible:ring-ring"
         />
-      </div>
+      </div> */}
 
       {/* Right side actions */}
       <div className="ml-auto flex items-center gap-2">
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10">
+            <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>
               {/* Notification badge */}
               {unreadCount > 0 && (
-                <span className="bg-accent absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium text-white">
+                <span className="bg-destructive absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium text-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -134,12 +129,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </DropdownMenu>
 
         {/* Help */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden text-white hover:bg-white/10 md:inline-flex"
-          asChild
-        >
+        <Button variant="ghost" size="icon" className="hidden md:inline-flex" asChild>
           <Link href="/docs">
             <HelpCircle className="h-5 w-5" />
             <span className="sr-only">Help & Documentation</span>
@@ -147,17 +137,17 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Button>
 
         {/* Theme toggle */}
-        <div className="text-white [&_button]:text-white [&_button:hover]:bg-white/10">
+        <div>
           <ThemeToggle />
         </div>
 
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/10">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={user?.image || ''} alt={user?.name || 'User'} />
-                <AvatarFallback className="bg-primary text-white">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {user?.name ? getInitials(user.name) : 'U'}
                 </AvatarFallback>
               </Avatar>

@@ -12,11 +12,17 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        toggleCollapse={() => setIsCollapsed(!isCollapsed)}
+      />
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col">

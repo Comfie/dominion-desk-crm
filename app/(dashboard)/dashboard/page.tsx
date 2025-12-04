@@ -131,7 +131,7 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground text-sm">Active Bookings</p>
                 <p className="text-2xl font-bold">{stats?.activeBookings || 0}</p>
               </div>
-              <Calendar className="text-accent h-8 w-8" />
+              <Calendar className="text-chart-2 h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground text-sm">Tenants</p>
                 <p className="text-2xl font-bold">{stats?.totalTenants || 0}</p>
               </div>
-              <Users className="text-secondary h-8 w-8" />
+              <Users className="text-chart-3 h-8 w-8" />
             </div>
           </CardContent>
         </Card>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold">{stats?.pendingInquiries || 0}</p>
                 <p className="text-muted-foreground/70 text-xs">Pending</p>
               </div>
-              <MessageSquare className="text-accent h-8 w-8" />
+              <MessageSquare className="text-chart-4 h-8 w-8" />
             </div>
           </CardContent>
         </Card>
