@@ -188,10 +188,10 @@ async function main() {
       propertyId: property1.id, // Relates to Property
       tenantId: tenantProfile.id, // *** CRITICAL: Links to the Tenant Profile we just created
 
-      bookingReference: 'BK-2024-001',
+      bookingReference: 'BK-2025-001',
       bookingType: 'SHORT_TERM',
-      checkInDate: new Date('2024-12-20'),
-      checkOutDate: new Date('2024-12-27'),
+      checkInDate: new Date('2025-04-20'),
+      checkOutDate: new Date('2025-04-27'),
       numberOfNights: 7,
 
       // Guest details (redundant but often kept for historical records)

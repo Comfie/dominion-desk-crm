@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Property CRM',
-    template: '%s | Property CRM',
+    default: 'Veld Unity',
+    template: '%s | Veld Unity',
   },
   description:
     'Modern property management CRM for South African landlords, property managers, and Airbnb hosts.',

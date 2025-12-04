@@ -70,7 +70,7 @@ END:VEVENT`;
 
     const icalContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Property CRM//Booking Calendar//EN
+PRODID:-//Veld Unity//Booking Calendar//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 X-WR-CALNAME:${escapeICalText(property.name)} - Bookings

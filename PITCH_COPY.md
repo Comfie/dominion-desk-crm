@@ -1,4 +1,4 @@
-# Property CRM - Complete Pitch Package
+# Veld Unity - Complete Pitch Package
 
 ## 📝 Power Punch Version (200 words)
 
@@ -6,7 +6,7 @@
 
 South African landlords and Airbnb hosts are drowning in WhatsApp messages, Excel chaos, and missed rent payments. Every month, thousands of Rands slip through the cracks because you're managing properties with tools built for 1995.
 
-Property CRM changes everything.
+Veld Unity changes everything.
 
 **Prevent double-bookings** that destroy your Airbnb ratings. **Never chase rent** again with automated reminders. **Stop juggling** ten different apps—everything in one professional dashboard.
 
@@ -42,7 +42,7 @@ Stop working harder. Start working smarter.
 ### Option 4: Direct & Bold
 
 **Headline:** Never Chase Late Rent Again. Never Double-Book Again. Never Lose Another Document.
-**Tagline:** Property CRM handles the chaos so you can focus on growth
+**Tagline:** Veld Unity handles the chaos so you can focus on growth
 
 ### Option 5: Social Proof Heavy
 
@@ -70,7 +70,7 @@ Stop working harder. Start working smarter.
 ### 3. **Old Way vs New Way Section**
 
 - **Split-screen animation**: Old way fades out, new way slides in
-- **Use actual screenshots**: Excel sheet vs. clean Property CRM interface
+- **Use actual screenshots**: Excel sheet vs. clean Veld Unity interface
 - **Add sound icons**: Notification "dings" for new way, chaos sounds muted for old way
 - **Strikethrough animation**: Old way text gets crossed out dramatically
 
@@ -137,7 +137,7 @@ Stop working harder. Start working smarter.
 
 - **Security badges**: SSL, POPIA, ISO certifications
 - **Social proof ticker**: "John just signed up from Cape Town" notifications
-- **Live user count**: "523 property managers trust Property CRM"
+- **Live user count**: "523 property managers trust Veld Unity"
 - **Press mentions**: As seen in [Property Magazine], [SA Tech News]
 - **Awards/Recognition**: Any industry awards or recognition
 
@@ -229,9 +229,9 @@ Create dedicated pages for:
 
 ### 3. **Comparison Pages**
 
-- Property CRM vs. Excel/Spreadsheets
-- Property CRM vs. WhatsApp Management
-- Property CRM vs. [Competitor Name]
+- Veld Unity vs. Excel/Spreadsheets
+- Veld Unity vs. WhatsApp Management
+- Veld Unity vs. [Competitor Name]
 - Free tools vs. Professional CRM
 
 ### 4. **Feature Deep-Dive Pages**
@@ -257,7 +257,7 @@ Individual landing pages for:
 
 ### Day 1: Welcome
 
-Subject: "Welcome to Property CRM - Let's Get Your First Property Set Up"
+Subject: "Welcome to Veld Unity - Let's Get Your First Property Set Up"
 
 - Quick start guide
 - Video tutorial link
@@ -281,7 +281,7 @@ Subject: "You're Halfway Through Your Trial - Here's What You Might've Missed"
 
 ### Day 10: Social Proof
 
-Subject: "See Why 500+ SA Property Managers Love Property CRM"
+Subject: "See Why 500+ SA Property Managers Love Veld Unity"
 
 - Testimonials
 - Case studies
@@ -309,9 +309,9 @@ Subject: "Final Day to Save Your Property Data & Get 20% Off"
 
 ### Facebook/Instagram Ads:
 
-1. "Still managing properties with WhatsApp? There's a better way. Try Property CRM free →"
+1. "Still managing properties with WhatsApp? There's a better way. Try Veld Unity free →"
 2. "SA landlords: Stop chasing rent. Automate everything. 14-day free trial →"
-3. "Double-booked your Airbnb? Never again. Property CRM prevents conflicts automatically →"
+3. "Double-booked your Airbnb? Never again. Veld Unity prevents conflicts automatically →"
 
 ### Google Display Ads:
 
@@ -323,7 +323,7 @@ Subject: "Final Day to Save Your Property Data & Get 20% Off"
 
 1. "Professional property management for serious SA investors. Try free →"
 2. "Scale your property portfolio without hiring staff. See how →"
-3. "Join 500+ SA property managers using Property CRM →"
+3. "Join 500+ SA property managers using Veld Unity →"
 
 ---
 
@@ -343,7 +343,7 @@ Subject: "Final Day to Save Your Property Data & Get 20% Off"
 - Respond to tenant messages
 - View financial reports
 
-**CTA:** Download the Property CRM app (iOS & Android)
+**CTA:** Download the Veld Unity app (iOS & Android)
 
 ---
 
@@ -351,7 +351,7 @@ Subject: "Final Day to Save Your Property Data & Get 20% Off"
 
 ### Option 1: Money-Back Guarantee
 
-"Try Property CRM completely risk-free for 14 days. If you're not saving hours and making more money, we'll refund every cent. No questions asked."
+"Try Veld Unity completely risk-free for 14 days. If you're not saving hours and making more money, we'll refund every cent. No questions asked."
 
 ### Option 2: Results Guarantee
 
@@ -359,7 +359,7 @@ Subject: "Final Day to Save Your Property Data & Get 20% Off"
 
 ### Option 3: Satisfaction Guarantee
 
-"Join 500+ happy property managers. If Property CRM doesn't make your life easier in the first 14 days, get a full refund instantly."
+"Join 500+ happy property managers. If Veld Unity doesn't make your life easier in the first 14 days, get a full refund instantly."
 
 ---
 

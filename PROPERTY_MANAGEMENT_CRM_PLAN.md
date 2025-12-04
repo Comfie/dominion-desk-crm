@@ -6,7 +6,8 @@ A modern, full-stack Property Management CRM system designed specifically for th
 
 **Target Market:** South African property owners, landlords, Airbnb hosts, and small property management agencies managing 1-50 properties.
 
-**Core Problem Solved:** 
+**Core Problem Solved:**
+
 - Prevent double bookings across multiple platforms (Airbnb, Booking.com, direct bookings)
 - Centralize inquiries from multiple sources
 - Streamline tenant/guest communication
@@ -164,35 +165,35 @@ model User {
   lastName        String
   phone           String?
   photoUrl        String?
-  
+
   // Account type
   accountType     AccountType @default(INDIVIDUAL)
   companyName     String?
-  
+
   // Subscription
   subscriptionTier SubscriptionTier @default(FREE)
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt     DateTime?
   subscriptionEndsAt DateTime?
-  
+
   // Limits based on subscription
   propertyLimit   Int       @default(1)
-  
+
   // Status
   isActive        Boolean   @default(true)
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
-  
+
   // Preferences
   timezone        String    @default("Africa/Johannesburg")
   currency        String    @default("ZAR")
   language        String    @default("en")
-  
+
   // Metadata
   lastLogin       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   // Relations
   properties      Property[]
   bookings        Booking[]
@@ -236,25 +237,25 @@ model TeamMember {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Team member details
   email           String
   firstName       String
   lastName        String
   role            TeamRole  @default(VIEWER)
-  
+
   // Permissions
   canManageProperties Boolean @default(false)
   canManageBookings   Boolean @default(false)
   canManageTenants    Boolean @default(false)
   canManageFinancials Boolean @default(false)
   canViewReports      Boolean @default(true)
-  
+
   // Status
   status          InviteStatus @default(PENDING)
   invitedAt       DateTime  @default(now())
   acceptedAt      DateTime?
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -280,12 +281,12 @@ model Property {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Basic Info
   name            String
   description     String?   @db.Text
   propertyType    PropertyType
-  
+
   // Address
   address         String
   city            String
@@ -294,22 +295,22 @@ model Property {
   country         String    @default("South Africa")
   latitude        Float?
   longitude       Float?
-  
+
   // Property Details
   bedrooms        Int
   bathrooms       Float
   size            Float?    // Square meters
   furnished       Boolean   @default(false)
   parkingSpaces   Int       @default(0)
-  
+
   // Amenities (stored as JSON array)
   amenities       Json?     // ["wifi", "pool", "gym", "security", "garden"]
-  
+
   // Media
   images          Json?     // Array of image URLs
   primaryImageUrl String?
   virtualTourUrl  String?
-  
+
   // Rental Info
   rentalType      RentalType @default(LONG_TERM)
   monthlyRent     Decimal?  @db.Decimal(10, 2)
@@ -318,33 +319,33 @@ model Property {
   monthlyRate     Decimal?  @db.Decimal(10, 2)
   cleaningFee     Decimal?  @db.Decimal(10, 2)
   securityDeposit Decimal?  @db.Decimal(10, 2)
-  
+
   // Availability
   isAvailable     Boolean   @default(true)
   availableFrom   DateTime?
   minimumStay     Int?      // Minimum nights for short-term
   maximumStay     Int?      // Maximum nights for short-term
-  
+
   // Rules
   petsAllowed     Boolean   @default(false)
   smokingAllowed  Boolean   @default(false)
   checkInTime     String?   // "14:00"
   checkOutTime    String?   // "10:00"
   houseRules      String?   @db.Text
-  
+
   // Integration
   airbnbListingId String?   @unique
   bookingComId    String?   @unique
   syncCalendar    Boolean   @default(false)
   calendarUrls    Json?     // Array of iCal URLs
-  
+
   // Status
   status          PropertyStatus @default(ACTIVE)
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   // Relations
   bookings        Booking[]
   tenants         PropertyTenant[]
@@ -392,22 +393,22 @@ model Booking {
   property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  
+
   // Booking Details
   bookingReference String   @unique
   bookingType     BookingType @default(SHORT_TERM)
-  
+
   // Dates
   checkInDate     DateTime
   checkOutDate    DateTime
   numberOfNights  Int
-  
+
   // Guest Info (if not linked to tenant)
   guestName       String
   guestEmail      String
   guestPhone      String
   numberOfGuests  Int       @default(1)
-  
+
   // Pricing
   baseRate        Decimal   @db.Decimal(10, 2)
   cleaningFee     Decimal   @default(0) @db.Decimal(10, 2)
@@ -415,38 +416,38 @@ model Booking {
   totalAmount     Decimal   @db.Decimal(10, 2)
   amountPaid      Decimal   @default(0) @db.Decimal(10, 2)
   amountDue       Decimal   @db.Decimal(10, 2)
-  
+
   // Payment
   paymentStatus   PaymentStatus @default(PENDING)
   paymentMethod   PaymentMethod?
   paymentDate     DateTime?
-  
+
   // Source
   bookingSource   BookingSource @default(DIRECT)
   externalId      String?   // Airbnb/Booking.com ID
-  
+
   // Status
   status          BookingStatus @default(PENDING)
-  
+
   // Check-in/out
   checkedIn       Boolean   @default(false)
   checkedInAt     DateTime?
   checkedOut      Boolean   @default(false)
   checkedOutAt    DateTime?
-  
+
   // Notes
   guestNotes      String?   @db.Text
   internalNotes   String?   @db.Text
-  
+
   // Cancellation
   cancelledAt     DateTime?
   cancellationReason String? @db.Text
   refundAmount    Decimal?  @db.Decimal(10, 2)
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   // Relations
   payments        Payment[]
   messages        Message[]
@@ -501,7 +502,7 @@ model Tenant {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Personal Info
   firstName       String
   lastName        String
@@ -510,45 +511,45 @@ model Tenant {
   alternatePhone  String?
   idNumber        String?   // SA ID number
   dateOfBirth     DateTime?
-  
+
   // Address
   currentAddress  String?
   city            String?
   province        String?
   postalCode      String?
-  
+
   // Employment
   employmentStatus EmploymentStatus?
   employer        String?
   employerPhone   String?
   monthlyIncome   Decimal?  @db.Decimal(10, 2)
-  
+
   // Emergency Contact
   emergencyContactName  String?
   emergencyContactPhone String?
   emergencyContactRelation String?
-  
+
   // Documents
   idDocumentUrl   String?
   proofOfIncomeUrl String?
   proofOfAddressUrl String?
-  
+
   // Tenant Type
   tenantType      TenantType @default(GUEST)
-  
+
   // Rating
   rating          Float?    @default(0)
-  
+
   // Status
   status          TenantStatus @default(ACTIVE)
-  
+
   // Notes
   notes           String?   @db.Text
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   // Relations
   properties      PropertyTenant[]
   bookings        Booking[]
@@ -585,23 +586,23 @@ model PropertyTenant {
   property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantId        String
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+
   // Lease Details
   leaseStartDate  DateTime
   leaseEndDate    DateTime?
   monthlyRent     Decimal   @db.Decimal(10, 2)
   depositPaid     Decimal   @default(0) @db.Decimal(10, 2)
   leaseDocumentUrl String?
-  
+
   // Status
   isActive        Boolean   @default(true)
   moveInDate      DateTime?
   moveOutDate     DateTime?
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   @@unique([propertyId, tenantId])
 }
 
@@ -613,48 +614,48 @@ model Inquiry {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId      String?
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  
+
   // Inquiry Details
   inquirySource   InquirySource @default(DIRECT)
   inquiryType     InquiryType @default(BOOKING)
-  
+
   // Contact Info
   contactName     String
   contactEmail    String
   contactPhone    String?
-  
+
   // Inquiry
   message         String    @db.Text
-  
+
   // Booking Interest (if applicable)
   checkInDate     DateTime?
   checkOutDate    DateTime?
   numberOfGuests  Int?
-  
+
   // Status
   status          InquiryStatus @default(NEW)
   priority        Priority  @default(NORMAL)
-  
+
   // Assignment
   assignedTo      String?
-  
+
   // Response
   response        String?   @db.Text
   respondedAt     DateTime?
   respondedBy     String?
-  
+
   // Follow-up
   followUpDate    DateTime?
   followUpNotes   String?   @db.Text
-  
+
   // Conversion
   convertedToBooking Boolean @default(false)
   bookingId       String?
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   @@index([status, priority, createdAt])
 }
 
@@ -704,45 +705,45 @@ model MaintenanceRequest {
   property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  
+
   // Request Details
   title           String
   description     String    @db.Text
   category        MaintenanceCategory
   priority        Priority  @default(NORMAL)
-  
+
   // Location
   location        String?   // Specific location in property
-  
+
   // Media
   images          Json?     // Array of image URLs
-  
+
   // Assignment
   assignedTo      String?   // Contractor/service provider
   assignedAt      DateTime?
-  
+
   // Status
   status          MaintenanceStatus @default(PENDING)
-  
+
   // Scheduling
   scheduledDate   DateTime?
   completedDate   DateTime?
-  
+
   // Cost
   estimatedCost   Decimal?  @db.Decimal(10, 2)
   actualCost      Decimal?  @db.Decimal(10, 2)
-  
+
   // Resolution
   resolutionNotes String?   @db.Text
-  
+
   // Rating
   rating          Int?      // 1-5 stars
   feedback        String?   @db.Text
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   @@index([status, priority, propertyId])
 }
 
@@ -778,32 +779,32 @@ model Payment {
   booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  
+
   // Payment Details
   paymentReference String   @unique
   paymentType     PaymentType
-  
+
   // Amount
   amount          Decimal   @db.Decimal(10, 2)
   currency        String    @default("ZAR")
-  
+
   // Payment Info
   paymentMethod   PaymentMethod
   paymentDate     DateTime
-  
+
   // Status
   status          PaymentStatus @default(PENDING)
-  
+
   // Receipt
   receiptUrl      String?
   invoiceUrl      String?
-  
+
   // Notes
   notes           String?   @db.Text
-  
+
   // Bank Details (for EFT)
   bankReference   String?
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -827,36 +828,36 @@ model Expense {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId      String?
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  
+
   // Expense Details
   title           String
   description     String?   @db.Text
   category        ExpenseCategory
-  
+
   // Amount
   amount          Decimal   @db.Decimal(10, 2)
   currency        String    @default("ZAR")
-  
+
   // Date
   expenseDate     DateTime
-  
+
   // Vendor
   vendor          String?
   vendorInvoice   String?
-  
+
   // Receipt
   receiptUrl      String?
-  
+
   // Tax
   isDeductible    Boolean   @default(false)
-  
+
   // Status
   status          ExpenseStatus @default(UNPAID)
   paidDate        DateTime?
-  
+
   // Notes
   notes           String?   @db.Text
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -892,29 +893,29 @@ model Document {
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  
+
   // Document Details
   title           String
   description     String?   @db.Text
   documentType    DocumentType
   category        String?
-  
+
   // File
   fileUrl         String
   fileName        String
   fileSize        Int       // Bytes
   mimeType        String
-  
+
   // Dates
   issueDate       DateTime?
   expiryDate      DateTime?
-  
+
   // Access
   isPublic        Boolean   @default(false)
-  
+
   // Status
   status          DocumentStatus @default(ACTIVE)
-  
+
   // Metadata
   uploadedBy      String
   createdAt       DateTime  @default(now())
@@ -953,32 +954,32 @@ model Message {
   booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   tenantId        String?
   tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  
+
   // Message Details
   subject         String?
   message         String    @db.Text
   messageType     MessageType
-  
+
   // Direction
   direction       MessageDirection
-  
+
   // Contact
   recipientEmail  String?
   recipientPhone  String?
-  
+
   // Status
   status          MessageStatus @default(SENT)
   sentAt          DateTime?
   deliveredAt     DateTime?
   readAt          DateTime?
-  
+
   // Thread
   threadId        String?   // For message threading
   replyTo         String?   // ID of message being replied to
-  
+
   // Attachments
   attachments     Json?     // Array of attachment URLs
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1010,34 +1011,34 @@ model Task {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Task Details
   title           String
   description     String?   @db.Text
   taskType        TaskType
   priority        Priority  @default(NORMAL)
-  
+
   // Assignment
   assignedTo      String?
-  
+
   // Dates
   dueDate         DateTime?
   completedDate   DateTime?
-  
+
   // Related Entity
   relatedType     String?   // "property", "booking", "tenant", etc.
   relatedId       String?
-  
+
   // Status
   status          TaskStatus @default(TODO)
-  
+
   // Reminder
   reminderDate    DateTime?
   reminderSent    Boolean   @default(false)
-  
+
   // Notes
   notes           String?   @db.Text
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1070,11 +1071,11 @@ model Review {
   property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   bookingId       String?
   booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  
+
   // Review Details
   reviewerName    String
   reviewerEmail   String?
-  
+
   // Rating
   rating          Int       // 1-5 stars
   cleanliness     Int?
@@ -1083,22 +1084,22 @@ model Review {
   accuracy        Int?
   location        Int?
   value           Int?
-  
+
   // Review
   title           String?
   comment         String    @db.Text
-  
+
   // Response
   response        String?   @db.Text
   respondedAt     DateTime?
-  
+
   // Source
   reviewSource    ReviewSource @default(DIRECT)
-  
+
   // Status
   isPublic        Boolean   @default(true)
   isVerified      Boolean   @default(false)
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1118,19 +1119,19 @@ model Notification {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Notification Details
   title           String
   message         String    @db.Text
   notificationType NotificationType
-  
+
   // Link
   linkUrl         String?
-  
+
   // Status
   isRead          Boolean   @default(false)
   readAt          DateTime?
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
 }
@@ -1152,22 +1153,22 @@ model AuditLog {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Action
   action          String    // "created", "updated", "deleted"
   entity          String    // "property", "booking", etc.
   entityId        String
-  
+
   // Changes (JSON)
   changes         Json?     // Before/after values
-  
+
   // IP Address
   ipAddress       String?
   userAgent       String?
-  
+
   // Metadata
   createdAt       DateTime  @default(now())
-  
+
   @@index([userId, createdAt])
   @@index([entity, entityId])
 }
@@ -1177,29 +1178,29 @@ model AuditLog {
 model Integration {
   id              String    @id @default(cuid())
   userId          String
-  
+
   // Integration Details
   platform        IntegrationPlatform
   isActive        Boolean   @default(false)
-  
+
   // Credentials (encrypted)
   accessToken     String?
   refreshToken    String?
   apiKey          String?
-  
+
   // Settings
   syncEnabled     Boolean   @default(false)
   lastSyncAt      DateTime?
-  
+
   // Status
   status          IntegrationStatus @default(DISCONNECTED)
   errorMessage    String?
-  
+
   // Metadata
   connectedAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   @@unique([userId, platform])
 }
 
@@ -1228,6 +1229,7 @@ enum IntegrationStatus {
 **Day 1-2: Environment Setup**
 
 Tasks:
+
 1. Initialize Next.js project
 2. Setup Prisma with PostgreSQL
 3. Configure NextAuth.js
@@ -1237,6 +1239,7 @@ Tasks:
 7. Create project structure
 
 Commands:
+
 ```bash
 # Create Next.js app
 npx create-next-app@latest property-crm --typescript --tailwind --app --use-npm
@@ -1278,11 +1281,13 @@ npx shadcn-ui@latest init
 ```
 
 **shadcn/ui Components:**
+
 ```bash
 npx shadcn-ui@latest add button input label card dropdown-menu dialog table form select textarea badge avatar calendar tabs alert toast pagination switch checkbox radio-group separator slider
 ```
 
 **Environment Variables (.env):**
+
 ```env
 # Database
 DATABASE_URL="postgresql://username:password@localhost:5432/property_crm_db"
@@ -1317,6 +1322,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 **Day 3-4: Database & Authentication**
 
 Tasks:
+
 1. Copy Prisma schema (from above)
 2. Run migrations
 3. Create seed data
@@ -1325,6 +1331,7 @@ Tasks:
 6. Create middleware for route protection
 
 **Seed File (prisma/seed.ts):**
+
 ```typescript
 import { PrismaClient, SubscriptionTier, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -1334,7 +1341,7 @@ const prisma = new PrismaClient();
 async function main() {
   // Create demo user
   const hashedPassword = await bcrypt.hash('Demo@123', 10);
-  
+
   const user = await prisma.user.upsert({
     where: { email: 'demo@propertycrm.com' },
     update: {},
@@ -1392,6 +1399,7 @@ main()
 ```
 
 Run migrations:
+
 ```bash
 npx prisma migrate dev --name init
 npx prisma generate
@@ -1401,6 +1409,7 @@ npm run seed
 **Day 5-7: Dashboard Layout**
 
 Tasks:
+
 1. Create dashboard layout with sidebar
 2. Setup navigation
 3. Create dashboard homepage with statistics
@@ -1408,6 +1417,7 @@ Tasks:
 5. Create notification system
 
 Components to create:
+
 - `/components/dashboard/sidebar.tsx`
 - `/components/dashboard/header.tsx`
 - `/components/dashboard/stats-card.tsx`
@@ -1418,6 +1428,7 @@ Components to create:
 **Day 8-10: Properties CRUD**
 
 Features:
+
 - Properties list with grid/table view
 - Add new property form (multi-step)
 - Edit property details
@@ -1427,12 +1438,14 @@ Features:
 - Map integration for address
 
 Pages:
+
 - `/app/(dashboard)/properties/page.tsx`
 - `/app/(dashboard)/properties/new/page.tsx`
 - `/app/(dashboard)/properties/[id]/page.tsx`
 - `/app/(dashboard)/properties/[id]/edit/page.tsx`
 
 API Routes:
+
 - `/app/api/properties/route.ts` - GET (list), POST (create)
 - `/app/api/properties/[id]/route.ts` - GET, PUT, DELETE
 - `/app/api/upload/route.ts` - File upload handler
@@ -1440,6 +1453,7 @@ API Routes:
 **Day 11-14: Property Details & Features**
 
 Features:
+
 - View property analytics (occupancy rate, revenue)
 - Property calendar (availability)
 - Linked bookings list
@@ -1453,6 +1467,7 @@ Features:
 **Day 15-18: Booking System**
 
 Features:
+
 - Bookings calendar view (FullCalendar)
 - Create new booking (availability check)
 - Edit booking
@@ -1462,17 +1477,20 @@ Features:
 - Guest communication
 
 Pages:
+
 - `/app/(dashboard)/bookings/page.tsx`
 - `/app/(dashboard)/bookings/calendar/page.tsx`
 - `/app/(dashboard)/bookings/new/page.tsx`
 - `/app/(dashboard)/bookings/[id]/page.tsx`
 
 Components:
+
 - `/components/bookings/booking-calendar.tsx`
 - `/components/bookings/booking-form.tsx`
 - `/components/bookings/availability-checker.tsx`
 
 API Routes:
+
 - `/app/api/bookings/route.ts`
 - `/app/api/bookings/[id]/route.ts`
 - `/app/api/bookings/availability/route.ts`
@@ -1482,6 +1500,7 @@ API Routes:
 **Day 19-21: Calendar Synchronization**
 
 Features:
+
 - Import iCal URLs (Airbnb, Booking.com)
 - Export property calendar as iCal
 - Sync bookings from external sources
@@ -1490,11 +1509,13 @@ Features:
 - Auto-sync scheduling (cron job)
 
 API Routes:
+
 - `/app/api/calendar/import/route.ts`
 - `/app/api/calendar/export/route.ts`
 - `/app/api/calendar/sync/route.ts`
 
 **Key Feature: Double Booking Prevention**
+
 ```typescript
 // Pseudo-code for availability check
 async function checkAvailability(propertyId, checkIn, checkOut) {
@@ -1505,12 +1526,12 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
       OR: [
         {
           checkInDate: { lte: checkOut },
-          checkOutDate: { gte: checkIn }
-        }
-      ]
-    }
+          checkOutDate: { gte: checkIn },
+        },
+      ],
+    },
   });
-  
+
   return overlappingBookings.length === 0;
 }
 ```
@@ -1520,6 +1541,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 **Day 22-25: Tenant System**
 
 Features:
+
 - Tenant list with filters
 - Add tenant (with document upload)
 - Edit tenant details
@@ -1530,11 +1552,13 @@ Features:
 - Tenant rating/notes
 
 Pages:
+
 - `/app/(dashboard)/tenants/page.tsx`
 - `/app/(dashboard)/tenants/new/page.tsx`
 - `/app/(dashboard)/tenants/[id]/page.tsx`
 
 API Routes:
+
 - `/app/api/tenants/route.ts`
 - `/app/api/tenants/[id]/route.ts`
 - `/app/api/tenants/[id]/documents/route.ts`
@@ -1542,6 +1566,7 @@ API Routes:
 **Day 26-28: Lease Management**
 
 Features:
+
 - Create lease agreement
 - Lease template system
 - Auto-generate lease PDF
@@ -1554,6 +1579,7 @@ Features:
 **Day 29-32: Inquiry System**
 
 Features:
+
 - Inquiry inbox (similar to email)
 - Inquiry details view
 - Quick respond templates
@@ -1564,16 +1590,19 @@ Features:
 - Inquiry sources tracking
 
 Pages:
+
 - `/app/(dashboard)/inquiries/page.tsx`
 - `/app/(dashboard)/inquiries/[id]/page.tsx`
 
 Components:
+
 - `/components/inquiries/inquiry-list.tsx`
 - `/components/inquiries/inquiry-detail.tsx`
 - `/components/inquiries/quick-respond.tsx`
 - `/components/inquiries/response-templates.tsx`
 
 API Routes:
+
 - `/app/api/inquiries/route.ts`
 - `/app/api/inquiries/[id]/route.ts`
 - `/app/api/inquiries/[id]/respond/route.ts`
@@ -1582,6 +1611,7 @@ API Routes:
 **Day 33-35: Inquiry Automation**
 
 Features:
+
 - Auto-respond templates
 - Inquiry routing rules
 - Email parsing (automatically create inquiries from emails)
@@ -1593,6 +1623,7 @@ Features:
 **Day 36-39: Maintenance Requests**
 
 Features:
+
 - Maintenance request list
 - Create maintenance request (with photos)
 - Assign to contractors
@@ -1603,17 +1634,20 @@ Features:
 - Contractor database
 
 Pages:
+
 - `/app/(dashboard)/maintenance/page.tsx`
 - `/app/(dashboard)/maintenance/new/page.tsx`
 - `/app/(dashboard)/maintenance/[id]/page.tsx`
 
 API Routes:
+
 - `/app/api/maintenance/route.ts`
 - `/app/api/maintenance/[id]/route.ts`
 
 **Day 40-42: Maintenance Scheduling**
 
 Features:
+
 - Maintenance calendar
 - Recurring maintenance (e.g., pool cleaning)
 - Preventive maintenance reminders
@@ -1624,6 +1658,7 @@ Features:
 **Day 43-46: Payments & Income**
 
 Features:
+
 - Payment tracking
 - Record payment (cash, EFT, card)
 - Generate invoices
@@ -1634,15 +1669,18 @@ Features:
 - Payment reports
 
 Pages:
+
 - `/app/(dashboard)/financials/income/page.tsx`
 - `/app/(dashboard)/financials/payments/[id]/page.tsx`
 
 Components:
+
 - `/components/financials/payment-form.tsx`
 - `/components/financials/invoice-generator.tsx`
 - `/components/financials/receipt-generator.tsx`
 
 API Routes:
+
 - `/app/api/payments/route.ts`
 - `/app/api/payments/[id]/route.ts`
 - `/app/api/invoices/generate/route.ts`
@@ -1651,6 +1689,7 @@ API Routes:
 **Day 47-49: Expenses**
 
 Features:
+
 - Expense tracking
 - Expense categories
 - Upload receipts
@@ -1660,12 +1699,14 @@ Features:
 - Expense vs income comparison
 
 Pages:
+
 - `/app/(dashboard)/financials/expenses/page.tsx`
 - `/app/(dashboard)/financials/expenses/new/page.tsx`
 
 **Day 50-52: Financial Reports**
 
 Features:
+
 - Income statement (P&L)
 - Cash flow report
 - Property-wise revenue comparison
@@ -1674,6 +1715,7 @@ Features:
 - Export to Excel/PDF
 
 Pages:
+
 - `/app/(dashboard)/financials/reports/page.tsx`
 
 ### Phase 8: Communications (Week 8-9)
@@ -1681,6 +1723,7 @@ Pages:
 **Day 53-56: Message Center**
 
 Features:
+
 - Unified inbox (email, SMS, in-app)
 - Send email to tenant/guest
 - Send SMS
@@ -1691,11 +1734,13 @@ Features:
 - Auto-responses
 
 Pages:
+
 - `/app/(dashboard)/communications/messages/page.tsx`
 - `/app/(dashboard)/communications/email/page.tsx`
 - `/app/(dashboard)/communications/sms/page.tsx`
 
 API Routes:
+
 - `/app/api/messages/route.ts`
 - `/app/api/messages/send-email/route.ts`
 - `/app/api/messages/send-sms/route.ts`
@@ -1703,6 +1748,7 @@ API Routes:
 **Day 57-59: Automated Communications**
 
 Features:
+
 - Booking confirmation emails
 - Check-in instructions (automated)
 - Payment reminder emails/SMS
@@ -1715,6 +1761,7 @@ Features:
 **Day 60-63: Tasks System**
 
 Features:
+
 - Task list (todo, in progress, completed)
 - Create task
 - Assign tasks to team members
@@ -1724,16 +1771,19 @@ Features:
 - Task templates
 
 Pages:
+
 - `/app/(dashboard)/tasks/page.tsx`
 - `/app/(dashboard)/tasks/calendar/page.tsx`
 
 API Routes:
+
 - `/app/api/tasks/route.ts`
 - `/app/api/tasks/[id]/route.ts`
 
 **Day 64-66: Task Automation**
 
 Features:
+
 - Auto-create tasks based on triggers:
   - New booking → Create check-in task
   - Lease ending in 30 days → Create renewal task
@@ -1744,6 +1794,7 @@ Features:
 **Day 67-70: Analytics Dashboard**
 
 Features:
+
 - Key metrics cards:
   - Total properties
   - Occupancy rate
@@ -1758,6 +1809,7 @@ Features:
 - Recent activity feed
 
 Components:
+
 - `/components/dashboard/metrics-card.tsx`
 - `/components/dashboard/revenue-chart.tsx`
 - `/components/dashboard/occupancy-chart.tsx`
@@ -1765,6 +1817,7 @@ Components:
 **Day 71-73: Advanced Reports**
 
 Features:
+
 - Occupancy reports
 - Revenue reports (by property, by month)
 - Expense reports
@@ -1775,6 +1828,7 @@ Features:
 - Export all reports (Excel, PDF)
 
 Pages:
+
 - `/app/(dashboard)/reports/occupancy/page.tsx`
 - `/app/(dashboard)/reports/revenue/page.tsx`
 - `/app/(dashboard)/reports/analytics/page.tsx`
@@ -1784,6 +1838,7 @@ Pages:
 **Day 74-77: Airbnb Integration**
 
 Features:
+
 - Connect Airbnb account (OAuth)
 - Import Airbnb bookings
 - Sync Airbnb calendar
@@ -1791,6 +1846,7 @@ Features:
 - Import Airbnb messages
 
 API Routes:
+
 - `/app/api/integrations/airbnb/connect/route.ts`
 - `/app/api/integrations/airbnb/sync/route.ts`
 - `/app/api/webhooks/airbnb/route.ts`
@@ -1802,6 +1858,7 @@ Similar to Airbnb integration
 **Day 81-83: Payment Gateway Integration**
 
 Features:
+
 - Paystack integration (for South Africa)
 - Stripe integration (international)
 - Online payment collection
@@ -1813,6 +1870,7 @@ Features:
 **Day 84-87: User Settings**
 
 Features:
+
 - Profile management
 - Change password
 - Preferences (timezone, currency, language)
@@ -1820,6 +1878,7 @@ Features:
 - Billing information
 
 Pages:
+
 - `/app/(dashboard)/settings/profile/page.tsx`
 - `/app/(dashboard)/settings/preferences/page.tsx`
 - `/app/(dashboard)/settings/billing/page.tsx`
@@ -1827,6 +1886,7 @@ Pages:
 **Day 88-90: Team Management**
 
 Features:
+
 - Invite team members
 - Role management (owner, admin, manager, viewer)
 - Permission settings
@@ -1834,11 +1894,13 @@ Features:
 - Activity log
 
 Pages:
+
 - `/app/(dashboard)/settings/team/page.tsx`
 
 **Day 91-93: Subscription & Billing**
 
 Features:
+
 - View current plan
 - Upgrade/downgrade plan
 - Payment history
@@ -1850,6 +1912,7 @@ Features:
 **Day 94-98: Mobile Optimization**
 
 Tasks:
+
 - Ensure all pages are mobile-responsive
 - Touch-friendly buttons and forms
 - Mobile navigation (hamburger menu)
@@ -1860,6 +1923,7 @@ Tasks:
 **Day 99-105: Final Polish**
 
 Tasks:
+
 - UI/UX improvements
 - Loading states
 - Error handling
@@ -1876,6 +1940,7 @@ Tasks:
 **Day 106-108: Testing**
 
 Tasks:
+
 - Test all CRUD operations
 - Test authentication and authorization
 - Test file uploads
@@ -1890,6 +1955,7 @@ Tasks:
 **Day 109-112: Deployment Preparation**
 
 Tasks:
+
 1. Setup production database (Railway/Supabase)
 2. Configure production environment variables
 3. Setup domain name
@@ -1903,6 +1969,7 @@ Tasks:
 **Day 113-115: Deployment & Launch**
 
 Tasks:
+
 1. Deploy to Vercel
 2. Run production migrations
 3. Seed production database with initial data
@@ -1913,6 +1980,7 @@ Tasks:
 8. Soft launch to beta users
 
 **Deployment Commands:**
+
 ```bash
 # Build for production
 npm run build
@@ -1935,6 +2003,7 @@ npx prisma generate
 **Solution:** Import iCal feeds from Airbnb, Booking.com, and sync availability
 
 **Implementation:**
+
 ```typescript
 // lib/calendar-sync.ts
 import ical from 'ical';
@@ -1943,7 +2012,7 @@ export async function syncExternalCalendar(calendarUrl: string, propertyId: stri
   const response = await fetch(calendarUrl);
   const icalData = await response.text();
   const events = ical.parseICS(icalData);
-  
+
   for (const event of Object.values(events)) {
     if (event.type === 'VEVENT') {
       // Create or update booking
@@ -1963,7 +2032,7 @@ export async function syncExternalCalendar(calendarUrl: string, propertyId: stri
           checkInDate: event.start,
           checkOutDate: event.end,
           status: 'CONFIRMED',
-        }
+        },
       });
     }
   }
@@ -1976,6 +2045,7 @@ export async function syncExternalCalendar(calendarUrl: string, propertyId: stri
 **Solution:** Centralized inbox with auto-conversion to bookings
 
 **Features:**
+
 - Email forwarding to custom email (e.g., property-123@yourcrm.com)
 - Parse and create inquiries automatically
 - Quick response templates
@@ -1984,6 +2054,7 @@ export async function syncExternalCalendar(calendarUrl: string, propertyId: stri
 ### 3. Smart Availability Checker
 
 **Before Creating Booking:**
+
 ```typescript
 async function checkAvailability(propertyId, checkIn, checkOut) {
   // Check database bookings
@@ -1993,21 +2064,18 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
       status: { notIn: ['CANCELLED', 'NO_SHOW'] },
       OR: [
         {
-          AND: [
-            { checkInDate: { lte: checkOut } },
-            { checkOutDate: { gte: checkIn } }
-          ]
-        }
-      ]
-    }
+          AND: [{ checkInDate: { lte: checkOut } }, { checkOutDate: { gte: checkIn } }],
+        },
+      ],
+    },
   });
-  
+
   // Check external calendars (cached)
   const externalBookings = await getExternalBookings(propertyId, checkIn, checkOut);
-  
+
   return {
     available: dbBookings.length === 0 && externalBookings.length === 0,
-    conflicts: [...dbBookings, ...externalBookings]
+    conflicts: [...dbBookings, ...externalBookings],
   };
 }
 ```
@@ -2015,6 +2083,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### 4. Automated Communication Flow
 
 **Booking Lifecycle Emails:**
+
 1. Booking created → Confirmation email
 2. 3 days before → Check-in instructions
 3. Check-in day → Welcome message with WiFi password
@@ -2026,6 +2095,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### 5. Financial Dashboard
 
 **Key Metrics:**
+
 - Total revenue (monthly, yearly)
 - Revenue by property
 - Occupancy rate
@@ -2035,6 +2105,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 - Expense breakdown
 
 **Charts:**
+
 - Revenue trend (last 12 months)
 - Occupancy trend
 - Income vs Expenses
@@ -2047,6 +2118,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### Pricing Tiers (South African Market)
 
 **Free Tier:**
+
 - 1 property
 - Basic features
 - Limited bookings (20/month)
@@ -2054,6 +2126,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 - Email support
 
 **Starter - R199/month:**
+
 - 5 properties
 - All basic features
 - Unlimited bookings
@@ -2062,6 +2135,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 - Payment processing
 
 **Professional - R499/month:**
+
 - 20 properties
 - All Starter features
 - Airbnb/Booking.com integration
@@ -2071,6 +2145,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 - White-label option
 
 **Enterprise - R999/month:**
+
 - Unlimited properties
 - All Professional features
 - Custom integrations
@@ -2104,6 +2179,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### Target Customer Segments
 
 **Primary:**
+
 1. **Airbnb Hosts** (1-5 properties)
    - Pain: Calendar management chaos
    - Message: "Never double-book again"
@@ -2119,12 +2195,14 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### Launch Strategy
 
 **Phase 1: Beta (Month 1-2)**
+
 - Recruit 20 beta users
 - Free access in exchange for feedback
 - Iterate based on feedback
 - Build case studies
 
 **Phase 2: Soft Launch (Month 3-4)**
+
 - Launch website with free tier
 - Content marketing (blog posts, SEO)
 - Facebook/Instagram ads targeting Airbnb hosts
@@ -2132,6 +2210,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 - Offer founding member discount (50% off first year)
 
 **Phase 3: Full Launch (Month 5-6)**
+
 - Product Hunt launch
 - Press releases
 - Partnership with property management associations
@@ -2141,11 +2220,13 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### Marketing Channels
 
 **Paid:**
+
 - Google Ads (keywords: "property management software south africa")
 - Facebook/Instagram Ads (target Airbnb hosts)
 - LinkedIn Ads (target property managers)
 
 **Organic:**
+
 - SEO (blog content on property management tips)
 - YouTube tutorials
 - Facebook groups (property investors)
@@ -2153,6 +2234,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 - LinkedIn (B2B outreach)
 
 **Partnerships:**
+
 - Property management associations
 - Real estate agencies
 - Airbnb host meetups
@@ -2215,6 +2297,7 @@ async function checkAvailability(propertyId, checkIn, checkOut) {
 ### API Design Principles
 
 **RESTful API Structure:**
+
 ```
 GET    /api/properties              # List properties
 POST   /api/properties              # Create property
@@ -2232,6 +2315,7 @@ DELETE /api/bookings/:id            # Cancel booking
 ### Database Optimization
 
 **Indexes:**
+
 ```prisma
 @@index([userId, status])          # Fast user queries
 @@index([propertyId, checkInDate]) # Fast calendar queries
@@ -2239,6 +2323,7 @@ DELETE /api/bookings/:id            # Cancel booking
 ```
 
 **Performance Considerations:**
+
 - Use pagination for large lists
 - Cache property listings (ISR in Next.js)
 - Optimize images with Next.js Image
@@ -2252,16 +2337,18 @@ DELETE /api/bookings/:id            # Cancel booking
 ### Authentication & Authorization
 
 **Row-Level Security:**
+
 ```typescript
 // Ensure users can only access their own data
 const properties = await prisma.property.findMany({
   where: {
-    userId: session.user.id // Critical!
-  }
+    userId: session.user.id, // Critical!
+  },
 });
 ```
 
 **API Route Protection:**
+
 ```typescript
 export async function GET(request: Request) {
   const session = await getServerSession();
@@ -2334,6 +2421,7 @@ export async function GET(request: Request) {
 ### Application Monitoring
 
 **Tools:**
+
 - **Sentry** - Error tracking
 - **Vercel Analytics** - Performance monitoring
 - **LogRocket** - Session replay
@@ -2342,6 +2430,7 @@ export async function GET(request: Request) {
 ### Business Metrics
 
 **Key Metrics to Track:**
+
 - Daily Active Users (DAU)
 - Monthly Active Users (MAU)
 - Properties per user
@@ -2352,6 +2441,7 @@ export async function GET(request: Request) {
 - Net Promoter Score (NPS)
 
 **Implementation:**
+
 - Google Analytics
 - Mixpanel
 - Custom analytics dashboard
@@ -2397,6 +2487,7 @@ export async function GET(request: Request) {
 ### Video Tutorials
 
 **Priority Videos:**
+
 1. Platform overview (5 min)
 2. Adding your first property (8 min)
 3. Creating and managing bookings (10 min)
@@ -2408,6 +2499,7 @@ export async function GET(request: Request) {
 ## Roadmap (Post-Launch)
 
 ### Q1 Features (Months 4-6)
+
 - Mobile app (React Native)
 - WhatsApp Business integration
 - Advanced automation rules
@@ -2415,6 +2507,7 @@ export async function GET(request: Request) {
 - Multi-currency support
 
 ### Q2 Features (Months 7-9)
+
 - Owner portal (for property owners to view reports)
 - Tenant portal (self-service)
 - Smart pricing recommendations (AI-powered)
@@ -2422,6 +2515,7 @@ export async function GET(request: Request) {
 - Accounting software integration (Xero, QuickBooks)
 
 ### Q3 Features (Months 10-12)
+
 - Property websites (auto-generated)
 - Direct booking widget
 - Advanced analytics (AI insights)
@@ -2435,22 +2529,26 @@ export async function GET(request: Request) {
 ### Code Standards
 
 **TypeScript:**
+
 - Use strict mode
 - Avoid `any` type
 - Define interfaces for all data structures
 
 **Components:**
+
 - Keep components small (<200 lines)
 - Use composition over inheritance
 - Extract reusable logic into hooks
 
 **API Routes:**
+
 - Always validate input with Zod
 - Return consistent error responses
 - Use proper HTTP status codes
 - Add request logging
 
 **Testing:**
+
 - Unit tests for utilities
 - Integration tests for API routes
 - E2E tests for critical flows
@@ -2458,6 +2556,7 @@ export async function GET(request: Request) {
 ### Git Workflow
 
 **Branching Strategy:**
+
 ```
 main (production)
   ├── develop (staging)
@@ -2467,6 +2566,7 @@ main (production)
 ```
 
 **Commit Messages:**
+
 ```
 feat: Add property creation form
 fix: Fix double booking bug
@@ -2491,18 +2591,21 @@ test: Add tests for payment flow
 ### Business Metrics
 
 **Month 3 (Beta End):**
+
 - [ ] 20 active beta users
 - [ ] 100+ properties managed
 - [ ] 500+ bookings created
 - [ ] 90% user satisfaction
 
 **Month 6 (Launch):**
+
 - [ ] 100 paying customers
 - [ ] MRR: R20,000
 - [ ] Churn rate < 10%
 - [ ] 50 properties on Professional plan
 
 **Month 12 (End of Year 1):**
+
 - [ ] 500 paying customers
 - [ ] MRR: R150,000
 - [ ] 1000+ properties managed
@@ -2516,11 +2619,13 @@ test: Add tests for payment flow
 ### Initial Costs (Year 1)
 
 **Development (Your Time):**
+
 - 3-4 months full-time development
 - Value: R120,000 (if hired)
 - Your cost: Sweat equity
 
 **Infrastructure (Monthly):**
+
 - Domain: R15/month
 - Hosting (Vercel): R0 (free tier initially)
 - Database (Railway): R90/month
@@ -2529,11 +2634,13 @@ test: Add tests for payment flow
 - Total: ~R775/month (~R9,300/year)
 
 **Tools & Services:**
+
 - Design tools (Figma): R0 (free tier)
 - Error monitoring (Sentry): R0 (free tier)
 - Analytics: R0 (Google Analytics)
 
 **Marketing (Year 1):**
+
 - Landing page design: R2,000 (one-time)
 - Google Ads: R5,000/month = R60,000/year
 - Facebook Ads: R3,000/month = R36,000/year
@@ -2541,6 +2648,7 @@ test: Add tests for payment flow
 - Total: R122,000/year
 
 **Legal:**
+
 - Company registration: R500
 - Terms of Service: R1,500
 - Privacy Policy: R1,000
@@ -2554,6 +2662,7 @@ test: Add tests for payment flow
 **Break-even:** 23 customers on Starter plan (R499)
 
 **Realistic Projection:**
+
 - Month 6: 100 customers × R199 avg = R19,900 (not profitable yet)
 - Month 9: 250 customers × R249 avg = R62,250 (profitable!)
 - Month 12: 500 customers × R299 avg = R149,500 (sustainable!)
@@ -2591,17 +2700,20 @@ test: Add tests for payment flow
 ### Support Channels
 
 **Tier 1: Self-Service**
+
 - Knowledge base
 - Video tutorials
 - FAQ
 - In-app tooltips
 
 **Tier 2: Community**
+
 - Facebook group
 - Discord community
 - User forums
 
 **Tier 3: Direct Support**
+
 - Email support (response within 24 hours)
 - Live chat (business hours)
 - Phone support (Professional plan and above)
@@ -2610,19 +2722,23 @@ test: Add tests for payment flow
 ### Support SLAs
 
 **Free Tier:**
+
 - Email support
 - 72-hour response time
 
 **Starter:**
+
 - Email + chat support
 - 24-hour response time
 
 **Professional:**
+
 - Priority support
 - 12-hour response time
 - Phone support available
 
 **Enterprise:**
+
 - Dedicated support
 - 4-hour response time
 - 24/7 emergency hotline
@@ -2634,16 +2750,19 @@ test: Add tests for payment flow
 ### Potential Outcomes
 
 **Option 1: Bootstrap to Profitability**
+
 - Grow organically
 - Maintain ownership
 - Lifestyle business (R500k - R2M/year revenue)
 
 **Option 2: Raise Funding**
+
 - Seed round (R5M - R10M)
 - Accelerate growth
 - Expand to other African markets
 
 **Option 3: Acquisition**
+
 - Target acquirers:
   - Property24
   - Private Property
@@ -2652,6 +2771,7 @@ test: Add tests for payment flow
 - Exit valuation: 5-10x revenue
 
 **Option 4: Franchise Model**
+
 - License software to property management agencies
 - White-label solution
 - Recurring licensing fees
@@ -2663,6 +2783,7 @@ test: Add tests for payment flow
 ### Pre-Launch Checklist
 
 **Technical:**
+
 - [ ] All core features working
 - [ ] Mobile responsive
 - [ ] Security audit completed
@@ -2673,6 +2794,7 @@ test: Add tests for payment flow
 - [ ] Domain configured
 
 **Legal:**
+
 - [ ] Terms of Service published
 - [ ] Privacy Policy published
 - [ ] Cookie consent implemented
@@ -2680,6 +2802,7 @@ test: Add tests for payment flow
 - [ ] Company registered
 
 **Business:**
+
 - [ ] Pricing finalized
 - [ ] Payment gateway tested (live mode)
 - [ ] Email templates ready
@@ -2689,6 +2812,7 @@ test: Add tests for payment flow
 - [ ] Video tutorials recorded
 
 **Marketing:**
+
 - [ ] Landing page live
 - [ ] Social media accounts created
 - [ ] Google Analytics setup
@@ -2703,6 +2827,7 @@ test: Add tests for payment flow
 This Property Management CRM is designed to solve real problems for South African property owners and managers. With your full-stack skills (Angular, .NET, Next.js) and experience building complex systems, you have everything you need to build this successfully.
 
 **Key Success Factors:**
+
 1. **Start with MVP** - Don't build everything at once
 2. **Get real users early** - Beta test with 10-20 property owners
 3. **Iterate based on feedback** - Let users guide feature priorities
@@ -2712,8 +2837,9 @@ This Property Management CRM is designed to solve real problems for South Africa
 7. **Market consistently** - Build in public, share progress
 
 **Next Steps:**
+
 1. Show your Apostle the church system (get that win!)
-2. Start Phase 1 of this Property CRM (Week 1-2)
+2. Start Phase 1 of this Veld Unity (Week 1-2)
 3. Recruit 5 beta testers from your network
 4. Build MVP (Weeks 1-8)
 5. Launch beta (Week 9)

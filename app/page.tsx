@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   Building2,
   CheckCircle2,
@@ -260,9 +261,16 @@ export default function App() {
               >
                 Log in
               </a>
-              <Button variant="accent" size="sm">
-                Start Free Trial
-              </Button>
+              <Link href="/contact">
+                <Button variant="ghost" size="sm">
+                  Contact Us
+                </Button>
+              </Link>
+              <Link href="/contact">
+                <Button variant="accent" size="sm">
+                  Start Free Trial
+                </Button>
+              </Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -293,9 +301,16 @@ export default function App() {
               </a>
             ))}
             <div className="my-2 h-px bg-slate-100" />
-            <Button fullWidth variant="primary">
-              Get Started Free
-            </Button>
+            <Link href="/contact" className="block">
+              <Button fullWidth variant="secondary">
+                Contact Us
+              </Button>
+            </Link>
+            <Link href="/contact" className="block">
+              <Button fullWidth variant="primary">
+                Get Started Free
+              </Button>
+            </Link>
           </div>
         )}
       </header>
@@ -329,14 +344,18 @@ export default function App() {
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button size="xl" variant="accent" className="group w-full sm:w-auto">
-              Start Your Free 14-Day Trial
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <Button size="xl" variant="outline" className="w-full gap-2 sm:w-auto">
-              <PlayCircle className="h-5 w-5" />
-              Watch 2-Min Demo
-            </Button>
+            <Link href="/contact" className="w-full sm:w-auto">
+              <Button size="xl" variant="accent" className="group w-full">
+                Start Your Free 14-Day Trial
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+            <Link href="/contact" className="w-full sm:w-auto">
+              <Button size="xl" variant="outline" className="w-full gap-2">
+                <PlayCircle className="h-5 w-5" />
+                Watch 2-Min Demo
+              </Button>
+            </Link>
           </div>
 
           <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-400">
@@ -648,9 +667,11 @@ export default function App() {
                 <p className="mb-6 text-sm text-slate-500">
                   Perfect for getting started with up to 5 properties.
                 </p>
-                <Button fullWidth variant="secondary">
-                  Start Free Trial
-                </Button>
+                <Link href="/contact" className="block">
+                  <Button fullWidth variant="secondary">
+                    Start Free Trial
+                  </Button>
+                </Link>
                 <ul className="mt-8 space-y-3 text-sm text-slate-600">
                   <li className="flex gap-2">
                     <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 5 Properties
@@ -679,9 +700,11 @@ export default function App() {
                 <p className="mb-6 text-sm text-slate-500">
                   For growing portfolios (6-20 properties).
                 </p>
-                <Button fullWidth variant="primary">
-                  Start Free Trial
-                </Button>
+                <Link href="/contact" className="block">
+                  <Button fullWidth variant="primary">
+                    Start Free Trial
+                  </Button>
+                </Link>
                 <ul className="mt-8 space-y-3 text-sm text-slate-600">
                   <li className="flex gap-2">
                     <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 20 Properties
@@ -715,9 +738,11 @@ export default function App() {
                 <p className="mb-6 text-sm text-slate-500">
                   Unlimited properties and advanced team features.
                 </p>
-                <Button fullWidth variant="secondary">
-                  Contact Sales
-                </Button>
+                <Link href="/contact" className="block">
+                  <Button fullWidth variant="secondary">
+                    Contact Sales
+                  </Button>
+                </Link>
                 <ul className="mt-8 space-y-3 text-sm text-slate-600">
                   <li className="flex gap-2">
                     <CheckCircle2 className="text-brand-600 h-4 w-4" /> Unlimited Properties

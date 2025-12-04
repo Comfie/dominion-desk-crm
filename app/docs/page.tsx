@@ -55,7 +55,7 @@ export default function DocumentationPage() {
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2 text-white">
               <Building2 className="h-6 w-6" />
-              <span className="text-lg font-semibold">Property CRM</span>
+              <span className="text-lg font-semibold">Veld Unity</span>
             </Link>
             <Badge variant="secondary">Documentation</Badge>
           </div>
@@ -98,7 +98,7 @@ export default function DocumentationPage() {
           <main className="min-w-0">
             {/* Hero */}
             <div className="bg-gradient-blue-cyan mb-12 rounded-xl p-8 text-white shadow-lg">
-              <h1 className="text-3xl font-bold sm:text-4xl">Property CRM User Guide</h1>
+              <h1 className="text-3xl font-bold sm:text-4xl">Veld Unity User Guide</h1>
               <p className="mt-2 text-white/90">
                 Complete documentation to help you manage your properties efficiently
               </p>
@@ -121,13 +121,13 @@ export default function DocumentationPage() {
 
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle>Welcome to Property CRM</CardTitle>
+                  <CardTitle>Welcome to Veld Unity</CardTitle>
                 </CardHeader>
                 <CardContent className="docs-content space-y-4">
                   <p className="text-muted-foreground leading-relaxed">
-                    Property CRM is a comprehensive property management platform designed
-                    specifically for South African landlords and property managers. This guide will
-                    help you get started and make the most of all available features.
+                    Veld Unity is a comprehensive property management platform designed specifically
+                    for South African landlords and property managers. This guide will help you get
+                    started and make the most of all available features.
                   </p>
 
                   <div>
@@ -1835,7 +1835,7 @@ export default function DocumentationPage() {
 
                   <h4>POPIA Compliance</h4>
                   <p>
-                    Property CRM is designed to help you comply with South Africa's Protection of
+                    Veld Unity is designed to help you comply with South Africa's Protection of
                     Personal Information Act (POPIA):
                   </p>
                   <ul>
@@ -1963,7 +1963,7 @@ export default function DocumentationPage() {
       {/* Footer */}
       <footer className="bg-card border-t py-8">
         <div className="text-muted-foreground mx-auto max-w-6xl px-4 text-center text-sm">
-          <p>© {new Date().getFullYear()} Property CRM. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Veld Unity. All rights reserved.</p>
           <p className="mt-2">
             Need help? Contact us at{' '}
             <a href="mailto:support@propertycrm.co.za" className="text-primary hover:underline">

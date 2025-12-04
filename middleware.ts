@@ -78,6 +78,8 @@ export default withAuth(
           pathname === '/' ||
           pathname.startsWith('/p/') ||
           pathname.startsWith('/pitch') ||
+          pathname.startsWith('/contact') ||
+          pathname.startsWith('/listings') ||
           pathname.startsWith('/docs') ||
           pathname.startsWith('/login') ||
           pathname.startsWith('/portal/login') ||

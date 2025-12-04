@@ -119,7 +119,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="border-sidebar-border flex h-16 items-center justify-between border-b px-4">
           <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
             <Building2 className="text-sidebar-primary h-6 w-6" />
-            <span className="text-lg font-semibold">Property CRM</span>
+            <span className="text-lg font-semibold">Veld Unity</span>
           </Link>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -158,7 +158,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Footer */}
         <div className="border-sidebar-border border-t p-4">
           <div className="text-sidebar-foreground/50 text-xs">
-            <p>Property CRM v0.1.0</p>
+            <p>Veld Unity v0.1.0</p>
             <p>© 2025 All rights reserved</p>
           </div>
         </div>

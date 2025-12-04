@@ -159,7 +159,7 @@ export async function generatePropertyCalendar(
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Property CRM//Calendar//EN',
+    'PRODID:-//Veld Unity//Calendar//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${property.name}`,

@@ -59,7 +59,7 @@ export const updatePaymentSchema = z.object({
 
 export const generateMonthlyPaymentsSchema = z.object({
   month: z.number().min(1).max(12),
-  year: z.number().min(2024),
+  year: z.number().min(2025),
 });
 
 export const paymentIdSchema = z.object({

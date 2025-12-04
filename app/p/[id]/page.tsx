@@ -474,7 +474,7 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
             <Building2 className="h-6 w-6 text-blue-600" />
-            <span className="text-lg font-semibold">Property CRM</span>
+            <span className="text-lg font-semibold">Veld Unity</span>
           </Link>
           <Button variant="outline" size="sm" asChild>
             <Link href="/">
@@ -721,7 +721,7 @@ export default function PublicPropertyPage({ params }: { params: Promise<{ id: s
       {/* Footer */}
       <footer className="border-t bg-white py-6 dark:bg-gray-800">
         <div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
-          <p>Powered by Property CRM</p>
+          <p>Powered by Veld Unity</p>
         </div>
       </footer>
     </div>
