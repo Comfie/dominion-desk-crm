@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/logo';
 import { Users, BarChart3, CreditCard, Settings, X, Shield } from 'lucide-react';
 
 const navItems = [
@@ -58,9 +59,9 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex h-16 items-center justify-between border-b px-6">
-            <Link href="/admin/users" className="flex items-center space-x-2">
-              <Shield className="text-primary h-6 w-6" />
-              <span className="text-xl font-bold">Admin Portal</span>
+            <Link href="/admin/users" className="flex items-center gap-2">
+              <Logo variant="icon" width={32} height={32} />
+              <span className="text-muted-foreground text-sm font-medium">Admin</span>
             </Link>
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
               <X className="h-5 w-5" />

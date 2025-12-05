@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Building2, Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { Logo } from '@/components/ui/logo';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -65,11 +66,8 @@ export default function ContactPage() {
         {/* Header */}
         <header className="border-b border-slate-200 bg-white">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="from-brand-600 to-brand-700 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-bold text-slate-900">DominionDesk</span>
+            <Link href="/" className="flex items-center">
+              <Logo variant="full" width={160} height={32} />
             </Link>
             <Link href="/">
               <Button variant="ghost" size="sm">
@@ -105,11 +103,8 @@ export default function ContactPage() {
       {/* Header */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="from-brand-600 to-brand-700 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br">
-              <Building2 className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-slate-900">DominionDesk</span>
+          <Link href="/" className="flex items-center">
+            <Logo variant="full" width={160} height={32} />
           </Link>
           <Link href="/">
             <Button variant="ghost" size="sm">

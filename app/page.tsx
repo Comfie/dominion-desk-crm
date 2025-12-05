@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Button } from './components/Button';
 import { Card } from './components/Card';
+import { Logo } from '@/components/ui/logo';
 
 // --- Types & Data ---
 
@@ -230,30 +231,30 @@ export default function App() {
   return (
     <div className="selection:bg-brand-200 min-h-screen bg-slate-50 font-sans text-slate-900">
       {/* Promotional Banner */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 py-2.5 text-center text-sm font-semibold text-white">
+      {/* <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 py-2.5 text-center text-sm font-semibold text-white">
         <div className="flex items-center justify-center gap-2">
           <Sparkles className="h-4 w-4" />
           <span>Launch Special: Get 50% Off Your First 3 Months - Limited Time Only!</span>
           <Sparkles className="h-4 w-4" />
         </div>
-      </div>
+      </div> */}
 
       {/* Navigation */}
       <header
-        className={`fixed top-10 right-0 left-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-slate-200 bg-white/90 shadow-sm backdrop-blur-md' : 'bg-transparent'}`}
+        className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-slate-200 bg-white/90 shadow-sm backdrop-blur-md' : 'bg-transparent'}`}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="from-brand-600 to-brand-700 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br shadow-sm">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <span
-                className={`text-xl font-bold tracking-tight ${scrolled ? 'text-slate-900' : 'text-slate-900 lg:text-white'}`}
-              >
-                DominionDesk
-              </span>
-            </div>
+            <Link href="/" className="flex items-center">
+              {/* Show light logo on dark hero, dark logo on white scrolled header */}
+              <img
+                src={scrolled ? '/logos/logo-light.svg' : '/logos/logo-dark.svg'}
+                alt="Dominion Desk"
+                width={160}
+                height={32}
+                className="h-8 w-auto"
+              />
+            </Link>
 
             {/* Desktop Nav */}
             <nav className="hidden items-center gap-8 md:flex">
@@ -455,7 +456,7 @@ export default function App() {
               <div className="relative rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-2xl sm:p-3">
                 <div className="rounded-lg bg-slate-900 p-0.5 sm:p-1">
                   <Image
-                    src="/mockups/mockup-dashboard.png"
+                    src="/mockups/img-desktop-mockup.svg"
                     alt="DominionDesk Dashboard"
                     width={1200}
                     height={675}
@@ -523,7 +524,7 @@ export default function App() {
                 </div>
                 <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md">
                   <Image
-                    src="/mockups/Properties Listing.jpg"
+                    src="/mockups/img-property-listing.jpg"
                     alt="Add Properties"
                     width={400}
                     height={225}
@@ -547,7 +548,7 @@ export default function App() {
                 </div>
                 <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md">
                   <Image
-                    src="/mockups/Booking Calendar.jpg"
+                    src="/mockups/img-booking-calendar.jpg"
                     alt="Connect Platforms"
                     width={400}
                     height={225}
@@ -570,7 +571,7 @@ export default function App() {
                 </div>
                 <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md">
                   <Image
-                    src="/mockups/Communications.jpg"
+                    src="/mockups/img-communications.jpg"
                     alt="Automate Communications"
                     width={400}
                     height={225}
@@ -593,7 +594,7 @@ export default function App() {
                 </div>
                 <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md">
                   <Image
-                    src="/mockups/Tenant Listing.jpg"
+                    src="/mockups/img-tenant-listing.jpg"
                     alt="Manage Tenants"
                     width={400}
                     height={225}
@@ -616,7 +617,7 @@ export default function App() {
                 </div>
                 <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md">
                   <Image
-                    src="/mockups/Communications.jpg"
+                    src="/mockups/img-documents.jpg"
                     alt="Tenant Portal"
                     width={400}
                     height={225}
@@ -640,7 +641,7 @@ export default function App() {
                 </div>
                 <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md">
                   <Image
-                    src="/mockups/Financials.jpg"
+                    src="/mockups/img-financials.jpg"
                     alt="Track Revenue"
                     width={400}
                     height={225}
@@ -871,10 +872,10 @@ export default function App() {
               <div className="mx-auto max-w-xs">
                 <div className="overflow-hidden rounded-3xl border-8 border-slate-900 bg-slate-900 shadow-2xl">
                   <Image
-                    src="/mockups/Mobile Dashboard.jpg"
+                    src="/mockups/img-mobile-dashboard.jpg"
                     alt="Mobile Dashboard"
                     width={300}
-                    height={650}
+                    height={550}
                     className="w-full"
                     unoptimized
                   />
@@ -886,7 +887,7 @@ export default function App() {
       </section>
 
       {/* Features by Persona (Tabbed) */}
-      <section id="features" className="bg-white py-20">
+      <section id="features" className="bg-white py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealOnScroll>
             <div className="mb-12 text-center">
@@ -976,10 +977,10 @@ export default function App() {
                       <Zap className="text-brand-400 h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold">Loadshedding Proof</h3>
+                      <h3 className="text-lg font-bold"></h3>
                       <p className="text-sm text-slate-400">
-                        Offline-first mobile app so you can access tenant info even when the grid is
-                        down.
+                        {/* Offline-first mobile app so you can access tenant info even when the grid is
+                        down. */}
                       </p>
                     </div>
                   </div>
@@ -994,10 +995,10 @@ export default function App() {
                   <div className="from-brand-500 rotate-2 rounded-3xl bg-gradient-to-br to-purple-600 p-1 shadow-2xl transition-transform duration-500 hover:rotate-0">
                     <div className="overflow-hidden rounded-2xl bg-slate-900">
                       <Image
-                        src="/mockups/Mobile Dashboard.jpg"
+                        src="/mockups/img-mobile-mockup.svg"
                         alt="Mobile Dashboard"
                         width={300}
-                        height={500}
+                        height={750}
                         className="h-auto w-full object-cover"
                         unoptimized
                       />
@@ -1005,12 +1006,12 @@ export default function App() {
                   </div>
 
                   {/* Made in SA Badge */}
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2">
+                  {/* <div className="absolute -bottom-4 left-1/2 -translate-x-1/2">
                     <div className="from-brand-500 to-brand-600 flex items-center gap-2 rounded-full bg-gradient-to-r px-6 py-3 shadow-xl">
                       <Globe className="h-5 w-5 text-white" />
                       <span className="text-sm font-bold text-white">Made in SA with ❤️</span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </RevealOnScroll>
@@ -1252,12 +1253,16 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-800 bg-slate-900 py-12 text-slate-400">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="bg-brand-600 flex h-8 w-8 items-center justify-center rounded text-white">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-bold text-white">DominionDesk</span>
-          </div>
+          <Link href="/" className="flex items-center">
+            {/* Footer has dark background, so show light logo */}
+            <img
+              src="/logos/logo-dark.svg"
+              alt="Dominion Desk"
+              width={160}
+              height={32}
+              className="h-8 w-auto"
+            />
+          </Link>
 
           <div className="flex gap-6 text-sm">
             <a href="#" className="transition-colors hover:text-white">

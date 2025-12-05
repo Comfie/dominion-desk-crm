@@ -22,6 +22,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/logo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -127,9 +128,12 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
             isCollapsed ? 'justify-center' : 'justify-between'
           )}
         >
-          <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
-            <Building2 className="text-sidebar-primary h-6 w-6" />
-            {!isCollapsed && <span className="text-lg font-semibold">Dominion Desk</span>}
+          <Link href="/dashboard" className="flex items-center" onClick={onClose}>
+            {isCollapsed ? (
+              <Logo variant="icon" width={32} height={32} />
+            ) : (
+              <Logo variant="full" width={160} height={32} />
+            )}
           </Link>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
             <X className="h-5 w-5" />
