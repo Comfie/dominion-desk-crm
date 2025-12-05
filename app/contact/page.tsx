@@ -69,7 +69,7 @@ export default function ContactPage() {
               <div className="from-brand-600 to-brand-700 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br">
                 <Building2 className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg font-bold text-slate-900">VeldUnity</span>
+              <span className="text-lg font-bold text-slate-900">DominionDesk</span>
             </Link>
             <Link href="/">
               <Button variant="ghost" size="sm">
@@ -109,7 +109,7 @@ export default function ContactPage() {
             <div className="from-brand-600 to-brand-700 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br">
               <Building2 className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-slate-900">VeldUnity</span>
+            <span className="text-lg font-bold text-slate-900">DominionDesk</span>
           </Link>
           <Link href="/">
             <Button variant="ghost" size="sm">

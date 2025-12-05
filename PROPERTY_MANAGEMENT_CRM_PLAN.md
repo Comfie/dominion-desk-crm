@@ -2839,7 +2839,7 @@ This Property Management CRM is designed to solve real problems for South Africa
 **Next Steps:**
 
 1. Show your Apostle the church system (get that win!)
-2. Start Phase 1 of this Veld Unity (Week 1-2)
+2. Start Phase 1 of this Dominion Desk (Week 1-2)
 3. Recruit 5 beta testers from your network
 4. Build MVP (Weeks 1-8)
 5. Launch beta (Week 9)

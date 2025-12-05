@@ -21,7 +21,7 @@ This guide will help you set up Gmail SMTP for the contact form email functional
 2. You may need to sign in again
 3. In the "Select app" dropdown, choose **"Mail"**
 4. In the "Select device" dropdown, choose **"Other (Custom name)"**
-5. Enter a name like **"VeldUnity CRM"**
+5. Enter a name like **"DominionDesk CRM"**
 6. Click **"Generate"**
 7. Google will display a 16-character app password (e.g., `abcd efgh ijkl mnop`)
 8. **Copy this password immediately** - you won't be able to see it again

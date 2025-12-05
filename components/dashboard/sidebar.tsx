@@ -129,7 +129,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
         >
           <Link href="/dashboard" className="flex items-center gap-2" onClick={onClose}>
             <Building2 className="text-sidebar-primary h-6 w-6" />
-            {!isCollapsed && <span className="text-lg font-semibold">Veld Unity</span>}
+            {!isCollapsed && <span className="text-lg font-semibold">Dominion Desk</span>}
           </Link>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -172,7 +172,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
           {!isCollapsed ? (
             <div className="flex items-center justify-between">
               <div className="text-sidebar-foreground/50 text-xs">
-                <p>Veld Unity v0.1.0</p>
+                <p>Dominion Desk v0.1.0</p>
                 <p>© 2025 All rights reserved</p>
               </div>
               {toggleCollapse && (

@@ -64,9 +64,11 @@
 }
 
 :root {
-  /* Modern Premium Theme - Clean, Crisp, Professional */
-  --background: 0 0% 100%; /* Pure White */
-  --foreground: 222 47% 11%; /* Deep Slate - High contrast */
+  /* Modern Premium Theme - Customized for DOMINION DESK */
+  --background: 0 0% 100%;
+  /* Pure White */
+  --foreground: 222 47% 11%;
+  /* Deep Slate - High contrast */
 
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
@@ -74,77 +76,105 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 221 83% 53%; /* Vivid Indigo - Premium & Tech-forward */
+  /* --- DOMINION DESK BRAND COLORS --- */
+  --primary: 207 100% 14%;
+  /* Deep Navy Blue (#002B49) - Main Brand Color */
   --primary-foreground: 210 40% 98%;
+  /* Off-White for text on Navy */
 
-  --secondary: 210 40% 96.1%; /* Pale Slate - Subtle secondary */
+  --secondary: 210 40% 96.1%;
+  /* Pale Slate (Cool Gray) - Backgrounds/Subtle */
   --secondary-foreground: 222 47% 11%;
 
   --muted: 210 40% 96.1%;
   --muted-foreground: 215 16% 47%;
 
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222 47% 11%;
+  --accent: 24 55% 47%;
+  /* Copper/Rust (#B85C38) - High-Value CTAs/Alerts */
+  --accent-foreground: 210 40% 98%;
+  /* Off-White for text on Copper */
+  /* --- END BRAND COLORS --- */
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 214 32% 91%; /* Subtle borders */
+  --border: 214 32% 91%;
+  /* Subtle borders */
   --input: 214 32% 91%;
-  --ring: 221 83% 53%;
+  --ring: 207 100% 14%;
+  /* Ring matches Primary for focus */
 
   --radius: 0.5rem;
 
-  --chart-1: 221 83% 53%;
-  --chart-2: 199 89% 48%;
-  --chart-3: 160 84% 39%;
-  --chart-4: 43 96% 64%;
-  --chart-5: 27 96% 61%;
+  /* Chart colors can be updated to include brand primary/accent */
+  --chart-1: 207 100% 14%;
+  /* Primary Navy */
+  --chart-2: 24 55% 47%;
+  /* Accent Copper */
+  --chart-3: 217 60% 70%;
+  /* Lighter Blue variant */
+  --chart-4: 30 70% 60%;
+  /* Orange/Yellow variant */
+  --chart-5: 160 84% 39%;
+  /* Original chart green */
 
-  --sidebar-background: 210 40% 98%; /* Off-white sidebar */
+  --sidebar-background: 210 40% 98%;
   --sidebar-foreground: 215 25% 27%;
-  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary: 207 100% 14%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 210 40% 96.1%;
-  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-accent: 24 55% 47%;
+  --sidebar-accent-foreground: 210 40% 98%;
   --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 221 83% 53%;
+  --sidebar-ring: 207 100% 14%;
 }
 
 .dark {
-  /* Dark theme with blue-cyan undertones - Less harsh, more professional */
+  /* Dark theme with cool undertones - Customized for DOMINION DESK */
   --background: 215 25% 12%;
   --foreground: 210 20% 98%;
   --card: 215 20% 16%;
   --card-foreground: 210 20% 98%;
   --popover: 215 20% 16%;
   --popover-foreground: 210 20% 98%;
-  --primary: 217 91% 65%;
+
+  /* --- DOMINION DESK BRAND COLORS (Dark) --- */
+  --primary: 207 100% 80%;
+  /* Lighter shade of Navy for visibility */
   --primary-foreground: 215 25% 10%;
+
   --secondary: 215 20% 25%;
   --secondary-foreground: 210 20% 98%;
+
   --muted: 215 20% 20%;
   --muted-foreground: 210 15% 70%;
-  --accent: 187 85% 55%;
+
+  --accent: 24 55% 55%;
+  /* Slightly brighter Copper/Rust for contrast */
   --accent-foreground: 215 25% 10%;
+  /* --- END BRAND COLORS (Dark) --- */
+
   --destructive: 0 72% 51%;
   --destructive-foreground: 210 20% 98%;
+
   --border: 215 20% 25%;
   --input: 215 20% 25%;
-  --ring: 217 91% 65%;
-  --chart-1: 217 91% 65%;
-  --chart-2: 187 85% 55%;
-  --chart-3: 195 60% 60%;
-  --chart-4: 207 80% 60%;
-  --chart-5: 199 70% 55%;
+  --ring: 207 100% 80%;
+
+  /* Chart colors updated for dark theme */
+  --chart-1: 207 100% 80%;
+  --chart-2: 24 55% 55%;
+  --chart-3: 187 85% 55%;
+  --chart-4: 195 60% 60%;
+  --chart-5: 207 80% 60%;
+
   --sidebar-background: 215 25% 14%;
   --sidebar-foreground: 210 15% 85%;
-  --sidebar-primary: 217 91% 65%;
+  --sidebar-primary: 207 100% 80%;
   --sidebar-primary-foreground: 215 25% 10%;
-  --sidebar-accent: 215 20% 22%;
+  --sidebar-accent: 24 55% 55%;
   --sidebar-accent-foreground: 210 20% 98%;
   --sidebar-border: 215 20% 25%;
-  --sidebar-ring: 217 91% 65%;
+  --sidebar-ring: 207 100% 80%;
 }
 
 @layer base {

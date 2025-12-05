@@ -130,7 +130,7 @@ export async function POST(request: Request) {
           </div>
 
           <div style="padding: 20px; text-align: center; color: #64748b; font-size: 14px;">
-            <p style="margin: 0;">This email was sent from the VeldUnity contact form</p>
+            <p style="margin: 0;">This email was sent from the DominionDesk contact form</p>
             <p style="margin: 8px 0 0 0;">Respond directly to <a href="mailto:${validatedData.email}" style="color: #0284c7;">${validatedData.email}</a></p>
           </div>
         </div>
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     const confirmationMail = {
       from: process.env.SMTP_USER,
       to: validatedData.email,
-      subject: 'Thank you for contacting VeldUnity',
+      subject: 'Thank you for contacting DominionDesk',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 30px; text-align: center;">
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
               <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hi ${validatedData.name},</p>
 
               <p style="font-size: 16px; color: #334155; line-height: 1.6;">
-                Thank you for reaching out to VeldUnity! We've received your message and one of our team members will get back to you within 24 hours.
+                Thank you for reaching out to DominionDesk! We've received your message and one of our team members will get back to you within 24 hours.
               </p>
 
               <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px; margin: 24px 0;">
@@ -169,13 +169,13 @@ export async function POST(request: Request) {
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}"
                    style="display: inline-block; background: #0284c7; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-                  Visit VeldUnity
+                  Visit DominionDesk
                 </a>
               </div>
 
               <p style="font-size: 16px; color: #334155; line-height: 1.6;">
                 Best regards,<br>
-                <strong>The VeldUnity Team</strong>
+                <strong>The DominionDesk Team</strong>
               </p>
             </div>
           </div>

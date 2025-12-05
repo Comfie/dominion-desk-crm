@@ -45,7 +45,7 @@ const testimonials: Testimonial[] = [
     role: 'Airbnb Host',
     properties: '8 short-term rentals in Cape Town',
     content:
-      'I was managing everything through WhatsApp and Google Calendar. The stress was unbearable. Since switching to VeldUnity, I have had ZERO double-bookings, and my 5-star ratings went from 73% to 96%.',
+      'I was managing everything through WhatsApp and Google Calendar. The stress was unbearable. Since switching to DominionDesk, I have had ZERO double-bookings, and my 5-star ratings went from 73% to 96%.',
     rating: 5,
     result: '+23% in 5-star ratings',
   },
@@ -63,7 +63,7 @@ const testimonials: Testimonial[] = [
     role: 'Property Investor',
     properties: '5 mixed portfolio in Durban',
     content:
-      'We were drowning in paperwork. VeldUnity gave us our lives back. What used to take 15 hours a week now takes 2 hours. We have added 3 more properties because we can actually handle them now.',
+      'We were drowning in paperwork. DominionDesk gave us our lives back. What used to take 15 hours a week now takes 2 hours. We have added 3 more properties because we can actually handle them now.',
     rating: 5,
     result: 'Saved 13 hours/week',
   },
@@ -236,7 +236,7 @@ export default function App() {
               <span
                 className={`text-xl font-bold tracking-tight ${scrolled ? 'text-slate-900' : 'text-slate-900 lg:text-white'}`}
               >
-                VeldUnity
+                DominionDesk
               </span>
             </div>
 
@@ -322,7 +322,7 @@ export default function App() {
           </h1>
 
           <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-slate-300 md:text-xl">
-            VeldUnity is the all-in-one CRM built specifically for South African{' '}
+            DominionDesk is the all-in-one CRM built specifically for South African{' '}
             <span className="font-semibold text-white">landlords</span> and{' '}
             <span className="font-semibold text-white">Airbnb hosts</span>. Automate rent, prevent
             double-bookings, and get your weekends back.
@@ -436,7 +436,7 @@ export default function App() {
                   <CheckCircle2 className="text-brand-500 h-32 w-32" />
                 </div>
                 <h3 className="text-brand-600 mb-6 flex items-center gap-2 text-xl font-bold">
-                  <CheckCircle className="h-6 w-6" /> The VeldUnity Way
+                  <CheckCircle className="h-6 w-6" /> The DominionDesk Way
                 </h3>
                 <ul className="space-y-4">
                   {[
@@ -517,7 +517,7 @@ export default function App() {
                   Built for the South African Reality
                 </h2>
                 <p className="mb-8 text-lg text-slate-300">
-                  Global tools don't understand our unique challenges. VeldUnity does.
+                  Global tools don't understand our unique challenges. DominionDesk does.
                 </p>
 
                 <div className="space-y-6">
@@ -752,7 +752,7 @@ export default function App() {
               {
                 question: 'Do I need technical skills?',
                 answer:
-                  'None at all. If you can use WhatsApp or Facebook, you can use VeldUnity. Our interface is designed to be dead simple.',
+                  'None at all. If you can use WhatsApp or Facebook, you can use DominionDesk. Our interface is designed to be dead simple.',
               },
               {
                 question: 'Can I manage both Airbnb and Long-term rentals?',
@@ -789,8 +789,8 @@ export default function App() {
               Stop managing. Start growing.
             </h2>
             <p className="text-brand-100 mx-auto mb-10 max-w-2xl text-lg md:text-xl">
-              Join 500+ South African property managers who have reclaimed their time. Try VeldUnity
-              completely risk-free.
+              Join 500+ South African property managers who have reclaimed their time. Try
+              DominionDesk completely risk-free.
             </p>
             <Button
               size="xl"
@@ -811,7 +811,7 @@ export default function App() {
             <div className="bg-brand-600 flex h-8 w-8 items-center justify-center rounded text-white">
               <Building2 className="h-5 w-5" />
             </div>
-            <span className="text-lg font-bold text-white">VeldUnity</span>
+            <span className="text-lg font-bold text-white">DominionDesk</span>
           </div>
 
           <div className="flex gap-6 text-sm">
@@ -826,7 +826,7 @@ export default function App() {
             </a>
           </div>
 
-          <div className="text-sm">© {new Date().getFullYear()} VeldUnity CRM.</div>
+          <div className="text-sm">© {new Date().getFullYear()} DominionDesk CRM.</div>
         </div>
       </footer>
     </div>

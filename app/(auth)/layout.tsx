@@ -11,14 +11,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
               <Building2 className="h-6 w-6" />
             </div>
-            <span className="text-xl font-bold">Veld Unity</span>
+            <span className="text-xl font-bold">Dominion Desk</span>
           </Link>
         </div>
 
         <div className="space-y-6">
           <blockquote className="space-y-2">
             <p className="text-lg leading-relaxed font-medium">
-              &ldquo;Veld Unity has transformed how I manage my rental properties. No more double
+              &ldquo;Dominion Desk has transformed how I manage my rental properties. No more double
               bookings, and I can finally see all my finances in one place.&rdquo;
             </p>
             <footer className="text-sm opacity-80">
@@ -42,7 +42,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <div className="text-xs opacity-60">© 2025 Veld Unity. All rights reserved.</div>
+        <div className="text-xs opacity-60">© 2025 Dominion Desk. All rights reserved.</div>
       </div>
 
       {/* Right side - Auth forms */}
@@ -53,7 +53,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="bg-primary text-primary-foreground flex h-10 w-10 items-center justify-center rounded-lg">
               <Building2 className="h-6 w-6" />
             </div>
-            <span className="text-xl font-bold">Veld Unity</span>
+            <span className="text-xl font-bold">Dominion Desk</span>
           </div>
 
           {children}
