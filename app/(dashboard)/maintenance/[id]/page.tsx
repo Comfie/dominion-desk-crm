@@ -15,6 +15,7 @@ import {
   PlayCircle,
   XCircle,
   Loader2,
+  CheckSquare,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
@@ -89,6 +90,22 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance', id] });
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+    },
+  });
+
+  const createTaskMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/maintenance/${id}/create-task`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to create task');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenance', id] });
     },
   });
 
@@ -418,6 +435,64 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Completed</span>
                   <span>{formatDate(request.completedDate)}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Linked Task */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckSquare className="h-5 w-5" />
+                Task
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {request.tasks && request.tasks.length > 0 ? (
+                <div className="space-y-2">
+                  <Link
+                    href={`/tasks/${request.tasks[0].id}`}
+                    className="hover:text-primary block font-medium transition-colors"
+                  >
+                    {request.tasks[0].title}
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={request.tasks[0].status === 'COMPLETED' ? 'default' : 'outline'}
+                    >
+                      {request.tasks[0].status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground text-xs">Status synced automatically</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-sm">No linked task</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => createTaskMutation.mutate()}
+                    disabled={createTaskMutation.isPending}
+                  >
+                    {createTaskMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="mr-2 h-4 w-4" />
+                        Create Task
+                      </>
+                    )}
+                  </Button>
+                  {createTaskMutation.isError && (
+                    <p className="text-destructive text-xs">
+                      {createTaskMutation.error?.message || 'Failed to create task'}
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

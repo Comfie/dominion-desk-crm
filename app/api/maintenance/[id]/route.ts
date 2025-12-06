@@ -85,6 +85,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             expenseDate: 'desc',
           },
         },
+        tasks: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            dueDate: true,
+            priority: true,
+          },
+        },
       },
     });
 

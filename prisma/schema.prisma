@@ -671,6 +671,7 @@ model MaintenanceRequest {
 
   // Relations
   expenses        Expense[]
+  tasks           Task[]
 
   @@index([status, priority, propertyId])
 }
@@ -1248,9 +1249,13 @@ model Task {
   dueDate         DateTime?
   completedDate   DateTime?
 
-  // Related Entity
+  // Related Entity (generic linking)
   relatedType     String?   // "property", "booking", "tenant", etc.
   relatedId       String?
+
+  // Maintenance Request Link (specific for status sync)
+  maintenanceRequestId String?
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id], onDelete: SetNull)
 
   // Status
   status          TaskStatus @default(TODO)

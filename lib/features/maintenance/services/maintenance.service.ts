@@ -7,6 +7,27 @@ import { sendEmail } from '@/lib/email';
 import { maintenanceEmailTemplates } from '@/lib/features/maintenance/templates/maintenance-templates';
 
 /**
+ * Map maintenance status to task status for synchronization
+ */
+function mapMaintenanceStatusToTaskStatus(
+  maintenanceStatus: MaintenanceStatus
+): 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' {
+  switch (maintenanceStatus) {
+    case 'PENDING':
+    case 'SCHEDULED':
+      return 'TODO';
+    case 'IN_PROGRESS':
+      return 'IN_PROGRESS';
+    case 'COMPLETED':
+      return 'COMPLETED';
+    case 'CANCELLED':
+      return 'CANCELLED';
+    default:
+      return 'TODO';
+  }
+}
+
+/**
  * Maintenance Service
  * Business logic layer for maintenance requests
  */
@@ -297,6 +318,36 @@ export class MaintenanceService {
 
     const updated = await maintenanceRepository.update(maintenanceId, updateData);
 
+    // Sync task status if a linked task exists
+    try {
+      const linkedTask = await prisma.task.findFirst({
+        where: { maintenanceRequestId: maintenanceId },
+      });
+
+      if (linkedTask) {
+        const taskStatus = mapMaintenanceStatusToTaskStatus(status);
+        await prisma.task.update({
+          where: { id: linkedTask.id },
+          data: {
+            status: taskStatus,
+            ...(status === 'COMPLETED' && { completedDate: new Date() }),
+          },
+        });
+
+        logger.info('Linked task status synced', {
+          maintenanceId,
+          taskId: linkedTask.id,
+          newTaskStatus: taskStatus,
+        });
+      }
+    } catch (taskSyncError) {
+      logger.error('Failed to sync linked task status', {
+        error: taskSyncError,
+        maintenanceId,
+      });
+      // Continue - don't fail the maintenance update if task sync fails
+    }
+
     logger.info('Maintenance status updated', {
       maintenanceId,
       userId,
@@ -502,6 +553,62 @@ export class MaintenanceService {
       logger.error('Failed to process follow-up emails', { error });
       throw error;
     }
+  }
+
+  /**
+   * Create a task from a maintenance request
+   */
+  async createTaskFromMaintenance(maintenanceId: string, userId: string) {
+    // Verify maintenance request exists and belongs to user
+    const maintenance = await maintenanceRepository.findById(maintenanceId);
+
+    if (!maintenance) {
+      throw new NotFoundError('Maintenance request', maintenanceId);
+    }
+
+    if (maintenance.userId !== userId) {
+      throw new ForbiddenError('You do not have permission to access this maintenance request');
+    }
+
+    // Check if task already exists for this maintenance
+    const existingTask = await prisma.task.findFirst({
+      where: { maintenanceRequestId: maintenanceId },
+    });
+
+    if (existingTask) {
+      throw new ValidationError('A task already exists for this maintenance request');
+    }
+
+    // Fetch property details
+    const property = await prisma.property.findUnique({
+      where: { id: maintenance.propertyId },
+      select: { id: true, name: true },
+    });
+
+    // Create task
+    const task = await prisma.task.create({
+      data: {
+        userId,
+        maintenanceRequestId: maintenanceId,
+        title: `[Maintenance] ${maintenance.title}`,
+        description: `${maintenance.description}\n\nProperty: ${property?.name || 'Unknown'}\nCategory: ${maintenance.category}\nPriority: ${maintenance.priority}`,
+        taskType: 'MAINTENANCE',
+        priority: maintenance.priority,
+        dueDate: maintenance.scheduledDate || undefined,
+        status: mapMaintenanceStatusToTaskStatus(maintenance.status),
+        assignedTo: maintenance.assignedTo || undefined,
+        relatedType: 'maintenance',
+        relatedId: maintenanceId,
+      },
+    });
+
+    logger.info('Task created from maintenance request', {
+      taskId: task.id,
+      maintenanceId,
+      userId,
+    });
+
+    return task;
   }
 }
 

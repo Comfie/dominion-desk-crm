@@ -120,7 +120,7 @@ export default function DashboardPage() {
       </PageHeader>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -177,19 +177,6 @@ export default function DashboardPage() {
                 )}
               </div>
               <DollarSign className="text-primary h-8 w-8" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm">Inquiries</p>
-                <p className="text-2xl font-bold">{stats?.pendingInquiries || 0}</p>
-                <p className="text-muted-foreground/70 text-xs">Pending</p>
-              </div>
-              <MessageSquare className="text-chart-4 h-8 w-8" />
             </div>
           </CardContent>
         </Card>
