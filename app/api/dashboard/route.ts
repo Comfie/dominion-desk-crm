@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getStaleMaintenance } from '@/lib/features/maintenance/services/dashboard-utils';
 
 export async function GET() {
   try {
@@ -27,6 +28,7 @@ export async function GET() {
       upcomingTasks,
       upcomingCheckIns,
       outstandingPayments,
+      staleMaintenance,
     ] = await Promise.all([
       // Total properties
       prisma.property.count({ where: { userId } }),
@@ -143,6 +145,9 @@ export async function GET() {
           amountPaid: true,
         },
       }),
+
+      // Stale maintenance requests (5+ days old)
+      getStaleMaintenance(userId),
     ]);
 
     // Calculate outstanding amount
@@ -218,10 +223,12 @@ export async function GET() {
         revenueChange: Math.round(revenueChange * 10) / 10,
         outstandingPayments: totalOutstanding,
         occupancyRate: Math.round(occupancyRate * 10) / 10,
+        staleMaintenanceCount: staleMaintenance.length,
       },
       recentBookings,
       upcomingTasks,
       upcomingCheckIns,
+      staleMaintenance,
     });
   } catch (error) {
     console.error('Dashboard error:', error);

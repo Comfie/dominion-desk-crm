@@ -174,3 +174,19 @@ export async function notifyTaskDue(userId: string, taskTitle: string, taskId: s
     linkUrl: `/tasks?id=${taskId}`,
   });
 }
+
+export async function notifyStaleMaintenance(
+  userId: string,
+  maintenanceTitle: string,
+  propertyName: string,
+  daysStale: number,
+  maintenanceId: string
+) {
+  return createNotification({
+    userId,
+    title: 'Stale maintenance request',
+    message: `${maintenanceTitle} at ${propertyName} has been pending for ${daysStale} days`,
+    type: 'MAINTENANCE',
+    linkUrl: `/maintenance/${maintenanceId}`,
+  });
+}

@@ -36,6 +36,7 @@ interface DashboardData {
     revenueChange: number;
     outstandingPayments: number;
     occupancyRate: number;
+    staleMaintenanceCount: number;
   };
   recentBookings: Array<{
     id: string;
@@ -60,6 +61,14 @@ interface DashboardData {
     checkInDate: string;
     numberOfGuests: number;
     property: { name: string };
+  }>;
+  staleMaintenance: Array<{
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    daysStale: number;
+    property: { id: string; name: string };
   }>;
 }
 
@@ -231,6 +240,47 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Stale Maintenance Alert */}
+      {data?.staleMaintenance && data.staleMaintenance.length > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="text-destructive h-5 w-5" />
+              <CardTitle className="text-destructive">Attention Required</CardTitle>
+            </div>
+            <CardDescription>
+              {data.staleMaintenance.length} maintenance request(s) pending for 5+ days
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {data.staleMaintenance.map((request) => (
+                <Link key={request.id} href={`/maintenance/${request.id}`}>
+                  <div className="hover:bg-destructive/10 flex items-center justify-between rounded-lg border p-3 transition-colors">
+                    <div>
+                      <p className="font-medium">{request.title}</p>
+                      <p className="text-muted-foreground text-sm">{request.property.name}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="destructive">{request.daysStale} days old</Badge>
+                      <p className="text-muted-foreground mt-1 text-xs">{request.status}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Link href="/maintenance">
+                <Button variant="outline" size="sm" className="w-full">
+                  <Wrench className="mr-2 h-4 w-4" />
+                  View All Maintenance
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">

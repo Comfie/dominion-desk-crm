@@ -347,18 +347,14 @@ export class MaintenanceService {
 
         let emailTemplate;
         switch (status) {
-          case 'SCHEDULED':
-            emailTemplate = maintenanceEmailTemplates.scheduled(emailData);
-            break;
-          case 'IN_PROGRESS':
-            emailTemplate = maintenanceEmailTemplates.inProgress(emailData);
-            break;
           case 'COMPLETED':
             emailTemplate = maintenanceEmailTemplates.completed(emailData);
             break;
           case 'CANCELLED':
             emailTemplate = maintenanceEmailTemplates.cancelled(emailData);
             break;
+          // Only send emails for COMPLETED and CANCELLED to save email quota
+          // SCHEDULED and IN_PROGRESS updates shown via dashboard alerts
           default:
             emailTemplate = null;
         }
