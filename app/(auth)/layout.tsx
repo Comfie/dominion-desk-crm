@@ -9,7 +9,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="from-primary via-primary/90 to-primary/80 text-primary-foreground hidden flex-col justify-between bg-gradient-to-br p-10 lg:flex">
         <div>
           <Link href="/" className="flex items-center">
-            <Logo variant="full" width={180} height={36} />
+            <img
+              src="/logos/logo-dark.svg"
+              alt="Dominion Desk"
+              width={300}
+              height={36}
+              style={{ display: 'block' }}
+            />
           </Link>
         </div>
 

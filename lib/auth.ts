@@ -50,6 +50,7 @@ export const authOptions: NextAuthOptions = {
           image: user.photoUrl,
           accountType: user.accountType,
           role: user.role,
+          requirePasswordChange: user.requirePasswordChange || false,
         };
       },
     }),
@@ -69,6 +70,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.accountType = user.accountType;
         token.role = user.role;
+        token.requirePasswordChange = user.requirePasswordChange;
         token.organizationId = user.id; // Default: user's own workspace
         token.isTeamMember = false;
 
@@ -134,6 +136,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.accountType = token.accountType as string;
         session.user.role = token.role;
+        session.user.requirePasswordChange = token.requirePasswordChange;
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName;
         session.user.isTeamMember = token.isTeamMember;

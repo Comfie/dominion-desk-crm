@@ -41,6 +41,10 @@ model User {
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
 
+  // First login and password change tracking
+  isFirstLogin        Boolean   @default(false)
+  requirePasswordChange Boolean @default(false)
+
   // Preferences
   timezone        String    @default("Africa/Johannesburg")
   currency        String    @default("ZAR")
@@ -85,6 +89,19 @@ model User {
   reviews         Review[]
   integrations    Integration[]
   subscriptionHistory SubscriptionHistory[]
+}
+
+// ============== PASSWORD RESET ==============
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
 }
 
 enum AccountType {

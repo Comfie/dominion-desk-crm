@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { sendEmail } from '@/lib/email';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -17,15 +17,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = contactSchema.parse(body);
 
-    // Create transporter using Gmail SMTP
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
     const requestTypeLabels = {
       demo: 'Demo Request',
       trial: 'Free Trial',
@@ -34,9 +25,8 @@ export async function POST(request: Request) {
       other: 'General Inquiry',
     };
 
-    // Email to you
-    const mailOptions = {
-      from: process.env.SMTP_USER,
+    // Email to admin
+    const adminEmailResult = await sendEmail({
       to: 'comfynyatsine@gmail.com',
       subject: `New Contact Form: ${requestTypeLabels[validatedData.requestType]} - ${validatedData.name}`,
       html: `
@@ -135,13 +125,14 @@ export async function POST(request: Request) {
           </div>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (!adminEmailResult.success) {
+      throw new Error(adminEmailResult.error);
+    }
 
-    // Optional: Send confirmation email to the user
-    const confirmationMail = {
-      from: process.env.SMTP_USER,
+    // Send confirmation email to the user
+    const confirmationResult = await sendEmail({
       to: validatedData.email,
       subject: 'Thank you for contacting DominionDesk',
       html: `
@@ -186,9 +177,7 @@ export async function POST(request: Request) {
           </div>
         </div>
       `,
-    };
-
-    await transporter.sendMail(confirmationMail);
+    });
 
     return NextResponse.json({ message: 'Contact form submitted successfully' }, { status: 200 });
   } catch (error) {

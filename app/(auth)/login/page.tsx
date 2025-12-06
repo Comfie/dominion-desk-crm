@@ -140,12 +140,12 @@ function LoginForm() {
         </Button>
       </form>
 
-      <div className="text-center text-sm">
+      {/* <div className="text-center text-sm">
         <span className="text-muted-foreground">Don&apos;t have an account? </span>
         <Link href="/register" className="text-primary font-medium hover:underline">
           Create account
         </Link>
-      </div>
+      </div> */}
 
       {/* Demo credentials hint */}
       <div className="bg-muted/50 space-y-3 rounded-lg border p-4 text-sm">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserTable } from '@/components/admin';
+import { UserTable, CreateUserDialog } from '@/components/admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -99,9 +99,12 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">Manage landlords and their subscriptions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">User Management</h1>
+          <p className="text-muted-foreground">Manage landlords and their subscriptions</p>
+        </div>
+        <CreateUserDialog onUserCreated={fetchUsers} />
       </div>
 
       <Card>

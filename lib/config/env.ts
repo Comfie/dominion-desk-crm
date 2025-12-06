@@ -21,12 +21,9 @@ const envSchema = z.object({
   // AWS_S3_BUCKET: z.string().min(3, 'AWS_S3_BUCKET is required'),
   // AWS_REGION: z.string().default('us-east-1'),
 
-  // Email (Optional - for SMTP)
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.string().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM_EMAIL: z.string().email().optional(),
+  // Email (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  FROM_EMAIL: z.string().email().optional(),
 
   // UploadThing
   UPLOADTHING_SECRET: z.string().optional(),
@@ -70,7 +67,7 @@ export { env };
  * Check if specific optional features are configured
  */
 export const features = {
-  hasEmail: !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
+  hasEmail: !!env.RESEND_API_KEY,
   hasUploadThing: !!(env.UPLOADTHING_SECRET && env.UPLOADTHING_APP_ID),
   hasStripe: !!env.STRIPE_SECRET_KEY,
   hasPaystack: !!env.PAYSTACK_SECRET_KEY,
