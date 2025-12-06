@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { maintenanceService } from '@/lib/features/maintenance/services/maintenance.service';
 
 const updateMaintenanceSchema = z.object({
   title: z.string().min(1).optional(),
@@ -68,6 +69,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             lastName: true,
             email: true,
             phone: true,
+          },
+        },
+        expenses: {
+          select: {
+            id: true,
+            title: true,
+            amount: true,
+            category: true,
+            expenseDate: true,
+            status: true,
+            vendor: true,
+          },
+          orderBy: {
+            expenseDate: 'desc',
           },
         },
       },
@@ -155,6 +170,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         },
       },
     });
+
+    // If status changed, send email notification
+    if (validatedData.status && validatedData.status !== existingRequest.status) {
+      try {
+        await maintenanceService.updateStatus(
+          id,
+          session.user.id,
+          validatedData.status,
+          validatedData.resolutionNotes || undefined
+        );
+      } catch (emailError) {
+        console.error('Failed to send status change email:', emailError);
+        // Continue - don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json(maintenanceRequest);
   } catch (error) {

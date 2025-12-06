@@ -16,6 +16,7 @@ export class ExpenseService {
     userId: string,
     data: {
       propertyId: string;
+      maintenanceRequestId?: string;
       category: ExpenseCategory;
       amount: number;
       expenseDate: Date;
@@ -38,9 +39,26 @@ export class ExpenseService {
       throw new NotFoundError('Property', data.propertyId);
     }
 
+    // If maintenance request specified, verify it belongs to user
+    if (data.maintenanceRequestId) {
+      const maintenanceRequest = await prisma.maintenanceRequest.findFirst({
+        where: {
+          id: data.maintenanceRequestId,
+          userId,
+        },
+      });
+
+      if (!maintenanceRequest) {
+        throw new NotFoundError('Maintenance request', data.maintenanceRequestId);
+      }
+    }
+
     const expense = await expenseRepository.create({
       user: { connect: { id: userId } },
       property: { connect: { id: data.propertyId } },
+      ...(data.maintenanceRequestId && {
+        maintenanceRequest: { connect: { id: data.maintenanceRequestId } },
+      }),
       title: data.description.substring(0, 100), // Use description as title
       category: data.category,
       amount: data.amount,
@@ -69,6 +87,7 @@ export class ExpenseService {
     userId: string,
     data: {
       propertyId?: string;
+      maintenanceRequestId?: string | null;
       category?: ExpenseCategory;
       amount?: number;
       expenseDate?: Date;
@@ -162,6 +181,7 @@ export class ExpenseService {
     userId: string,
     filters?: {
       propertyId?: string;
+      maintenanceRequestId?: string;
       category?: ExpenseCategory;
       startDate?: Date;
       endDate?: Date;
@@ -169,6 +189,25 @@ export class ExpenseService {
     }
   ) {
     return expenseRepository.findByUserId(userId, filters);
+  }
+
+  /**
+   * Get expenses for a specific maintenance request
+   */
+  async getByMaintenanceRequestId(maintenanceRequestId: string, userId: string) {
+    // Verify maintenance request belongs to user
+    const maintenanceRequest = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: maintenanceRequestId,
+        userId,
+      },
+    });
+
+    if (!maintenanceRequest) {
+      throw new NotFoundError('Maintenance request', maintenanceRequestId);
+    }
+
+    return expenseRepository.findByMaintenanceRequestId(maintenanceRequestId);
   }
 
   /**

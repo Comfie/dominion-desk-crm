@@ -325,6 +325,15 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Maintenance card component
 - ✅ Delete maintenance request
 
+#### Maintenance Email Notifications
+
+- ✅ Email sent on maintenance request creation
+- ✅ Email sent on status change (SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED)
+- ✅ Follow-up emails for stale requests (5+ days pending/in-progress)
+- ✅ Comprehensive email templates with HTML and plain text
+- ✅ Automatic email triggering via service layer
+- ✅ Cron job for daily follow-up email processing (10 AM)
+
 #### Maintenance Repository & Services
 
 - ✅ Maintenance repository with 11 methods
@@ -334,6 +343,8 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Find urgent requests
 - ✅ Find pending requests
 - ✅ Full CRUD operations
+- ✅ Email notification integration
+- ✅ Follow-up email automation
 
 ---
 
@@ -346,6 +357,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Expense date tracking
 - ✅ Amount and description
 - ✅ Property assignment
+- ✅ Maintenance request linking (optional)
 - ✅ Vendor tracking
 - ✅ Receipt upload
 - ✅ Notes field
@@ -357,22 +369,24 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Expenses by date range
 - ✅ Expense statistics (total amount, count, by category)
 - ✅ Recent expenses
+- ✅ Expenses by maintenance request
 
 #### Expense Management Page
 
 - ✅ Expense list with filtering
 - ✅ Search functionality
-- ✅ Filter by property, category, date range
+- ✅ Filter by property, maintenance request, category, date range
 - ✅ Create new expense
 - ✅ Expense statistics display
 
 #### Expense Repository & Services
 
-- ✅ Expense repository with 11 methods
-- ✅ Find by ID, user, property, category
+- ✅ Expense repository with 12 methods
+- ✅ Find by ID, user, property, category, maintenance request
 - ✅ Get statistics with date range support
 - ✅ Get recent expenses
 - ✅ Full CRUD operations
+- ✅ Maintenance request validation and linking
 
 ---
 
@@ -684,14 +698,14 @@ UPLOADTHING_APP_ID
 2. No SMS/WhatsApp implementation (stubs only)
 3. No payment gateway integration (manual payments only)
 4. No calendar sync (Airbnb, Booking.com)
-5. No maintenance module
-6. No expense tracking
+5. Frontend integration pending for expense-maintenance linking
+6. Limited mobile optimization (core backend complete)
 
 ### Technical Debt
 
 1. Some old API routes not yet migrated to service layer
 2. Frontend components could use more refactoring
-3. Limited mobile optimization
+3. Limited mobile optimization on some pages
 4. No PWA support
 
 ---
@@ -700,10 +714,10 @@ UPLOADTHING_APP_ID
 
 ### Immediate (Next Sprint)
 
-1. Complete automated testing setup
-2. Implement maintenance request module
-3. Add expense tracking
-4. Improve mobile responsiveness
+1. Complete frontend integration for expense-maintenance linking
+2. Improve mobile responsiveness across all pages
+3. Complete automated testing setup
+4. Add e2e testing for critical flows
 
 ### Short-term (1-2 months)
 
@@ -725,6 +739,7 @@ UPLOADTHING_APP_ID
 
 ✅ Core property management functionality working  
 ✅ Automated payment reminder system operational  
+✅ Automated maintenance email notifications operational  
 ✅ Tenant portal provides self-service  
 ✅ Multi-tenancy fully implemented  
 ✅ Clean architecture established  
@@ -732,7 +747,8 @@ UPLOADTHING_APP_ID
 ✅ Audit trail for compliance  
 ✅ Email notifications working  
 ✅ Cron jobs running automatically  
-✅ Role-based access control functional
+✅ Role-based access control functional  
+✅ Expense-maintenance linking implemented
 
 ---
 

@@ -661,9 +661,16 @@ model MaintenanceRequest {
   rating          Int?      // 1-5 stars
   feedback        String?   @db.Text
 
+  // Follow-up tracking
+  followUpSent    Boolean   @default(false)
+  followUpSentAt  DateTime?
+
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  // Relations
+  expenses        Expense[]
 
   @@index([status, priority, propertyId])
 }
@@ -765,6 +772,8 @@ model Expense {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId      String?
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  maintenanceRequestId String?
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id], onDelete: SetNull)
 
   // Expense Details
   title           String

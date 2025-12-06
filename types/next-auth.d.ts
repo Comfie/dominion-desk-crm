@@ -7,6 +7,7 @@ declare module 'next-auth' {
       id: string;
       accountType: string;
       role: UserRole;
+      requirePasswordChange?: boolean;
       organizationId: string; // Current workspace context
       organizationName?: string; // For UI display
       isTeamMember?: boolean; // True if accessing via team membership
@@ -17,6 +18,7 @@ declare module 'next-auth' {
     id: string;
     accountType: string;
     role: UserRole;
+    requirePasswordChange?: boolean;
     organizationId?: string;
   }
 }
@@ -26,6 +28,7 @@ declare module 'next-auth/jwt' {
     id: string;
     accountType: string;
     role: UserRole;
+    requirePasswordChange?: boolean;
     organizationId: string;
     organizationName?: string;
     isTeamMember?: boolean;

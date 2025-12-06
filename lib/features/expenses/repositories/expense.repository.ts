@@ -20,6 +20,13 @@ export class ExpenseRepository {
             address: true,
           },
         },
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
       },
     });
   }
@@ -31,6 +38,7 @@ export class ExpenseRepository {
     userId: string,
     filters?: {
       propertyId?: string;
+      maintenanceRequestId?: string;
       category?: ExpenseCategory;
       startDate?: Date;
       endDate?: Date;
@@ -41,6 +49,10 @@ export class ExpenseRepository {
 
     if (filters?.propertyId) {
       where.propertyId = filters.propertyId;
+    }
+
+    if (filters?.maintenanceRequestId) {
+      where.maintenanceRequestId = filters.maintenanceRequestId;
     }
 
     if (filters?.category) {
@@ -74,6 +86,13 @@ export class ExpenseRepository {
             name: true,
           },
         },
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
       },
       orderBy: { expenseDate: 'desc' },
     });
@@ -85,6 +104,33 @@ export class ExpenseRepository {
   async findByPropertyId(propertyId: string) {
     return prisma.expense.findMany({
       where: { propertyId },
+      include: {
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { expenseDate: 'desc' },
+    });
+  }
+
+  /**
+   * Find expenses by maintenance request ID
+   */
+  async findByMaintenanceRequestId(maintenanceRequestId: string) {
+    return prisma.expense.findMany({
+      where: { maintenanceRequestId },
+      include: {
+        property: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       orderBy: { expenseDate: 'desc' },
     });
   }
@@ -100,6 +146,13 @@ export class ExpenseRepository {
           select: {
             id: true,
             name: true,
+          },
+        },
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
           },
         },
       },
@@ -118,6 +171,13 @@ export class ExpenseRepository {
           select: {
             id: true,
             name: true,
+          },
+        },
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
           },
         },
       },

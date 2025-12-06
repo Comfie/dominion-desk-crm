@@ -14,6 +14,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const propertyId = searchParams.get('propertyId');
+    const maintenanceRequestId = searchParams.get('maintenanceRequestId');
     const category = searchParams.get('category');
     const status = searchParams.get('status');
     const startDate = searchParams.get('startDate');
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
       where: {
         userId: session.user.id,
         ...(propertyId && { propertyId }),
+        ...(maintenanceRequestId && { maintenanceRequestId }),
         ...(category && {
           category: category as
             | 'MAINTENANCE'
@@ -54,6 +56,14 @@ export async function GET(request: Request) {
             id: true,
             name: true,
             address: true,
+          },
+        },
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            priority: true,
           },
         },
       },
@@ -108,6 +118,7 @@ export async function POST(request: Request) {
       data: {
         userId: session.user.id,
         propertyId: data.propertyId || null,
+        ...(data.maintenanceRequestId && { maintenanceRequestId: data.maintenanceRequestId }),
         title: data.title,
         description: data.description || null,
         category: data.category,
@@ -128,6 +139,13 @@ export async function POST(request: Request) {
             id: true,
             name: true,
             address: true,
+          },
+        },
+        maintenanceRequest: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
           },
         },
       },

@@ -6,6 +6,7 @@ import { ExpenseCategory } from '@prisma/client';
  */
 export const createExpenseSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
+  maintenanceRequestId: z.string().min(1).optional(),
   category: z.nativeEnum(ExpenseCategory),
   amount: z.number().positive('Amount must be positive'),
   expenseDate: z.coerce.date(),
@@ -23,6 +24,7 @@ export type CreateExpenseDTO = z.infer<typeof createExpenseSchema>;
  */
 export const updateExpenseSchema = z.object({
   propertyId: z.string().min(1).optional(),
+  maintenanceRequestId: z.string().min(1).optional().nullable(),
   category: z.nativeEnum(ExpenseCategory).optional(),
   amount: z.number().positive().optional(),
   expenseDate: z.coerce.date().optional(),
@@ -40,6 +42,7 @@ export type UpdateExpenseDTO = z.infer<typeof updateExpenseSchema>;
  */
 export const listExpensesSchema = z.object({
   propertyId: z.string().min(1).optional(),
+  maintenanceRequestId: z.string().min(1).optional(),
   category: z.nativeEnum(ExpenseCategory).optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),

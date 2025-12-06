@@ -3,6 +3,8 @@ import { maintenanceRepository } from '@/lib/features/maintenance/repositories/m
 import { logger } from '@/lib/shared/logger';
 import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
 import { prisma } from '@/lib/db';
+import { sendEmail } from '@/lib/email';
+import { maintenanceEmailTemplates } from '@/lib/features/maintenance/templates/maintenance-templates';
 
 /**
  * Maintenance Service
@@ -70,6 +72,51 @@ export class MaintenanceService {
       propertyId: data.propertyId,
       priority: data.priority,
     });
+
+    // Send email notification
+    try {
+      const landlord = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+
+      const tenant = data.tenantId
+        ? await prisma.tenant.findUnique({
+            where: { id: data.tenantId },
+            select: { firstName: true, lastName: true, email: true },
+          })
+        : null;
+
+      if (landlord) {
+        const emailTemplate = maintenanceEmailTemplates.created({
+          landlordName: `${landlord.firstName} ${landlord.lastName}`,
+          tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : undefined,
+          tenantEmail: tenant?.email,
+          propertyName: property.name,
+          propertyAddress: `${property.address}, ${property.city}`,
+          title: data.title,
+          description: data.description,
+          category: data.category,
+          priority: data.priority,
+          status: 'PENDING',
+          estimatedCost: data.estimatedCost ? `R ${data.estimatedCost.toFixed(2)}` : undefined,
+        });
+
+        await sendEmail({
+          to: landlord.email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+          text: emailTemplate.text,
+        });
+
+        logger.info('Maintenance creation email sent', { maintenanceId: maintenance.id });
+      }
+    } catch (emailError) {
+      logger.error('Failed to send maintenance creation email', {
+        error: emailError,
+        maintenanceId: maintenance.id,
+      });
+    }
 
     return maintenance;
   }
@@ -257,6 +304,89 @@ export class MaintenanceService {
       newStatus: status,
     });
 
+    // Send email notification for status change
+    try {
+      const fullMaintenance = await prisma.maintenanceRequest.findUnique({
+        where: { id: maintenanceId },
+        include: {
+          property: true,
+          tenant: true,
+          user: true,
+        },
+      });
+
+      if (fullMaintenance) {
+        const landlordName = `${fullMaintenance.user.firstName} ${fullMaintenance.user.lastName}`;
+        const tenantName = fullMaintenance.tenant
+          ? `${fullMaintenance.tenant.firstName} ${fullMaintenance.tenant.lastName}`
+          : undefined;
+
+        const emailData = {
+          landlordName,
+          tenantName,
+          tenantEmail: fullMaintenance.tenant?.email,
+          propertyName: fullMaintenance.property.name,
+          propertyAddress: `${fullMaintenance.property.address}, ${fullMaintenance.property.city}`,
+          title: fullMaintenance.title,
+          description: fullMaintenance.description,
+          category: fullMaintenance.category,
+          priority: fullMaintenance.priority,
+          status,
+          scheduledDate: fullMaintenance.scheduledDate
+            ? new Date(fullMaintenance.scheduledDate).toLocaleDateString()
+            : undefined,
+          completedDate: updateData.completedDate
+            ? new Date(updateData.completedDate).toLocaleDateString()
+            : undefined,
+          actualCost: fullMaintenance.actualCost
+            ? `R ${Number(fullMaintenance.actualCost).toFixed(2)}`
+            : undefined,
+          assignedTo: fullMaintenance.assignedTo,
+          resolutionNotes: resolutionNotes || fullMaintenance.resolutionNotes || undefined,
+        };
+
+        let emailTemplate;
+        switch (status) {
+          case 'SCHEDULED':
+            emailTemplate = maintenanceEmailTemplates.scheduled(emailData);
+            break;
+          case 'IN_PROGRESS':
+            emailTemplate = maintenanceEmailTemplates.inProgress(emailData);
+            break;
+          case 'COMPLETED':
+            emailTemplate = maintenanceEmailTemplates.completed(emailData);
+            break;
+          case 'CANCELLED':
+            emailTemplate = maintenanceEmailTemplates.cancelled(emailData);
+            break;
+          default:
+            emailTemplate = null;
+        }
+
+        if (emailTemplate) {
+          // Send to tenant if exists, otherwise to landlord
+          const recipientEmail = fullMaintenance.tenant?.email || fullMaintenance.user.email;
+          await sendEmail({
+            to: recipientEmail,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+            text: emailTemplate.text,
+          });
+
+          logger.info('Maintenance status change email sent', {
+            maintenanceId,
+            status,
+            recipient: recipientEmail,
+          });
+        }
+      }
+    } catch (emailError) {
+      logger.error('Failed to send maintenance status change email', {
+        error: emailError,
+        maintenanceId,
+      });
+    }
+
     return updated;
   }
 
@@ -278,6 +408,104 @@ export class MaintenanceService {
     });
 
     return updated;
+  }
+
+  /**
+   * Send follow-up emails for stale maintenance requests
+   * Checks for requests that haven't been updated in 5+ days
+   */
+  async sendFollowUpEmails(): Promise<{ sent: number; errors: number }> {
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+    try {
+      // Find maintenance requests that are pending or in progress,
+      // haven't been updated in 5+ days, and haven't had a follow-up sent
+      const staleRequests = await prisma.maintenanceRequest.findMany({
+        where: {
+          status: {
+            in: ['PENDING', 'IN_PROGRESS'],
+          },
+          updatedAt: {
+            lte: fiveDaysAgo,
+          },
+          followUpSent: false,
+        },
+        include: {
+          property: true,
+          tenant: true,
+          user: true,
+        },
+      });
+
+      let sentCount = 0;
+      let errorCount = 0;
+
+      for (const request of staleRequests) {
+        try {
+          const daysStale = Math.floor(
+            (Date.now() - new Date(request.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+          );
+
+          const landlordName = `${request.user.firstName} ${request.user.lastName}`;
+          const tenantName = request.tenant
+            ? `${request.tenant.firstName} ${request.tenant.lastName}`
+            : undefined;
+
+          const emailTemplate = maintenanceEmailTemplates.followUp({
+            landlordName,
+            tenantName,
+            propertyName: request.property.name,
+            propertyAddress: `${request.property.address}, ${request.property.city}`,
+            title: request.title,
+            description: request.description,
+            category: request.category,
+            priority: request.priority,
+            status: request.status,
+            daysStale,
+          });
+
+          await sendEmail({
+            to: request.user.email,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+            text: emailTemplate.text,
+          });
+
+          // Mark follow-up as sent
+          await prisma.maintenanceRequest.update({
+            where: { id: request.id },
+            data: {
+              followUpSent: true,
+              followUpSentAt: new Date(),
+            },
+          });
+
+          sentCount++;
+          logger.info('Follow-up email sent for stale maintenance request', {
+            maintenanceId: request.id,
+            daysStale,
+          });
+        } catch (error) {
+          errorCount++;
+          logger.error('Failed to send follow-up email', {
+            error,
+            maintenanceId: request.id,
+          });
+        }
+      }
+
+      logger.info('Follow-up email batch completed', {
+        total: staleRequests.length,
+        sent: sentCount,
+        errors: errorCount,
+      });
+
+      return { sent: sentCount, errors: errorCount };
+    } catch (error) {
+      logger.error('Failed to process follow-up emails', { error });
+      throw error;
+    }
   }
 }
 
