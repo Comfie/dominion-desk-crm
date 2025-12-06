@@ -45,54 +45,153 @@ async function importProperties(data: {
   return response.json();
 }
 
+/**
+ * Parse CSV text into an array of objects
+ * Handles Excel-formatted CSV with quoted fields, commas within fields, etc.
+ */
 function parseCSV(csvText: string): unknown[] {
-  const lines = csvText.trim().split('\n');
+  // Remove BOM if present (Excel sometimes adds UTF-8 BOM)
+  const cleanText = csvText.replace(/^\uFEFF/, '');
+  const lines = cleanText.trim().split(/\r?\n/); // Handle both \n and \r\n line endings
+
   if (lines.length < 2) {
     throw new Error('CSV must contain at least a header row and one data row');
   }
 
-  const headers = lines[0].split(',').map((h) => h.trim());
+  // Auto-detect delimiter (comma or semicolon)
+  // Excel in some regions uses semicolon instead of comma
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const delimiter = semicolonCount > commaCount ? ';' : ',';
+
+  console.log('Detected CSV delimiter:', delimiter === ';' ? 'semicolon (;)' : 'comma (,)');
+
+  // Parse a single CSV line handling quoted fields
+  const parseLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote ""
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === delimiter && !inQuotes) {
+        // Field separator (using detected delimiter)
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current.trim());
+    return result;
+  };
+
+  const rawHeaders = parseLine(lines[0]);
+  // Normalize headers: trim whitespace
+  const headers = rawHeaders.map((h) => h.trim());
+
+  // Debug: log headers to help troubleshoot
+  console.log('CSV Headers:', headers);
+
   const properties: Record<string, unknown>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map((v) => v.trim());
+    // Skip empty lines
+    if (!lines[i].trim()) continue;
+
+    const values = parseLine(lines[i]);
     const property: Record<string, unknown> = {};
 
     headers.forEach((header, index) => {
-      const value = values[index];
+      const value = values[index] || '';
+      // Normalize header for comparison (case-insensitive)
+      const normalizedHeader = header.toLowerCase();
 
-      // Convert data types
+      // Map to the correct property name (camelCase as expected by schema)
+      let propertyName = header; // Default to original header
+
+      // Create mapping for known fields to handle case variations
+      const fieldMap: Record<string, string> = {
+        name: 'name',
+        description: 'description',
+        propertytype: 'propertyType',
+        address: 'address',
+        city: 'city',
+        province: 'province',
+        postalcode: 'postalCode',
+        country: 'country',
+        bedrooms: 'bedrooms',
+        bathrooms: 'bathrooms',
+        size: 'size',
+        furnished: 'furnished',
+        parkingspaces: 'parkingSpaces',
+        amenities: 'amenities',
+        primaryimageurl: 'primaryImageUrl',
+        rentaltype: 'rentalType',
+        monthlyrent: 'monthlyRent',
+        dailyrate: 'dailyRate',
+        weeklyrate: 'weeklyRate',
+        monthlyrate: 'monthlyRate',
+        cleaningfee: 'cleaningFee',
+        securitydeposit: 'securityDeposit',
+        isavailable: 'isAvailable',
+        availablefrom: 'availableFrom',
+        minimumstay: 'minimumStay',
+        maximumstay: 'maximumStay',
+        petsallowed: 'petsAllowed',
+        smokingallowed: 'smokingAllowed',
+        checkintime: 'checkInTime',
+        checkouttime: 'checkOutTime',
+        houserules: 'houseRules',
+      };
+
+      propertyName = fieldMap[normalizedHeader] || header;
+
+      // Convert data types based on field type
       if (
-        header === 'bedrooms' ||
-        header === 'parkingSpaces' ||
-        header === 'minimumStay' ||
-        header === 'maximumStay'
+        propertyName === 'bedrooms' ||
+        propertyName === 'parkingSpaces' ||
+        propertyName === 'minimumStay' ||
+        propertyName === 'maximumStay'
       ) {
-        property[header] = value ? parseInt(value, 10) : undefined;
+        property[propertyName] = value ? parseInt(value, 10) : undefined;
       } else if (
-        header === 'bathrooms' ||
-        header === 'size' ||
-        header === 'monthlyRent' ||
-        header === 'dailyRate' ||
-        header === 'weeklyRate' ||
-        header === 'monthlyRate' ||
-        header === 'cleaningFee' ||
-        header === 'securityDeposit'
+        propertyName === 'bathrooms' ||
+        propertyName === 'size' ||
+        propertyName === 'monthlyRent' ||
+        propertyName === 'dailyRate' ||
+        propertyName === 'weeklyRate' ||
+        propertyName === 'monthlyRate' ||
+        propertyName === 'cleaningFee' ||
+        propertyName === 'securityDeposit'
       ) {
-        property[header] = value ? parseFloat(value) : undefined;
+        property[propertyName] = value ? parseFloat(value) : undefined;
       } else if (
-        header === 'furnished' ||
-        header === 'isAvailable' ||
-        header === 'petsAllowed' ||
-        header === 'smokingAllowed'
+        propertyName === 'furnished' ||
+        propertyName === 'isAvailable' ||
+        propertyName === 'petsAllowed' ||
+        propertyName === 'smokingAllowed'
       ) {
-        property[header] = value?.toLowerCase() === 'true' || value === '1';
-      } else if (header === 'amenities') {
-        property[header] = value ? value.split('|').map((a: string) => a.trim()) : [];
-      } else if (header === 'availableFrom') {
-        property[header] = value ? new Date(value) : undefined;
+        property[propertyName] = value?.toLowerCase() === 'true' || value === '1';
+      } else if (propertyName === 'amenities') {
+        property[propertyName] = value ? value.split('|').map((a: string) => a.trim()) : [];
+      } else if (propertyName === 'availableFrom') {
+        property[propertyName] = value ? new Date(value) : undefined;
       } else {
-        property[header] = value || undefined;
+        property[propertyName] = value || undefined;
       }
     });
 

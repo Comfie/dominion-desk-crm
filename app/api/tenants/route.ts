@@ -7,6 +7,8 @@ import { Prisma } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 import { createDefaultFoldersForTenant } from '@/lib/document-folders';
+import { sendEmail, emailTemplates } from '@/lib/email';
+import { generateTenantPassword } from '@/lib/password-generator';
 
 const tenantSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -34,7 +36,6 @@ const tenantSchema = z.object({
   notes: z.string().optional().nullable(),
   // Portal access fields
   createPortalAccess: z.boolean().optional().default(false),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional().nullable(),
   // Property assignment fields
   assignProperty: z.boolean().optional().default(false),
   propertyId: z.string().optional().nullable(),
@@ -125,13 +126,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = tenantSchema.parse(body);
 
-    // Validate portal access requirements
-    if (validatedData.createPortalAccess && !validatedData.password) {
-      return NextResponse.json(
-        { error: 'Password is required when creating portal access' },
-        { status: 400 }
-      );
-    }
+    // No validation needed - password will be auto-generated if portal access requested
 
     // Check if tenant with same email already exists for this user
     const existingTenant = await prisma.tenant.findFirst({
@@ -192,9 +187,11 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create separate portal user account if requested (not linked to tenant record)
-    if (validatedData.createPortalAccess && validatedData.password) {
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    // Auto-generate password and create portal user account if requested
+    let generatedPassword: string | null = null;
+    if (validatedData.createPortalAccess) {
+      generatedPassword = generateTenantPassword(validatedData.firstName, validatedData.lastName);
+      const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
       await prisma.user.create({
         data: {
@@ -207,6 +204,7 @@ export async function POST(request: Request) {
           role: 'TENANT',
           isActive: true,
           emailVerified: false,
+          requirePasswordChange: true, // Force password change on first login
           propertyLimit: 0, // Tenants don't own properties
         },
       });
@@ -281,6 +279,110 @@ export async function POST(request: Request) {
     } catch (folderError) {
       console.error('Error creating default folders:', folderError);
       // Don't fail the entire request if folder creation fails
+    }
+
+    // Send welcome email to tenant
+    try {
+      // Fetch landlord information
+      const landlord = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
+      });
+
+      const landlordName = landlord
+        ? `${landlord.firstName} ${landlord.lastName}`
+        : 'Your Landlord';
+      const landlordEmail = landlord?.email || '';
+      const landlordPhone = landlord?.phone || '';
+
+      // Check if property was assigned
+      if (validatedData.assignProperty && validatedData.propertyId) {
+        // Fetch property details
+        const property = await prisma.property.findUnique({
+          where: { id: validatedData.propertyId },
+          select: {
+            name: true,
+            address: true,
+            city: true,
+          },
+        });
+
+        if (property) {
+          const propertyAddress = `${property.address}, ${property.city}`;
+          const moveInDate = validatedData.propertyMoveInDate
+            ? new Date(validatedData.propertyMoveInDate).toLocaleDateString('en-ZA')
+            : undefined;
+          const monthlyRent = validatedData.propertyMonthlyRent
+            ? `R${validatedData.propertyMonthlyRent.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
+            : 'TBD';
+          const deposit = validatedData.propertyDepositPaid
+            ? `R${validatedData.propertyDepositPaid.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
+            : 'R0.00';
+          const leaseStartDate = new Date(validatedData.leaseStartDate!).toLocaleDateString(
+            'en-ZA'
+          );
+          const leaseEndDate = validatedData.leaseEndDate
+            ? new Date(validatedData.leaseEndDate).toLocaleDateString('en-ZA')
+            : undefined;
+
+          if (validatedData.createPortalAccess && generatedPassword) {
+            // Send email with portal access
+            const emailData = emailTemplates.tenantWelcomeWithPortal({
+              tenantName: `${validatedData.firstName} ${validatedData.lastName}`,
+              email: validatedData.email,
+              password: generatedPassword,
+              landlordName,
+              landlordEmail,
+              landlordPhone,
+              propertyName: property.name,
+              propertyAddress,
+              moveInDate,
+              monthlyRent,
+              deposit,
+              leaseStartDate,
+              leaseEndDate,
+              loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/portal/login`,
+            });
+
+            await sendEmail({
+              to: validatedData.email,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+            });
+          } else {
+            // Send email without portal access
+            const emailData = emailTemplates.tenantWelcomeNoPortal({
+              tenantName: `${validatedData.firstName} ${validatedData.lastName}`,
+              landlordName,
+              landlordEmail,
+              landlordPhone,
+              propertyName: property.name,
+              propertyAddress,
+              moveInDate,
+              monthlyRent,
+              deposit,
+              leaseStartDate,
+              leaseEndDate,
+            });
+
+            await sendEmail({
+              to: validatedData.email,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+            });
+          }
+        }
+      }
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError);
+      // Don't fail the entire request if email sending fails
     }
 
     return NextResponse.json(tenant, { status: 201 });

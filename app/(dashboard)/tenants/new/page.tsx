@@ -45,7 +45,6 @@ const tenantSchema = z
     tenantType: z.string(),
     notes: z.string().optional(),
     createPortalAccess: z.boolean().optional(),
-    password: z.string().optional(),
     // Property assignment fields
     assignProperty: z.boolean().optional(),
     propertyId: z.string().optional(),
@@ -55,21 +54,7 @@ const tenantSchema = z
     propertyDepositPaid: z.union([z.number(), z.nan()]).optional(),
     propertyMoveInDate: z.string().optional(),
   })
-  .refine(
-    (data) => {
-      if (data.createPortalAccess && !data.password) {
-        return false;
-      }
-      if (data.createPortalAccess && data.password && data.password.length < 6) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: 'Password must be at least 6 characters when creating portal access',
-      path: ['password'],
-    }
-  )
+
   .refine(
     (data) => {
       if (data.assignProperty && !data.propertyId) {
@@ -465,19 +450,12 @@ function NewTenantForm() {
             </div>
 
             {createPortalAccess && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Portal Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Minimum 6 characters"
-                  {...register('password')}
-                />
-                {errors.password && (
-                  <p className="text-destructive text-sm">{errors.password.message}</p>
-                )}
-                <p className="text-muted-foreground text-xs">
-                  This password will allow the tenant to log in to the portal at /portal/login
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm text-blue-900">
+                  <strong>📧 Portal Access:</strong> A secure password will be automatically
+                  generated based on the tenant's name and year. The tenant will receive an email
+                  with their login credentials at{' '}
+                  <span className="font-semibold">/portal/login</span>
                 </p>
               </div>
             )}

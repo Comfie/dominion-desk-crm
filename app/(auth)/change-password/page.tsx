@@ -88,9 +88,10 @@ export default function ChangePasswordPage() {
         description: 'Your password has been changed successfully. Redirecting to dashboard...',
       });
 
-      // Redirect to dashboard after a short delay
+      // Redirect based on user role
       setTimeout(() => {
-        router.push('/dashboard');
+        const redirectUrl = session?.user?.role === 'TENANT' ? '/portal/dashboard' : '/dashboard';
+        router.push(redirectUrl);
       }, 1500);
     } catch (error) {
       console.error('Error changing password:', error);

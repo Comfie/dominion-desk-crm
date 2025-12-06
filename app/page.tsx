@@ -340,7 +340,7 @@ export default function App() {
           className={`relative z-10 mx-auto max-w-7xl transform px-4 text-center transition-all duration-1000 ease-out sm:px-6 lg:px-8 ${heroLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
           {/* Trust Badge with Rating */}
-          <div className="mb-6 flex flex-col items-center gap-3">
+          {/* <div className="mb-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
@@ -349,11 +349,11 @@ export default function App() {
             <div className="text-slate-300">
               <span className="font-bold text-white">4.9/5</span> from 127+ property managers
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-brand-500/10 border-brand-500/20 text-brand-300 mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium backdrop-blur-sm">
             <Sparkles className="text-brand-400 h-4 w-4" />
-            <span>Trusted by 500+ SA Property Managers</span>
+            <span>Trusted Property Management Partner</span>
           </div>
 
           <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white md:text-6xl lg:text-7xl">

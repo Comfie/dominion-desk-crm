@@ -6,6 +6,7 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
     const role = token?.role;
+    const requirePasswordChange = token?.requirePasswordChange;
 
     if (pathname.startsWith('/portal') || pathname.startsWith('/tenant')) {
       console.log('🛑 Middleware Debug:', {
@@ -18,6 +19,16 @@ export default withAuth(
 
     // Skip middleware for API routes - they handle their own authorization
     if (pathname.startsWith('/api')) {
+      return NextResponse.next();
+    }
+
+    // Force password change if required (except on the change-password page itself)
+    if (requirePasswordChange && pathname !== '/change-password') {
+      return NextResponse.redirect(new URL('/change-password', req.url));
+    }
+
+    // Skip remaining checks if on change-password page
+    if (pathname === '/change-password') {
       return NextResponse.next();
     }
 
@@ -85,6 +96,7 @@ export default withAuth(
           pathname.startsWith('/portal/login') ||
           pathname.startsWith('/register') ||
           pathname.startsWith('/forgot-password') ||
+          pathname.startsWith('/change-password') ||
           pathname.startsWith('/verify-email') ||
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/public') ||

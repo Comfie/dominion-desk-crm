@@ -5,10 +5,11 @@ import bcrypt from 'bcryptjs';
 
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
+import { sendEmail, emailTemplates } from '@/lib/email';
+import { generateTenantPassword } from '@/lib/password-generator';
 
 const portalAccessSchema = z.object({
   action: z.enum(['create', 'reset', 'revoke']),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
 });
 
 // POST /api/tenants/[id]/portal-access - Manage portal access for tenant
@@ -49,13 +50,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           return NextResponse.json({ error: 'Tenant already has portal access' }, { status: 400 });
         }
 
-        if (!validatedData.password) {
-          return NextResponse.json(
-            { error: 'Password is required when creating portal access' },
-            { status: 400 }
-          );
-        }
-
         // Check if user with this email already exists
         if (existingTenantUser) {
           return NextResponse.json(
@@ -64,8 +58,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           );
         }
 
+        // Auto-generate password
+        const generatedPassword = generateTenantPassword(tenant.firstName, tenant.lastName);
+        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+
         // Create tenant user account (but don't link it to tenant record)
-        const hashedPassword = await bcrypt.hash(validatedData.password, 10);
         await prisma.user.create({
           data: {
             email: tenant.email,
@@ -77,9 +74,90 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             role: 'TENANT',
             isActive: true,
             emailVerified: false,
+            requirePasswordChange: true, // Force password change on first login
             propertyLimit: 0,
           },
         });
+
+        // Send welcome email with portal access
+        try {
+          // Fetch landlord information
+          const landlord = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          });
+
+          const landlordName = landlord
+            ? `${landlord.firstName} ${landlord.lastName}`
+            : 'Your Landlord';
+          const landlordEmail = landlord?.email || '';
+          const landlordPhone = landlord?.phone || '';
+
+          // Find tenant's active property assignment
+          const propertyAssignment = await prisma.propertyTenant.findFirst({
+            where: {
+              tenantId: tenant.id,
+              isActive: true,
+            },
+            include: {
+              property: {
+                select: {
+                  name: true,
+                  address: true,
+                  city: true,
+                },
+              },
+            },
+          });
+
+          if (propertyAssignment && propertyAssignment.property) {
+            const property = propertyAssignment.property;
+            const propertyAddress = `${property.address}, ${property.city}`;
+            const moveInDate = propertyAssignment.moveInDate
+              ? new Date(propertyAssignment.moveInDate).toLocaleDateString('en-ZA')
+              : undefined;
+            const monthlyRent = `R${propertyAssignment.monthlyRent.toNumber().toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
+            const deposit = `R${propertyAssignment.depositPaid.toNumber().toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
+            const leaseStartDate = new Date(propertyAssignment.leaseStartDate).toLocaleDateString(
+              'en-ZA'
+            );
+            const leaseEndDate = propertyAssignment.leaseEndDate
+              ? new Date(propertyAssignment.leaseEndDate).toLocaleDateString('en-ZA')
+              : undefined;
+
+            const emailData = emailTemplates.tenantWelcomeWithPortal({
+              tenantName: `${tenant.firstName} ${tenant.lastName}`,
+              email: tenant.email,
+              password: generatedPassword,
+              landlordName,
+              landlordEmail,
+              landlordPhone,
+              propertyName: property.name,
+              propertyAddress,
+              moveInDate,
+              monthlyRent,
+              deposit,
+              leaseStartDate,
+              leaseEndDate,
+              loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/portal/login`,
+            });
+
+            await sendEmail({
+              to: tenant.email,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+            });
+          }
+        } catch (emailError) {
+          console.error('Error sending portal access email:', emailError);
+          // Don't fail the request if email fails
+        }
 
         return NextResponse.json({
           success: true,
@@ -95,23 +173,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           );
         }
 
-        if (!validatedData.password) {
-          return NextResponse.json(
-            { error: 'New password is required when resetting portal access' },
-            { status: 400 }
-          );
-        }
+        // Auto-generate new password
+        const generatedPassword = generateTenantPassword(tenant.firstName, tenant.lastName);
+        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
         // Update password
-        const hashedPassword = await bcrypt.hash(validatedData.password, 10);
         await prisma.user.update({
           where: { email: tenant.email },
           data: { password: hashedPassword },
         });
 
+        // TODO: Send password reset email with new credentials
+
         return NextResponse.json({
           success: true,
           message: 'Password reset successfully',
+          password: generatedPassword, // Return new password to display to landlord
         });
       }
 

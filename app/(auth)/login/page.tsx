@@ -148,7 +148,7 @@ function LoginForm() {
       </div> */}
 
       {/* Demo credentials hint */}
-      <div className="bg-muted/50 space-y-3 rounded-lg border p-4 text-sm">
+      {/* <div className="bg-muted/50 space-y-3 rounded-lg border p-4 text-sm">
         <div>
           <p className="font-medium">Super Admin</p>
           <p className="text-muted-foreground mt-1">
@@ -173,7 +173,7 @@ function LoginForm() {
             Password: Tenant@123
           </p>
         </div>
-      </div>
+      </div> */}
     </>
   );
 }

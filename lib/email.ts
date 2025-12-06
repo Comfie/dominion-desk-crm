@@ -402,6 +402,182 @@ DominionDesk Team
     `.trim(),
   }),
 
+  tenantWelcomeWithPortal: (data: {
+    tenantName: string;
+    email: string;
+    password: string;
+    landlordName: string;
+    landlordEmail: string;
+    landlordPhone: string;
+    propertyName: string;
+    propertyAddress: string;
+    moveInDate?: string;
+    monthlyRent: string;
+    deposit: string;
+    leaseStartDate: string;
+    leaseEndDate?: string;
+    loginUrl: string;
+  }) => ({
+    subject: `Welcome to ${data.propertyName} - Your Tenant Portal Account`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Welcome to Your New Rental Property!</h2>
+        <p>Dear ${data.tenantName},</p>
+        <p>Your landlord <strong>${data.landlordName}</strong> has created a tenant portal account for you. You can now access the portal to view your lease details, submit maintenance requests, and more.</p>
+        
+        <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
+          <h3 style="margin-top: 0; color: #2563eb;">🔑 Your Portal Login Credentials</h3>
+          <p style="margin: 5px 0;"><strong>Email:</strong> ${data.email}</p>
+          <p style="margin: 5px 0;"><strong>Temporary Password:</strong> <code style="background: #fff; padding: 2px 8px; border-radius: 4px; font-size: 14px; border: 1px solid #ddd;">${data.password}</code></p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${data.loginUrl}" 
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 500;">
+            Log In to Portal
+          </a>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">🏠 Property Details</h3>
+          <p style="margin: 5px 0;"><strong>Property:</strong> ${data.propertyName}</p>
+          <p style="margin: 5px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
+          ${data.moveInDate ? `<p style="margin: 5px 0;"><strong>Move-in Date:</strong> ${data.moveInDate}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Monthly Rent:</strong> ${data.monthlyRent}</p>
+          <p style="margin: 5px 0;"><strong>Deposit:</strong> ${data.deposit}</p>
+          <p style="margin: 5px 0;"><strong>Lease Period:</strong> ${data.leaseStartDate}${data.leaseEndDate ? ` - ${data.leaseEndDate}` : ''}</p>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">👤 Landlord Contact</h3>
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${data.landlordName}</p>
+          <p style="margin: 5px 0;"><strong>Email:</strong> ${data.landlordEmail}</p>
+          <p style="margin: 5px 0;"><strong>Phone:</strong> ${data.landlordPhone}</p>
+        </div>
+
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
+          <p style="margin: 0; font-size: 14px;"><strong>🔒 Security Notice:</strong></p>
+          <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 14px;">
+            <li>You will be required to change your password on first login</li>
+            <li>Please choose a strong, unique password</li>
+            <li>Do not share your credentials with anyone</li>
+          </ul>
+        </div>
+
+        <p style="font-size: 14px; color: #666;">
+          If the button doesn't work, copy and paste this link into your browser:
+        </p>
+        <p style="font-size: 13px; color: #2563eb; word-break: break-all;">
+          ${data.loginUrl}
+        </p>
+
+        <p style="margin-top: 30px;">Best regards,<br>DominionDesk Team</p>
+      </div>
+    `,
+    text: `
+Welcome to Your New Rental Property!
+
+Dear ${data.tenantName},
+
+Your landlord ${data.landlordName} has created a tenant portal account for you.
+
+YOUR PORTAL LOGIN CREDENTIALS:
+Email: ${data.email}
+Temporary Password: ${data.password}
+Login URL: ${data.loginUrl}
+
+PROPERTY DETAILS:
+Property: ${data.propertyName}
+Address: ${data.propertyAddress}
+${data.moveInDate ? `Move-in Date: ${data.moveInDate}` : ''}
+Monthly Rent: ${data.monthlyRent}
+Deposit: ${data.deposit}
+Lease Period: ${data.leaseStartDate}${data.leaseEndDate ? ` - ${data.leaseEndDate}` : ''}
+
+LANDLORD CONTACT:
+Name: ${data.landlordName}
+Email: ${data.landlordEmail}
+Phone: ${data.landlordPhone}
+
+SECURITY NOTICE:
+- You will be required to change your password on first login
+- Please choose a strong, unique password
+- Do not share your credentials with anyone
+
+Best regards,
+DominionDesk Team
+    `.trim(),
+  }),
+
+  tenantWelcomeNoPortal: (data: {
+    tenantName: string;
+    landlordName: string;
+    landlordEmail: string;
+    landlordPhone: string;
+    propertyName: string;
+    propertyAddress: string;
+    moveInDate?: string;
+    monthlyRent: string;
+    deposit: string;
+    leaseStartDate: string;
+    leaseEndDate?: string;
+  }) => ({
+    subject: `Welcome to ${data.propertyName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Welcome to Your New Rental Property!</h2>
+        <p>Dear ${data.tenantName},</p>
+        <p>Welcome to your new rental property! Here are your rental details:</p>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">🏠 Property Details</h3>
+          <p style="margin: 5px 0;"><strong>Property:</strong> ${data.propertyName}</p>
+          <p style="margin: 5px 0;"><strong>Address:</strong> ${data.propertyAddress}</p>
+          ${data.moveInDate ? `<p style="margin: 5px 0;"><strong>Move-in Date:</strong> ${data.moveInDate}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Monthly Rent:</strong> ${data.monthlyRent}</p>
+          <p style="margin: 5px 0;"><strong>Deposit:</strong> ${data.deposit}</p>
+          <p style="margin: 5px 0;"><strong>Lease Period:</strong> ${data.leaseStartDate}${data.leaseEndDate ? ` - ${data.leaseEndDate}` : ''}</p>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">👤 Landlord Contact</h3>
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${data.landlordName}</p>
+          <p style="margin: 5px 0;"><strong>Email:</strong> ${data.landlordEmail}</p>
+          <p style="margin: 5px 0;"><strong>Phone:</strong> ${data.landlordPhone}</p>
+        </div>
+
+        <p>If you have any questions or concerns, please don't hesitate to contact your landlord directly using the contact information above.</p>
+
+        <p style="margin-top: 30px;">Best regards,<br>DominionDesk Team</p>
+      </div>
+    `,
+    text: `
+Welcome to Your New Rental Property!
+
+Dear ${data.tenantName},
+
+Welcome to your new rental property! Here are your rental details:
+
+PROPERTY DETAILS:
+Property: ${data.propertyName}
+Address: ${data.propertyAddress}
+${data.moveInDate ? `Move-in Date: ${data.moveInDate}` : ''}
+Monthly Rent: ${data.monthlyRent}
+Deposit: ${data.deposit}
+Lease Period: ${data.leaseStartDate}${data.leaseEndDate ? ` - ${data.leaseEndDate}` : ''}
+
+LANDLORD CONTACT:
+Name: ${data.landlordName}
+Email: ${data.landlordEmail}
+Phone: ${data.landlordPhone}
+
+If you have any questions or concerns, please don't hesitate to contact your landlord directly.
+
+Best regards,
+DominionDesk Team
+    `.trim(),
+  }),
+
   generic: (data: { recipientName: string; subject: string; body: string }) => ({
     subject: data.subject,
     html: `
