@@ -83,9 +83,9 @@ export async function GET(request: Request) {
         }),
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { address: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { address: { contains: search, mode: 'insensitive' as const } },
+          { city: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
     };

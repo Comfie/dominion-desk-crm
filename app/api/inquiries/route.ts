@@ -68,9 +68,9 @@ export async function GET(request: Request) {
 
     if (search) {
       where.OR = [
-        { contactName: { contains: search, mode: 'insensitive' } },
-        { contactEmail: { contains: search, mode: 'insensitive' } },
-        { message: { contains: search, mode: 'insensitive' } },
+        { contactName: { contains: search, mode: 'insensitive' as const } },
+        { contactEmail: { contains: search, mode: 'insensitive' as const } },
+        { message: { contains: search, mode: 'insensitive' as const } },
       ];
     }
 

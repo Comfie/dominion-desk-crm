@@ -70,9 +70,9 @@ export async function GET(request: Request) {
 
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { assignedTo: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' as const } },
+        { description: { contains: search, mode: 'insensitive' as const } },
+        { assignedTo: { contains: search, mode: 'insensitive' as const } },
       ];
     }
 

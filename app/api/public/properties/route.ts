@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     };
 
     if (city) {
-      where.city = { contains: city, mode: 'insensitive' };
+      where.city = { contains: city, mode: 'insensitive' as const };
     }
 
     if (type) {
