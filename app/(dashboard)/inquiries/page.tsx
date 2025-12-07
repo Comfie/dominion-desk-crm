@@ -9,10 +9,11 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { InquiryCard } from '@/components/inquiries/inquiry-card';
 
-async function fetchInquiries(filters: Record<string, string>) {
-  const params = new URLSearchParams(filters);
+async function fetchInquiries(filters: Record<string, string>, page = 1) {
+  const params = new URLSearchParams({ ...filters, page: page.toString() });
   const response = await fetch(`/api/inquiries?${params}`);
   if (!response.ok) throw new Error('Failed to fetch inquiries');
   return response.json();
@@ -24,20 +25,27 @@ export default function InquiriesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: inquiries, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: [
       'inquiries',
-      { search, status: statusFilter, priority: priorityFilter, source: sourceFilter },
+      { search, status: statusFilter, priority: priorityFilter, source: sourceFilter, page },
     ],
     queryFn: () =>
-      fetchInquiries({
-        ...(search && { search }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(priorityFilter && { priority: priorityFilter }),
-        ...(sourceFilter && { source: sourceFilter }),
-      }),
+      fetchInquiries(
+        {
+          ...(search && { search }),
+          ...(statusFilter && { status: statusFilter }),
+          ...(priorityFilter && { priority: priorityFilter }),
+          ...(sourceFilter && { source: sourceFilter }),
+        },
+        page
+      ),
   });
+
+  const inquiries = data?.data || [];
+  const pagination = data?.pagination;
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -107,7 +115,10 @@ export default function InquiriesPage() {
           <Input
             placeholder="Search inquiries..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
@@ -115,7 +126,10 @@ export default function InquiriesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Status</option>
@@ -129,7 +143,10 @@ export default function InquiriesPage() {
 
           <select
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            onChange={(e) => {
+              setPriorityFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Priority</option>
@@ -141,7 +158,10 @@ export default function InquiriesPage() {
 
           <select
             value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
+            onChange={(e) => {
+              setSourceFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Sources</option>
@@ -164,33 +184,44 @@ export default function InquiriesPage() {
             <Skeleton key={i} className="h-64 w-full rounded-lg" />
           ))}
         </div>
-      ) : inquiries?.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {inquiries.map(
-            (inquiry: {
-              id: string;
-              contactName: string;
-              contactEmail: string;
-              contactPhone: string | null;
-              message: string;
-              inquirySource: string;
-              inquiryType: string;
-              status: string;
-              priority: string;
-              checkInDate: string | null;
-              checkOutDate: string | null;
-              numberOfGuests: number | null;
-              createdAt: string;
-              property: {
+      ) : inquiries.length > 0 ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {inquiries.map(
+              (inquiry: {
                 id: string;
-                name: string;
-                city: string;
-              } | null;
-            }) => (
-              <InquiryCard key={inquiry.id} inquiry={inquiry} onDelete={handleDelete} />
-            )
+                contactName: string;
+                contactEmail: string;
+                contactPhone: string | null;
+                message: string;
+                inquirySource: string;
+                inquiryType: string;
+                status: string;
+                priority: string;
+                checkInDate: string | null;
+                checkOutDate: string | null;
+                numberOfGuests: number | null;
+                createdAt: string;
+                property: {
+                  id: string;
+                  name: string;
+                  city: string;
+                } | null;
+              }) => (
+                <InquiryCard key={inquiry.id} inquiry={inquiry} onDelete={handleDelete} />
+              )
+            )}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
+            />
           )}
-        </div>
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
           <MessageSquare className="text-muted-foreground/50 h-12 w-12" />

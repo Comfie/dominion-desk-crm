@@ -11,6 +11,7 @@ import { ImportPropertiesDialog } from '@/components/properties/import-propertie
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +21,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-async function fetchProperties(search?: string, status?: string, type?: string) {
+async function fetchProperties(search?: string, status?: string, type?: string, page = 1) {
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   if (status) params.set('status', status);
   if (type) params.set('type', type);
+  params.set('page', page.toString());
 
   const response = await fetch(`/api/properties?${params.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch properties');
@@ -43,10 +45,11 @@ export default function PropertiesPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
 
-  const { data: properties, isLoading } = useQuery({
-    queryKey: ['properties', search, statusFilter, typeFilter],
-    queryFn: () => fetchProperties(search, statusFilter.join(','), typeFilter.join(',')),
+  const { data, isLoading } = useQuery({
+    queryKey: ['properties', search, statusFilter, typeFilter, page],
+    queryFn: () => fetchProperties(search, statusFilter.join(','), typeFilter.join(','), page),
   });
 
   const deleteMutation = useMutation({
@@ -66,18 +69,29 @@ export default function PropertiesPage() {
     setStatusFilter((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
     );
+    setPage(1); // Reset to first page when filters change
   };
 
   const toggleTypeFilter = (type: string) => {
     setTypeFilter((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
+    setPage(1); // Reset to first page when filters change
   };
 
   const clearFilters = () => {
     setStatusFilter([]);
     setTypeFilter([]);
+    setPage(1);
   };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when search changes
+  };
+
+  const properties = data?.data || [];
+  const pagination = data?.pagination;
 
   const hasActiveFilters = statusFilter.length > 0 || typeFilter.length > 0;
 
@@ -102,7 +116,7 @@ export default function PropertiesPage() {
           <Input
             placeholder="Search properties..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -221,22 +235,44 @@ export default function PropertiesPage() {
           </Button>
         </EmptyState>
       ) : viewMode === 'grid' ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {properties?.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
-            <PropertyCard key={property.id} property={property} onDelete={handleDelete} />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {properties?.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              onDelete={handleDelete}
-              variant="list"
+        <>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {properties.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
+              <PropertyCard key={property.id} property={property} onDelete={handleDelete} />
+            ))}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
             />
-          ))}
-        </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="space-y-4">
+            {properties.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
+              <PropertyCard
+                key={property.id}
+                property={property}
+                onDelete={handleDelete}
+                variant="list"
+              />
+            ))}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
+            />
+          )}
+        </>
       )}
     </div>
   );

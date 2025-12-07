@@ -58,6 +58,8 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
     const status = searchParams.get('status');
     const type = searchParams.get('type');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
     const where: Record<string, unknown> = {
       userId: session.user.id,
@@ -80,35 +82,48 @@ export async function GET(request: Request) {
       ];
     }
 
-    const tenants = await prisma.tenant.findMany({
-      where,
-      include: {
-        properties: {
-          include: {
-            property: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-                city: true,
+    const [tenants, total] = await Promise.all([
+      prisma.tenant.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          properties: {
+            include: {
+              property: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                  city: true,
+                },
               },
             },
+            where: {
+              isActive: true,
+            },
           },
-          where: {
-            isActive: true,
+          _count: {
+            select: {
+              bookings: true,
+              payments: true,
+            },
           },
         },
-        _count: {
-          select: {
-            bookings: true,
-            payments: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.tenant.count({ where }),
+    ]);
 
-    return NextResponse.json(tenants);
+    return NextResponse.json({
+      data: tenants,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error('Error fetching tenants:', error);
     return NextResponse.json({ error: 'Failed to fetch tenants' }, { status: 500 });

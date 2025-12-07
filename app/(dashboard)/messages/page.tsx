@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 
 async function fetchMessages(params: {
   direction?: string;
@@ -46,9 +47,9 @@ export default function MessagesPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
-
+  const [page, setPage] = useState(1);
   const { data, isLoading, error } = useQuery({
-    queryKey: ['messages', direction, messageType, status, search],
+    queryKey: ['messages', direction, messageType, status, search, page],
     queryFn: () =>
       fetchMessages({
         direction: direction || undefined,
@@ -249,12 +250,15 @@ export default function MessagesPage() {
             )
           )}
 
-          {/* Pagination info */}
+          {/* Pagination controls */}
           {data.pagination && data.pagination.pages > 1 && (
-            <div className="text-muted-foreground text-center text-sm">
-              Page {data.pagination.page} of {data.pagination.pages} ({data.pagination.total} total
-              messages)
-            </div>
+            <Pagination
+              currentPage={data.pagination.page}
+              totalPages={data.pagination.pages}
+              totalItems={data.pagination.total}
+              itemsPerPage={data.pagination.limit}
+              onPageChange={setPage}
+            />
           )}
         </div>
       )}

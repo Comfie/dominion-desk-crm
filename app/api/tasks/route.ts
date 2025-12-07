@@ -21,6 +21,8 @@ export async function GET(request: Request) {
     const assignedTo = searchParams.get('assignedTo');
     const dueBefore = searchParams.get('dueBefore');
     const dueAfter = searchParams.get('dueAfter');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
     const where = {
       userId: session.user.id,
@@ -34,13 +36,14 @@ export async function GET(request: Request) {
       ...(dueAfter && { dueDate: { gte: new Date(dueAfter) } }),
     };
 
-    const tasks = await prisma.task.findMany({
-      where,
-      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
-    });
-
-    // Get summary statistics
-    const [total, todo, inProgress, completed, overdue] = await Promise.all([
+    const [tasks, total, totalTasks, todo, inProgress, completed, overdue] = await Promise.all([
+      prisma.task.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+      }),
+      prisma.task.count({ where }),
       prisma.task.count({ where: { userId: session.user.id } }),
       prisma.task.count({ where: { userId: session.user.id, status: 'TODO' } }),
       prisma.task.count({ where: { userId: session.user.id, status: 'IN_PROGRESS' } }),
@@ -55,9 +58,15 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      tasks,
-      summary: {
+      data: tasks,
+      pagination: {
+        page,
+        limit,
         total,
+        totalPages: Math.ceil(total / limit),
+      },
+      summary: {
+        total: totalTasks,
         todo,
         inProgress,
         completed,

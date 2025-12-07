@@ -58,6 +58,8 @@ export async function GET(request: Request) {
     const statusParam = searchParams.get('status');
     const typeParam = searchParams.get('type');
     const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
     // Handle multiple statuses (comma-separated)
     const statusFilter = statusParam ? statusParam.split(',').filter(Boolean) : undefined;
@@ -65,41 +67,56 @@ export async function GET(request: Request) {
     // Handle multiple rental types (comma-separated)
     const typeFilter = typeParam ? typeParam.split(',').filter(Boolean) : undefined;
 
-    const properties = await prisma.property.findMany({
-      where: {
-        userId: session.user.id,
-        ...(statusFilter &&
-          statusFilter.length > 0 && {
-            status: {
-              in: statusFilter as Array<
-                'ACTIVE' | 'INACTIVE' | 'OCCUPIED' | 'MAINTENANCE' | 'ARCHIVED'
-              >,
-            },
-          }),
-        ...(typeFilter &&
-          typeFilter.length > 0 && {
-            rentalType: { in: typeFilter as Array<'LONG_TERM' | 'SHORT_TERM' | 'BOTH'> },
-          }),
-        ...(search && {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { address: { contains: search, mode: 'insensitive' } },
-            { city: { contains: search, mode: 'insensitive' } },
-          ],
+    const where = {
+      userId: session.user.id,
+      ...(statusFilter &&
+        statusFilter.length > 0 && {
+          status: {
+            in: statusFilter as Array<
+              'ACTIVE' | 'INACTIVE' | 'OCCUPIED' | 'MAINTENANCE' | 'ARCHIVED'
+            >,
+          },
         }),
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: {
-            bookings: true,
-            tenants: true,
+      ...(typeFilter &&
+        typeFilter.length > 0 && {
+          rentalType: { in: typeFilter as Array<'LONG_TERM' | 'SHORT_TERM' | 'BOTH'> },
+        }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { address: { contains: search, mode: 'insensitive' } },
+          { city: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    const [properties, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              bookings: true,
+              tenants: true,
+            },
           },
         },
+      }),
+      prisma.property.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: properties,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
-
-    return NextResponse.json(properties);
   } catch (error) {
     console.error('Error fetching properties:', error);
     return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });

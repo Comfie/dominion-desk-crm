@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Task {
@@ -35,11 +36,17 @@ interface Task {
   createdAt: string;
 }
 
-async function fetchTasks(params: { status?: string; priority?: string; taskType?: string }) {
+async function fetchTasks(params: {
+  status?: string;
+  priority?: string;
+  taskType?: string;
+  page?: number;
+}) {
   const searchParams = new URLSearchParams();
   if (params.status) searchParams.set('status', params.status);
   if (params.priority) searchParams.set('priority', params.priority);
   if (params.taskType) searchParams.set('taskType', params.taskType);
+  if (params.page) searchParams.set('page', params.page.toString());
 
   const response = await fetch(`/api/tasks?${searchParams.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch tasks');
@@ -48,21 +55,25 @@ async function fetchTasks(params: { status?: string; priority?: string; taskType
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState('all');
-  const [priority, setPriority] = useState('');
-  const [taskType, setTaskType] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
-  const statusFilter = activeTab === 'all' ? undefined : activeTab;
+  const [page, setPage] = useState(1);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['tasks', statusFilter, priority, taskType],
+    queryKey: ['tasks', activeTab, priorityFilter, typeFilter, page],
     queryFn: () =>
       fetchTasks({
-        status: statusFilter,
-        priority: priority || undefined,
-        taskType: taskType || undefined,
+        status: activeTab === 'all' ? undefined : activeTab.toUpperCase(),
+        priority: priorityFilter,
+        taskType: typeFilter,
+        page,
       }),
   });
+
+  const tasks = data?.data || [];
+  const pagination = data?.pagination;
+  const summary = data?.summary;
 
   // Quick status update mutation
   // const updateStatusMutation = useMutation({
@@ -81,7 +92,12 @@ export default function TasksPage() {
   // });
 
   // Filter tasks by search term
-  const filteredTasks = data?.tasks?.filter((task: Task) =>
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setPage(1);
+  };
+
+  const filteredTasks = tasks?.filter((task: Task) =>
     searchTerm
       ? task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -108,7 +124,7 @@ export default function TasksPage() {
       </PageHeader>
 
       {/* Summary Cards */}
-      {data?.summary && (
+      {summary && (
         <div className="grid gap-4 md:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -116,7 +132,7 @@ export default function TasksPage() {
               <CheckSquare className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.summary.total}</div>
+              <div className="text-2xl font-bold">{summary.total}</div>
             </CardContent>
           </Card>
 
@@ -126,7 +142,7 @@ export default function TasksPage() {
               <ListTodo className="h-4 w-4 text-gray-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.summary.todo}</div>
+              <div className="text-2xl font-bold">{summary.todo}</div>
             </CardContent>
           </Card>
 
@@ -136,7 +152,7 @@ export default function TasksPage() {
               <Clock className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.summary.inProgress}</div>
+              <div className="text-2xl font-bold">{summary.inProgress}</div>
             </CardContent>
           </Card>
 
@@ -146,7 +162,7 @@ export default function TasksPage() {
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.summary.completed}</div>
+              <div className="text-2xl font-bold">{summary.completed}</div>
             </CardContent>
           </Card>
 
@@ -156,7 +172,7 @@ export default function TasksPage() {
               <AlertTriangle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{data.summary.overdue}</div>
+              <div className="text-2xl font-bold text-red-600">{summary.overdue}</div>
             </CardContent>
           </Card>
         </div>
@@ -178,8 +194,11 @@ export default function TasksPage() {
 
             <div className="flex gap-2">
               <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
+                value={priorityFilter}
+                onChange={(e) => {
+                  setPriorityFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 <option value="">All Priorities</option>
@@ -190,8 +209,11 @@ export default function TasksPage() {
               </select>
 
               <select
-                value={taskType}
-                onChange={(e) => setTaskType(e.target.value)}
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 <option value="">All Types</option>
@@ -212,11 +234,22 @@ export default function TasksPage() {
 
       {/* Tasks List with Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="TODO">To Do</TabsTrigger>
-          <TabsTrigger value="IN_PROGRESS">In Progress</TabsTrigger>
-          <TabsTrigger value="COMPLETED">Completed</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="all" onClick={() => handleTabChange('all')}>
+            All
+          </TabsTrigger>
+          <TabsTrigger value="todo" onClick={() => handleTabChange('todo')}>
+            To Do
+          </TabsTrigger>
+          <TabsTrigger value="in_progress" onClick={() => handleTabChange('in_progress')}>
+            In Progress
+          </TabsTrigger>
+          <TabsTrigger value="completed" onClick={() => handleTabChange('completed')}>
+            Completed
+          </TabsTrigger>
+          <TabsTrigger value="cancelled" onClick={() => handleTabChange('cancelled')}>
+            Cancelled
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-4">
@@ -238,7 +271,7 @@ export default function TasksPage() {
                 <CheckSquare className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                 <h3 className="mb-2 text-lg font-semibold">No tasks found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || priority || taskType || activeTab !== 'all'
+                  {searchTerm || priorityFilter || typeFilter || activeTab !== 'all'
                     ? 'Try adjusting your filters'
                     : 'Create your first task to get started'}
                 </p>
@@ -250,13 +283,24 @@ export default function TasksPage() {
                 </Link>
               </CardContent>
             </Card>
-          ) : (
-            <div className="space-y-4">
-              {filteredTasks.map((task: Task) => (
-                <TaskCard key={task.id} task={task} />
-              ))}
-            </div>
-          )}
+          ) : filteredTasks.length > 0 ? (
+            <>
+              <div className="space-y-3">
+                {filteredTasks.map((task: Task) => (
+                  <TaskCard key={task.id} task={task} />
+                ))}
+              </div>
+              {pagination && pagination.totalPages > 1 && (
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  totalItems={pagination.total}
+                  itemsPerPage={pagination.limit}
+                  onPageChange={setPage}
+                />
+              )}
+            </>
+          ) : null}
         </TabsContent>
       </Tabs>
     </div>

@@ -9,10 +9,11 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { MaintenanceCard } from '@/components/maintenance/maintenance-card';
 
-async function fetchMaintenanceRequests(filters: Record<string, string>) {
-  const params = new URLSearchParams(filters);
+async function fetchMaintenanceRequests(filters: Record<string, string>, page = 1) {
+  const params = new URLSearchParams({ ...filters, page: page.toString() });
   const response = await fetch(`/api/maintenance?${params}`);
   if (!response.ok) throw new Error('Failed to fetch maintenance requests');
   return response.json();
@@ -24,20 +25,27 @@ export default function MaintenancePage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: requests, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: [
       'maintenance',
-      { search, status: statusFilter, priority: priorityFilter, category: categoryFilter },
+      { search, status: statusFilter, priority: priorityFilter, category: categoryFilter, page },
     ],
     queryFn: () =>
-      fetchMaintenanceRequests({
-        ...(search && { search }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(priorityFilter && { priority: priorityFilter }),
-        ...(categoryFilter && { category: categoryFilter }),
-      }),
+      fetchMaintenanceRequests(
+        {
+          ...(search && { search }),
+          ...(statusFilter && { status: statusFilter }),
+          ...(priorityFilter && { priority: priorityFilter }),
+          ...(categoryFilter && { category: categoryFilter }),
+        },
+        page
+      ),
   });
+
+  const requests = data?.data || [];
+  const pagination = data?.pagination;
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -104,7 +112,10 @@ export default function MaintenancePage() {
           <Input
             placeholder="Search requests..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
@@ -112,7 +123,10 @@ export default function MaintenancePage() {
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Status</option>
@@ -125,7 +139,10 @@ export default function MaintenancePage() {
 
           <select
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            onChange={(e) => {
+              setPriorityFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Priority</option>
@@ -137,7 +154,10 @@ export default function MaintenancePage() {
 
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Categories</option>
@@ -163,36 +183,47 @@ export default function MaintenancePage() {
             <Skeleton key={i} className="h-64 w-full rounded-lg" />
           ))}
         </div>
-      ) : requests?.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {requests.map(
-            (request: {
-              id: string;
-              title: string;
-              description: string;
-              category: string;
-              status: string;
-              priority: string;
-              scheduledDate: string | null;
-              estimatedCost: number | null;
-              actualCost: number | null;
-              assignedTo: string | null;
-              createdAt: string;
-              property: {
+      ) : requests.length > 0 ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {requests.map(
+              (request: {
                 id: string;
-                name: string;
-                city: string;
-              };
-              tenant: {
-                id: string;
-                firstName: string;
-                lastName: string;
-              } | null;
-            }) => (
-              <MaintenanceCard key={request.id} request={request} onDelete={handleDelete} />
-            )
+                title: string;
+                description: string;
+                category: string;
+                status: string;
+                priority: string;
+                scheduledDate: string | null;
+                estimatedCost: number | null;
+                actualCost: number | null;
+                assignedTo: string | null;
+                createdAt: string;
+                property: {
+                  id: string;
+                  name: string;
+                  city: string;
+                };
+                tenant: {
+                  id: string;
+                  firstName: string;
+                  lastName: string;
+                } | null;
+              }) => (
+                <MaintenanceCard key={request.id} request={request} onDelete={handleDelete} />
+              )
+            )}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
+            />
           )}
-        </div>
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
           <Wrench className="text-muted-foreground/50 h-12 w-12" />

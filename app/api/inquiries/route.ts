@@ -47,6 +47,8 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
     const source = searchParams.get('source');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
     const where: Record<string, unknown> = {
       userId: session.user.id,
@@ -72,22 +74,35 @@ export async function GET(request: Request) {
       ];
     }
 
-    const inquiries = await prisma.inquiry.findMany({
-      where,
-      include: {
-        property: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            city: true,
+    const [inquiries, total] = await Promise.all([
+      prisma.inquiry.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              city: true,
+            },
           },
         },
-      },
-      orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+      }),
+      prisma.inquiry.count({ where }),
+    ]);
 
-    return NextResponse.json(inquiries);
+    return NextResponse.json({
+      data: inquiries,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error('Error fetching inquiries:', error);
     return NextResponse.json({ error: 'Failed to fetch inquiries' }, { status: 500 });

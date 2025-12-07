@@ -20,76 +20,92 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const isDeductible = searchParams.get('isDeductible');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
-    const expenses = await prisma.expense.findMany({
-      where: {
-        userId: session.user.id,
-        ...(propertyId && { propertyId }),
-        ...(maintenanceRequestId && { maintenanceRequestId }),
-        ...(category && {
-          category: category as
-            | 'MAINTENANCE'
-            | 'UTILITIES'
-            | 'INSURANCE'
-            | 'PROPERTY_TAX'
-            | 'MORTGAGE'
-            | 'CLEANING'
-            | 'SUPPLIES'
-            | 'ADVERTISING'
-            | 'PROFESSIONAL_FEES'
-            | 'MANAGEMENT_FEE'
-            | 'OTHER',
+    const where = {
+      userId: session.user.id,
+      ...(propertyId && { propertyId }),
+      ...(maintenanceRequestId && { maintenanceRequestId }),
+      ...(category && {
+        category: category as
+          | 'MAINTENANCE'
+          | 'UTILITIES'
+          | 'INSURANCE'
+          | 'PROPERTY_TAX'
+          | 'MORTGAGE'
+          | 'CLEANING'
+          | 'SUPPLIES'
+          | 'ADVERTISING'
+          | 'PROFESSIONAL_FEES'
+          | 'MANAGEMENT_FEE'
+          | 'OTHER',
+      }),
+      ...(status && { status: status as 'UNPAID' | 'PAID' | 'OVERDUE' }),
+      ...(isDeductible && { isDeductible: isDeductible === 'true' }),
+      ...(startDate &&
+        endDate && {
+          expenseDate: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
         }),
-        ...(status && { status: status as 'UNPAID' | 'PAID' | 'OVERDUE' }),
-        ...(isDeductible && { isDeductible: isDeductible === 'true' }),
-        ...(startDate &&
-          endDate && {
-            expenseDate: {
-              gte: new Date(startDate),
-              lte: new Date(endDate),
+    };
+
+    const [expenses, total] = await Promise.all([
+      prisma.expense.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
             },
-          }),
-      },
-      include: {
-        property: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
+          },
+          maintenanceRequest: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              priority: true,
+            },
           },
         },
-        maintenanceRequest: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            priority: true,
-          },
+        orderBy: {
+          expenseDate: 'desc',
         },
-      },
-      orderBy: {
-        expenseDate: 'desc',
-      },
+      }),
+      prisma.expense.count({ where }),
+    ]);
+
+    // Calculate summary statistics from all matching expenses (not just current page)
+    const allExpenses = await prisma.expense.findMany({
+      where,
+      select: { amount: true, status: true, isDeductible: true, category: true },
     });
 
-    // Calculate summary statistics
     const summary = {
-      totalAmount: expenses.reduce(
-        (sum: number, e: (typeof expenses)[number]) => sum + Number(e.amount),
+      totalAmount: allExpenses.reduce(
+        (sum: number, e: (typeof allExpenses)[number]) => sum + Number(e.amount),
         0
       ),
-      unpaidAmount: expenses
-        .filter((e: (typeof expenses)[number]) => e.status === 'UNPAID' || e.status === 'OVERDUE')
-        .reduce((sum: number, e: (typeof expenses)[number]) => sum + Number(e.amount), 0),
-      paidAmount: expenses
-        .filter((e: (typeof expenses)[number]) => e.status === 'PAID')
-        .reduce((sum: number, e: (typeof expenses)[number]) => sum + Number(e.amount), 0),
-      deductibleAmount: expenses
-        .filter((e: (typeof expenses)[number]) => e.isDeductible)
-        .reduce((sum: number, e: (typeof expenses)[number]) => sum + Number(e.amount), 0),
-      count: expenses.length,
-      byCategory: expenses.reduce(
-        (acc: Record<string, number>, e: (typeof expenses)[number]) => {
+      unpaidAmount: allExpenses
+        .filter(
+          (e: (typeof allExpenses)[number]) => e.status === 'UNPAID' || e.status === 'OVERDUE'
+        )
+        .reduce((sum: number, e: (typeof allExpenses)[number]) => sum + Number(e.amount), 0),
+      paidAmount: allExpenses
+        .filter((e: (typeof allExpenses)[number]) => e.status === 'PAID')
+        .reduce((sum: number, e: (typeof allExpenses)[number]) => sum + Number(e.amount), 0),
+      deductibleAmount: allExpenses
+        .filter((e: (typeof allExpenses)[number]) => e.isDeductible)
+        .reduce((sum: number, e: (typeof allExpenses)[number]) => sum + Number(e.amount), 0),
+      count: allExpenses.length,
+      byCategory: allExpenses.reduce(
+        (acc: Record<string, number>, e: (typeof allExpenses)[number]) => {
           acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
           return acc;
         },
@@ -97,7 +113,16 @@ export async function GET(request: Request) {
       ),
     };
 
-    return NextResponse.json({ expenses, summary });
+    return NextResponse.json({
+      data: expenses,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+      summary,
+    });
   } catch (error) {
     console.error('Error fetching expenses:', error);
     return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });

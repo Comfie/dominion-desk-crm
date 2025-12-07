@@ -9,11 +9,12 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { PaymentCard } from '@/components/financials/payment-card';
 import { formatCurrency } from '@/lib/utils';
 
-async function fetchPayments(filters: Record<string, string>) {
-  const params = new URLSearchParams(filters);
+async function fetchPayments(filters: Record<string, string>, page = 1) {
+  const params = new URLSearchParams({ ...filters, page: page.toString() });
   const response = await fetch(`/api/payments?${params}`);
   if (!response.ok) throw new Error('Failed to fetch payments');
   return response.json();
@@ -22,15 +23,23 @@ async function fetchPayments(filters: Record<string, string>) {
 export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['payments', statusFilter, typeFilter],
+    queryKey: ['payments', statusFilter, typeFilter, page],
     queryFn: () =>
-      fetchPayments({
-        ...(statusFilter && { status: statusFilter }),
-        ...(typeFilter && { paymentType: typeFilter }),
-      }),
+      fetchPayments(
+        {
+          ...(statusFilter && { status: statusFilter }),
+          ...(typeFilter && { paymentType: typeFilter }),
+        },
+        page
+      ),
   });
+
+  const payments = data?.data || [];
+  const pagination = data?.pagination;
+  const summary = data?.summary;
 
   return (
     <div className="space-y-6">
@@ -50,7 +59,7 @@ export default function PaymentsPage() {
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
-      ) : data?.summary ? (
+      ) : summary ? (
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -103,8 +112,11 @@ export default function PaymentsPage() {
       <div className="flex flex-wrap gap-4">
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-40 rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
         >
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
@@ -117,8 +129,11 @@ export default function PaymentsPage() {
 
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-40 rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(1);
+          }}
+          className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
         >
           <option value="">All Types</option>
           <option value="RENT">Rent</option>
@@ -146,7 +161,7 @@ export default function PaymentsPage() {
             <p className="text-muted-foreground">Failed to load payments</p>
           </CardContent>
         </Card>
-      ) : data?.payments?.length === 0 ? (
+      ) : payments.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <DollarSign className="text-muted-foreground/50 mx-auto h-12 w-12" />
@@ -163,38 +178,49 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {data?.payments?.map(
-            (payment: {
-              id: string;
-              paymentReference: string;
-              paymentType: string;
-              amount: number;
-              paymentMethod: string;
-              paymentDate: string;
-              dueDate?: string | null;
-              status: string;
-              reminderSent?: boolean;
-              reminderSentAt?: string | null;
-              booking?: {
+        <>
+          <div className="space-y-4">
+            {payments.map(
+              (payment: {
                 id: string;
-                guestName: string;
-                property?: {
+                paymentReference: string;
+                paymentType: string;
+                amount: number;
+                paymentMethod: string;
+                paymentDate: string;
+                dueDate?: string | null;
+                status: string;
+                reminderSent?: boolean;
+                reminderSentAt?: string | null;
+                booking?: {
                   id: string;
-                  name: string;
-                };
-              } | null;
-              tenant?: {
-                id: string;
-                firstName: string;
-                lastName: string;
-                email?: string;
-              } | null;
-            }) => (
-              <PaymentCard key={payment.id} payment={payment} />
-            )
+                  guestName: string;
+                  property?: {
+                    id: string;
+                    name: string;
+                  };
+                } | null;
+                tenant?: {
+                  id: string;
+                  firstName: string;
+                  lastName: string;
+                  email?: string;
+                } | null;
+              }) => (
+                <PaymentCard key={payment.id} payment={payment} />
+              )
+            )}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
+            />
           )}
-        </div>
+        </>
       )}
     </div>
   );

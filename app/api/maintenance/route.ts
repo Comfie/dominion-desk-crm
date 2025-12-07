@@ -45,6 +45,8 @@ export async function GET(request: Request) {
     const priority = searchParams.get('priority');
     const category = searchParams.get('category');
     const propertyId = searchParams.get('propertyId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
     const where: Record<string, unknown> = {
       userId: session.user.id,
@@ -74,30 +76,43 @@ export async function GET(request: Request) {
       ];
     }
 
-    const maintenanceRequests = await prisma.maintenanceRequest.findMany({
-      where,
-      include: {
-        property: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            city: true,
+    const [maintenanceRequests, total] = await Promise.all([
+      prisma.maintenanceRequest.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              city: true,
+            },
+          },
+          tenant: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
           },
         },
-        tenant: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
-        },
-      },
-      orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+      }),
+      prisma.maintenanceRequest.count({ where }),
+    ]);
 
-    return NextResponse.json(maintenanceRequests);
+    return NextResponse.json({
+      data: maintenanceRequests,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error('Error fetching maintenance requests:', error);
     return NextResponse.json({ error: 'Failed to fetch maintenance requests' }, { status: 500 });

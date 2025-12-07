@@ -23,6 +23,10 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
 
+    // Parse pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
+
     // Parse and validate query parameters
     const filters: ListBookingsDTO = listBookingsSchema.parse({
       propertyId: searchParams.get('propertyId') || undefined,
@@ -46,7 +50,20 @@ export async function GET(request: Request) {
       specialRequests: booking.guestNotes,
     }));
 
-    return NextResponse.json(transformedBookings);
+    // Apply pagination to the results
+    const total = transformedBookings.length;
+    const startIndex = (page - 1) * limit;
+    const paginatedBookings = transformedBookings.slice(startIndex, startIndex + limit);
+
+    return NextResponse.json({
+      data: paginatedBookings,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

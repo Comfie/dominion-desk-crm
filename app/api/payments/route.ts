@@ -20,117 +20,134 @@ export async function GET(request: Request) {
     const paymentType = searchParams.get('paymentType');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
-    const payments = await prisma.payment.findMany({
-      where: {
-        userId: session.user.id,
-        ...(bookingId && { bookingId }),
-        ...(tenantId && { tenantId }),
-        ...(status && {
-          status: status as
-            | 'PENDING'
-            | 'PARTIALLY_PAID'
-            | 'PAID'
-            | 'OVERDUE'
-            | 'REFUNDED'
-            | 'FAILED',
+    const where = {
+      userId: session.user.id,
+      ...(bookingId && { bookingId }),
+      ...(tenantId && { tenantId }),
+      ...(status && {
+        status: status as 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'REFUNDED' | 'FAILED',
+      }),
+      ...(paymentType && {
+        paymentType: paymentType as
+          | 'RENT'
+          | 'DEPOSIT'
+          | 'BOOKING'
+          | 'CLEANING_FEE'
+          | 'UTILITIES'
+          | 'LATE_FEE'
+          | 'DAMAGE'
+          | 'REFUND'
+          | 'OTHER',
+      }),
+      ...(startDate &&
+        endDate && {
+          paymentDate: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
         }),
-        ...(paymentType && {
-          paymentType: paymentType as
-            | 'RENT'
-            | 'DEPOSIT'
-            | 'BOOKING'
-            | 'CLEANING_FEE'
-            | 'UTILITIES'
-            | 'LATE_FEE'
-            | 'DAMAGE'
-            | 'REFUND'
-            | 'OTHER',
-        }),
-        ...(startDate &&
-          endDate && {
-            paymentDate: {
-              gte: new Date(startDate),
-              lte: new Date(endDate),
-            },
-          }),
-      },
-      select: {
-        id: true,
-        paymentReference: true,
-        paymentType: true,
-        amount: true,
-        currency: true,
-        paymentMethod: true,
-        paymentDate: true,
-        dueDate: true,
-        status: true,
-        description: true,
-        notes: true,
-        reminderSent: true,
-        reminderSentAt: true,
-        propertyId: true,
-        property: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-          },
-        },
-        booking: {
-          select: {
-            id: true,
-            guestName: true,
-            property: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            properties: {
-              select: {
-                property: {
-                  select: {
-                    id: true,
-                    name: true,
-                    address: true,
-                  },
-                },
-              },
-              take: 1,
-            },
-          },
-        },
-      },
-      orderBy: {
-        paymentDate: 'desc',
-      },
-    });
-
-    // Calculate summary statistics
-    const summary = {
-      totalAmount: payments.reduce(
-        (sum: number, p: (typeof payments)[number]) => sum + Number(p.amount),
-        0
-      ),
-      pendingAmount: payments
-        .filter((p: (typeof payments)[number]) => p.status === 'PENDING')
-        .reduce((sum: number, p: (typeof payments)[number]) => sum + Number(p.amount), 0),
-      paidAmount: payments
-        .filter((p: (typeof payments)[number]) => p.status === 'PAID')
-        .reduce((sum: number, p: (typeof payments)[number]) => sum + Number(p.amount), 0),
-      count: payments.length,
     };
 
-    return NextResponse.json({ payments, summary });
+    const [payments, total] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          paymentReference: true,
+          paymentType: true,
+          amount: true,
+          currency: true,
+          paymentMethod: true,
+          paymentDate: true,
+          dueDate: true,
+          status: true,
+          description: true,
+          notes: true,
+          reminderSent: true,
+          reminderSentAt: true,
+          propertyId: true,
+          property: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+            },
+          },
+          booking: {
+            select: {
+              id: true,
+              guestName: true,
+              property: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          tenant: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              properties: {
+                select: {
+                  property: {
+                    select: {
+                      id: true,
+                      name: true,
+                      address: true,
+                    },
+                  },
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+        orderBy: {
+          paymentDate: 'desc',
+        },
+      }),
+      prisma.payment.count({ where }),
+    ]);
+
+    // Calculate summary statistics from all matching payments (not just current page)
+    const allPayments = await prisma.payment.findMany({
+      where,
+      select: { amount: true, status: true },
+    });
+
+    const summary = {
+      totalAmount: allPayments.reduce(
+        (sum: number, p: (typeof allPayments)[number]) => sum + Number(p.amount),
+        0
+      ),
+      pendingAmount: allPayments
+        .filter((p: (typeof allPayments)[number]) => p.status === 'PENDING')
+        .reduce((sum: number, p: (typeof allPayments)[number]) => sum + Number(p.amount), 0),
+      paidAmount: allPayments
+        .filter((p: (typeof allPayments)[number]) => p.status === 'PAID')
+        .reduce((sum: number, p: (typeof allPayments)[number]) => sum + Number(p.amount), 0),
+      count: allPayments.length,
+    };
+
+    return NextResponse.json({
+      data: payments,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+      summary,
+    });
   } catch (error) {
     console.error('Error fetching payments:', error);
     return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 });

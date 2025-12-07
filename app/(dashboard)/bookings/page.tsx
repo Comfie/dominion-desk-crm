@@ -9,10 +9,11 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { BookingCard } from '@/components/bookings/booking-card';
 
-async function fetchBookings(filters: Record<string, string>) {
-  const params = new URLSearchParams(filters);
+async function fetchBookings(filters: Record<string, string>, page = 1) {
+  const params = new URLSearchParams({ ...filters, page: page.toString() });
   const response = await fetch(`/api/bookings?${params}`);
   if (!response.ok) throw new Error('Failed to fetch bookings');
   return response.json();
@@ -23,16 +24,23 @@ export default function BookingsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ['bookings', { search, status: statusFilter, source: sourceFilter }],
+  const { data, isLoading } = useQuery({
+    queryKey: ['bookings', { search, status: statusFilter, source: sourceFilter, page }],
     queryFn: () =>
-      fetchBookings({
-        ...(search && { search }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(sourceFilter && { source: sourceFilter }),
-      }),
+      fetchBookings(
+        {
+          ...(search && { search }),
+          ...(statusFilter && { status: statusFilter }),
+          ...(sourceFilter && { source: sourceFilter }),
+        },
+        page
+      ),
   });
+
+  const bookings = data?.data || [];
+  const pagination = data?.pagination;
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -79,7 +87,10 @@ export default function BookingsPage() {
           <Input
             placeholder="Search bookings..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
@@ -87,7 +98,10 @@ export default function BookingsPage() {
         <div className="flex items-center gap-2">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Status</option>
@@ -101,7 +115,10 @@ export default function BookingsPage() {
 
           <select
             value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
+            onChange={(e) => {
+              setSourceFilter(e.target.value);
+              setPage(1);
+            }}
             className="border-input focus-visible:ring-ring flex h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
           >
             <option value="">All Sources</option>
@@ -121,32 +138,43 @@ export default function BookingsPage() {
             <Skeleton key={i} className="h-64 w-full rounded-lg" />
           ))}
         </div>
-      ) : bookings?.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {bookings.map(
-            (booking: {
-              id: string;
-              guestName: string;
-              guestEmail: string | null;
-              guestPhone: string | null;
-              checkInDate: string;
-              checkOutDate: string;
-              numberOfGuests: number;
-              totalAmount: number;
-              status: string;
-              source: string;
-              property: {
+      ) : bookings.length > 0 ? (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {bookings.map(
+              (booking: {
                 id: string;
-                name: string;
-                address: string;
-                city: string;
-                primaryImageUrl: string | null;
-              };
-            }) => (
-              <BookingCard key={booking.id} booking={booking} onDelete={handleDelete} />
-            )
+                guestName: string;
+                guestEmail: string | null;
+                guestPhone: string | null;
+                checkInDate: string;
+                checkOutDate: string;
+                numberOfGuests: number;
+                totalAmount: number;
+                status: string;
+                source: string;
+                property: {
+                  id: string;
+                  name: string;
+                  address: string;
+                  city: string;
+                  primaryImageUrl: string | null;
+                };
+              }) => (
+                <BookingCard key={booking.id} booking={booking} onDelete={handleDelete} />
+              )
+            )}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
+            />
           )}
-        </div>
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
           <Calendar className="text-muted-foreground/50 h-12 w-12" />
