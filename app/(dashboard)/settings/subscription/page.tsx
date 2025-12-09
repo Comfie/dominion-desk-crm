@@ -179,7 +179,7 @@ export default function SubscriptionPage() {
             return (
               <Card
                 key={plan.id}
-                className={`relative ${plan.popular ? 'border-2 border-blue-500' : ''} ${isCurrent ? 'bg-gray-50' : ''}`}
+                className={`relative ${plan.popular ? 'border-2 border-blue-500' : ''} ${isCurrent ? 'bg-gray-50 dark:bg-gray-800' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">

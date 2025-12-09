@@ -14,6 +14,11 @@ const navItems = [
     icon: Users,
   },
   {
+    title: 'System Admins',
+    href: '/admin/system-admins',
+    icon: Shield,
+  },
+  {
     title: 'Analytics',
     href: '/admin/analytics',
     icon: BarChart3,

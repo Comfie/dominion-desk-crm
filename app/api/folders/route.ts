@@ -48,8 +48,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Only fetch root-level folders (parentFolderId is null)
+    // and include their subfolders recursively to avoid duplicates
     const folders = await prisma.documentFolder.findMany({
-      where,
+      where: {
+        ...where,
+        parentFolderId: null, // Only root-level folders
+      },
       include: {
         _count: {
           select: {
@@ -69,6 +74,38 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
           },
+        },
+        // Recursively include subfolders
+        subFolders: {
+          include: {
+            _count: {
+              select: {
+                documents: true,
+                subFolders: true,
+              },
+            },
+            subFolders: {
+              include: {
+                _count: {
+                  select: {
+                    documents: true,
+                    subFolders: true,
+                  },
+                },
+                subFolders: {
+                  include: {
+                    _count: {
+                      select: {
+                        documents: true,
+                        subFolders: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
         },
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],

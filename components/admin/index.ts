@@ -5,3 +5,5 @@ export { StatsCard } from './stats-card';
 export { SubscriptionTierBadge, SubscriptionStatusBadge } from './subscription-badge';
 export { UserTable } from './user-table';
 export { CreateUserDialog } from './create-user-dialog';
+export { AdminTable } from './admin-table';
+export { CreateAdminDialog } from './create-admin-dialog';
