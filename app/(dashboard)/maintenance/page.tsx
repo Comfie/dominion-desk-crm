@@ -11,6 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
 import { MaintenanceCard } from '@/components/maintenance/maintenance-card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 async function fetchMaintenanceRequests(filters: Record<string, string>, page = 1) {
   const params = new URLSearchParams({ ...filters, page: page.toString() });
@@ -21,11 +32,14 @@ async function fetchMaintenanceRequests(filters: Record<string, string>, page = 
 
 export default function MaintenancePage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -57,13 +71,25 @@ export default function MaintenancePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+      setDeleteDialogOpen(false);
+      setRequestToDelete(null);
+      toast({
+        title: 'Request deleted',
+        description: 'The maintenance request has been deleted successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this maintenance request?')) {
-      deleteMutation.mutate(id);
-    }
+    setRequestToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   // Count requests by status
@@ -243,6 +269,29 @@ export default function MaintenancePage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Maintenance Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this maintenance request? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => requestToDelete && deleteMutation.mutate(requestToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

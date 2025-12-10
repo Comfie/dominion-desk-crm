@@ -11,6 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
 import { InquiryCard } from '@/components/inquiries/inquiry-card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 async function fetchInquiries(filters: Record<string, string>, page = 1) {
   const params = new URLSearchParams({ ...filters, page: page.toString() });
@@ -21,11 +32,14 @@ async function fetchInquiries(filters: Record<string, string>, page = 1) {
 
 export default function InquiriesPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [inquiryToDelete, setInquiryToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -57,13 +71,25 @@ export default function InquiriesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+      setDeleteDialogOpen(false);
+      setInquiryToDelete(null);
+      toast({
+        title: 'Inquiry deleted',
+        description: 'The inquiry has been deleted successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this inquiry?')) {
-      deleteMutation.mutate(id);
-    }
+    setInquiryToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   // Count inquiries by status
@@ -241,6 +267,28 @@ export default function InquiriesPage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Inquiry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this inquiry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => inquiryToDelete && deleteMutation.mutate(inquiryToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

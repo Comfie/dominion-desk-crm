@@ -11,6 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
 import { BookingCard } from '@/components/bookings/booking-card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 async function fetchBookings(filters: Record<string, string>, page = 1) {
   const params = new URLSearchParams({ ...filters, page: page.toString() });
@@ -21,10 +32,13 @@ async function fetchBookings(filters: Record<string, string>, page = 1) {
 
 export default function BookingsPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['bookings', { search, status: statusFilter, source: sourceFilter, page }],
@@ -52,13 +66,25 @@ export default function BookingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      setDeleteDialogOpen(false);
+      setBookingToDelete(null);
+      toast({
+        title: 'Booking deleted',
+        description: 'The booking has been deleted successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this booking?')) {
-      deleteMutation.mutate(id);
-    }
+    setBookingToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -194,6 +220,28 @@ export default function BookingsPage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Booking</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bookingToDelete && deleteMutation.mutate(bookingToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

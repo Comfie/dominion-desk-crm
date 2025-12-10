@@ -112,7 +112,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   >
                     <p className="text-sm font-medium">{notification.title}</p>
                     <p className="text-muted-foreground text-xs">{notification.message}</p>
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-muted-foreground text-xs" suppressHydrationWarning>
                       {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                     </p>
                   </DropdownMenuItem>

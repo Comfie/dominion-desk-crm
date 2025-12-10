@@ -11,6 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
 import { TenantCard } from '@/components/tenants/tenant-card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 async function fetchTenants(filters: Record<string, string>, page = 1) {
   const params = new URLSearchParams({ ...filters, page: page.toString() });
@@ -21,10 +32,13 @@ async function fetchTenants(filters: Record<string, string>, page = 1) {
 
 export default function TenantsPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tenantToDelete, setTenantToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['tenants', { search, status: statusFilter, type: typeFilter, page }],
@@ -52,13 +66,25 @@ export default function TenantsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      setDeleteDialogOpen(false);
+      setTenantToDelete(null);
+      toast({
+        title: 'Tenant deleted',
+        description: 'The tenant has been deleted successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this tenant?')) {
-      deleteMutation.mutate(id);
-    }
+    setTenantToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -183,6 +209,29 @@ export default function TenantsPage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tenant? This action cannot be undone. Associated
+              payments and bookings may be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => tenantToDelete && deleteMutation.mutate(tenantToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

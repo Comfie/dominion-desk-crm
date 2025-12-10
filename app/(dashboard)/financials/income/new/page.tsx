@@ -32,13 +32,15 @@ type PaymentFormData = z.infer<typeof paymentSchema>;
 async function fetchBookings() {
   const response = await fetch('/api/bookings');
   if (!response.ok) throw new Error('Failed to fetch bookings');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 async function fetchTenants() {
   const response = await fetch('/api/tenants');
   if (!response.ok) throw new Error('Failed to fetch tenants');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 export default function NewPaymentPage() {

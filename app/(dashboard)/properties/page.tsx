@@ -20,6 +20,17 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 async function fetchProperties(search?: string, status?: string, type?: string, page = 1) {
   const params = new URLSearchParams();
@@ -41,11 +52,14 @@ async function deleteProperty(id: string) {
 
 export default function PropertiesPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['properties', search, statusFilter, typeFilter, page],
@@ -56,13 +70,25 @@ export default function PropertiesPage() {
     mutationFn: deleteProperty,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+      setDeleteDialogOpen(false);
+      setPropertyToDelete(null);
+      toast({
+        title: 'Property deleted',
+        description: 'The property has been deleted successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this property?')) {
-      deleteMutation.mutate(id);
-    }
+    setPropertyToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
   const toggleStatusFilter = (status: string) => {
@@ -274,6 +300,29 @@ export default function PropertiesPage() {
           )}
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Property</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this property? This action cannot be undone. All
+              associated bookings, tenants, and documents may also be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => propertyToDelete && deleteMutation.mutate(propertyToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

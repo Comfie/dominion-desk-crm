@@ -433,7 +433,7 @@ export default function AnalyticsDashboardPage() {
           <CardTitle>Detailed Reports</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Link href="/reports/occupancy">
               <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
                 <CardContent className="flex items-center gap-3 p-4">
@@ -456,10 +456,65 @@ export default function AnalyticsDashboardPage() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/financials/income">
+            <Link href="/reports/tenant-payments">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <Users className="text-primary h-8 w-8" />
+                  <div>
+                    <p className="font-medium">Tenant Payments</p>
+                    <p className="text-muted-foreground text-sm">Payment history by tenant</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/reports/lease-expiration">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <Calendar className="text-primary h-8 w-8" />
+                  <div>
+                    <p className="font-medium">Lease Expiration</p>
+                    <p className="text-muted-foreground text-sm">Upcoming lease renewals</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/reports/aging-receivables">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <AlertCircle className="text-primary h-8 w-8" />
+                  <div>
+                    <p className="font-medium">Aging Receivables</p>
+                    <p className="text-muted-foreground text-sm">Outstanding payment aging</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/reports/maintenance-costs">
               <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
                 <CardContent className="flex items-center gap-3 p-4">
                   <Wrench className="text-primary h-8 w-8" />
+                  <div>
+                    <p className="font-medium">Maintenance Costs</p>
+                    <p className="text-muted-foreground text-sm">Property maintenance expenses</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/reports/cash-flow">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <DollarSign className="text-primary h-8 w-8" />
+                  <div>
+                    <p className="font-medium">Cash Flow</p>
+                    <p className="text-muted-foreground text-sm">Inflows and outflows</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/financials/income">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <Calendar className="text-primary h-8 w-8" />
                   <div>
                     <p className="font-medium">Financial Details</p>
                     <p className="text-muted-foreground text-sm">View all transactions</p>
