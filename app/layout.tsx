@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { Providers } from '@/components/providers';
+import { Toaster } from '@/components/ui/toaster';
 
 import './globals.css';
 
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     other: [
       { rel: 'android-chrome', url: '/android-chrome-192x192.png', sizes: '192x192' },
-      { rel: 'android-chrome', url: '/android-chrome-512x512.png', sizes: '512x512' },
+      { rel: '/android-chrome', url: '/android-chrome-512x512.png', sizes: '512x512' },
     ],
   },
   manifest: '/site.webmanifest',
@@ -65,6 +66,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <Providers>{children}</Providers>
+        <Toaster />
       </body>
     </html>
   );

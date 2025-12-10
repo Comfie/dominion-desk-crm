@@ -1,5 +1,6 @@
 import { PropertyStatus, PropertyType, RentalType } from '@prisma/client';
 import { propertyRepository } from '@/lib/features/properties/repositories/property.repository';
+import { prisma } from '@/lib/db';
 import { logger } from '@/lib/shared/logger';
 import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
 
@@ -183,6 +184,33 @@ export class PropertyService {
       throw new ValidationError(
         'Cannot delete property with active bookings. Please cancel or complete bookings first.',
         { propertyId, activeBookings: property.bookings?.length }
+      );
+    }
+
+    // Check if property has active tenant assignments
+    const activeTenants = await prisma.propertyTenant.findMany({
+      where: {
+        propertyId,
+        isActive: true,
+      },
+      include: {
+        tenant: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    if (activeTenants.length > 0) {
+      const tenantNames = activeTenants
+        .map((pt) => `${pt.tenant.firstName} ${pt.tenant.lastName}`)
+        .join(', ');
+
+      throw new ValidationError(
+        `Cannot delete property with active tenant assignments. Please terminate the lease(s) first. Active tenants: ${tenantNames}`,
+        { propertyId, activeTenants: activeTenants.length, tenantNames }
       );
     }
 

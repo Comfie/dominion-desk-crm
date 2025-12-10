@@ -46,7 +46,10 @@ async function fetchProperties(search?: string, status?: string, type?: string, 
 
 async function deleteProperty(id: string) {
   const response = await fetch(`/api/properties/${id}`, { method: 'DELETE' });
-  if (!response.ok) throw new Error('Failed to delete property');
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to delete property');
+  }
   return response.json();
 }
 

@@ -5,6 +5,8 @@ import { Prisma } from '@prisma/client';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { propertyService } from '@/lib/features/properties';
+import { ValidationError } from '@/lib/shared/errors/app-error';
 
 const updatePropertySchema = z.object({
   name: z.string().min(1).optional(),
@@ -162,24 +164,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params;
 
-    // Check if property exists and belongs to user
-    const existingProperty = await prisma.property.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
-    });
-
-    if (!existingProperty) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
-    }
-
-    await prisma.property.delete({
-      where: { id },
-    });
+    // Use service layer which includes validation for active tenants and bookings
+    await propertyService.delete(id, session.user.id);
 
     return NextResponse.json({ message: 'Property deleted successfully' });
   } catch (error) {
+    // Handle validation errors (active tenants/bookings)
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     console.error('Error deleting property:', error);
     return NextResponse.json({ error: 'Failed to delete property' }, { status: 500 });
   }
