@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { DashboardCharts } from '@/components/dashboard/dashboard-charts';
 
 interface DashboardData {
   stats: {
@@ -37,6 +38,10 @@ interface DashboardData {
     outstandingPayments: number;
     occupancyRate: number;
     staleMaintenanceCount: number;
+  };
+  charts: {
+    revenue: Array<{ name: string; total: number }>;
+    propertyStatus: Array<{ name: string; value: number }>;
   };
   recentBookings: Array<{
     id: string;
@@ -249,6 +254,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Visual Charts */}
+      {data?.charts && <DashboardCharts data={data.charts} />}
 
       {/* Stale Maintenance Alert */}
       {data?.staleMaintenance && data.staleMaintenance.length > 0 && (

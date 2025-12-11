@@ -65,14 +65,20 @@ export default function TaskCalendarPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['tasks-calendar', year, month],
     queryFn: async () => {
-      const response = await fetch('/api/tasks');
+      // Use date range parameters to fetch tasks for the current month view
+      const params = new URLSearchParams({
+        dueAfter: startDate.toISOString(),
+        dueBefore: endDate.toISOString(),
+        limit: '100', // Fetch more tasks for calendar view
+      });
+      const response = await fetch(`/api/tasks?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch tasks');
       return response.json();
     },
   });
 
-  // Filter tasks that have due dates within the visible range
-  const tasksWithDueDates = data?.tasks?.filter((task: Task) => task.dueDate) || [];
+  // Filter tasks that have due dates (API returns tasks in data.data, not data.tasks)
+  const tasksWithDueDates = data?.data?.filter((task: Task) => task.dueDate) || [];
 
   // Group tasks by date
   const tasksByDate: Record<string, Task[]> = {};

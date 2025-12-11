@@ -16,6 +16,9 @@ export async function GET() {
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
+    // Calculate start of 6 months ago correctly
+    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+
     // Get all counts in parallel
     const [
       totalProperties,
@@ -29,6 +32,8 @@ export async function GET() {
       upcomingCheckIns,
       outstandingPayments,
       staleMaintenance,
+      propertyStats,
+      rawRevenueHistory,
     ] = await Promise.all([
       // Total properties
       prisma.property.count({ where: { userId } }),
@@ -148,6 +153,26 @@ export async function GET() {
 
       // Stale maintenance requests (5+ days old)
       getStaleMaintenance(userId),
+
+      // Property status distribution
+      prisma.property.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: true,
+      }),
+
+      // Last 6 months revenue data
+      prisma.payment.groupBy({
+        by: ['paymentDate'],
+        where: {
+          userId,
+          status: 'PAID',
+          paymentDate: {
+            gte: new Date(new Date().setMonth(new Date().getMonth() - 5)), // Last 6 months
+          },
+        },
+        _sum: { amount: true },
+      }),
     ]);
 
     // Calculate outstanding amount
@@ -212,6 +237,30 @@ export async function GET() {
 
     const occupancyRate = totalPropertyDays > 0 ? (occupiedDays / totalPropertyDays) * 100 : 0;
 
+    // Process revenue history
+    const revenueHistory: Array<{ name: string; total: number }> = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthName = d.toLocaleString('default', { month: 'short' });
+      const year = d.getFullYear();
+
+      // Filter payments for this month from the raw grouped data
+      // Note: groupBy with date usually returns precise dates, so we might need to process in JS
+      // A cleaner way for the future is raw query or multiple aggregates,
+      // but for now we'll sum up the raw chunks that fall in this month
+      const monthRevenue = rawRevenueHistory
+        .filter((p) => {
+          const pDate = new Date(p.paymentDate!);
+          return pDate.getMonth() === d.getMonth() && pDate.getFullYear() === year;
+        })
+        .reduce((sum, p) => sum + Number(p._sum.amount || 0), 0);
+
+      revenueHistory.push({
+        name: monthName,
+        total: monthRevenue,
+      });
+    }
+
     return NextResponse.json({
       stats: {
         totalProperties,
@@ -229,6 +278,13 @@ export async function GET() {
       upcomingTasks,
       upcomingCheckIns,
       staleMaintenance,
+      charts: {
+        propertyStatus: propertyStats.map((stat) => ({
+          name: stat.status,
+          value: stat._count,
+        })),
+        revenue: revenueHistory,
+      },
     });
   } catch (error) {
     console.error('Dashboard error:', error);
