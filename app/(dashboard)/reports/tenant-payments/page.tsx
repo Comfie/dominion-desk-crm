@@ -255,7 +255,7 @@ export default function TenantPaymentsReportPage() {
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-lg font-bold text-green-600">
               {formatCurrency(data?.summary.paidAmount || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -270,7 +270,7 @@ export default function TenantPaymentsReportPage() {
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-lg font-bold text-yellow-600">
               {formatCurrency(data?.summary.pendingAmount || 0)}
             </div>
             <p className="text-muted-foreground text-xs">Awaiting payment</p>
@@ -283,7 +283,7 @@ export default function TenantPaymentsReportPage() {
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-lg font-bold text-red-600">
               {formatCurrency(data?.summary.overdueAmount || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -298,7 +298,7 @@ export default function TenantPaymentsReportPage() {
             <CheckCircle className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.overallPunctualityRate || 0}%</div>
+            <div className="text-lg font-bold">{data?.summary.overallPunctualityRate || 0}%</div>
             <p className="text-muted-foreground text-xs">Payments made on time</p>
           </CardContent>
         </Card>

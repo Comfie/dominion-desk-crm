@@ -93,7 +93,8 @@ export default function MaintenanceCostsReportPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -210,7 +211,7 @@ export default function MaintenanceCostsReportPage() {
             <DollarSign className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data?.summary.totalCost || 0)}</div>
+            <div className="text-lg font-bold">{formatCurrency(data?.summary.totalCost || 0)}</div>
             <p className="text-muted-foreground text-xs">
               {data?.summary.totalRequests || 0} requests in {year}
             </p>
@@ -223,7 +224,7 @@ export default function MaintenanceCostsReportPage() {
             <Wrench className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {formatCurrency(data?.summary.avgCostPerRequest || 0)}
             </div>
             <p className="text-muted-foreground text-xs">Per maintenance request</p>
@@ -236,7 +237,7 @@ export default function MaintenanceCostsReportPage() {
             <Clock className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {data?.summary.avgResolutionDays !== null &&
               data?.summary.avgResolutionDays !== undefined
                 ? `${data.summary.avgResolutionDays} days`
@@ -252,7 +253,7 @@ export default function MaintenanceCostsReportPage() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {data?.summary.totalRequests
                 ? Math.round((data.summary.completedRequests / data.summary.totalRequests) * 100)
                 : 0}

@@ -33,13 +33,15 @@ type MaintenanceFormData = z.infer<typeof maintenanceSchema>;
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 async function fetchTenants() {
   const response = await fetch('/api/tenants');
   if (!response.ok) throw new Error('Failed to fetch tenants');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 export default function NewMaintenancePage() {

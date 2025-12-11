@@ -133,7 +133,7 @@ export default function AnalyticsDashboardPage() {
             <Building2 className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.totalProperties}</div>
+            <div className="text-lg font-bold">{data?.summary.totalProperties}</div>
             <p className="text-muted-foreground text-xs">Active properties</p>
           </CardContent>
         </Card>
@@ -144,7 +144,7 @@ export default function AnalyticsDashboardPage() {
             <DollarSign className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {formatCurrency(data?.summary.totalRevenue || 0)}
             </div>
             <p className="text-muted-foreground text-xs">Last {period} days</p>
@@ -157,7 +157,7 @@ export default function AnalyticsDashboardPage() {
             <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.occupancyRate}%</div>
+            <div className="text-lg font-bold">{data?.summary.occupancyRate}%</div>
             <p className="text-muted-foreground text-xs">Average occupancy</p>
           </CardContent>
         </Card>
@@ -173,7 +173,7 @@ export default function AnalyticsDashboardPage() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
+              className={`text-lg font-bold ${
                 (data?.summary.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
@@ -192,7 +192,7 @@ export default function AnalyticsDashboardPage() {
             <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.totalBookings}</div>
+            <div className="text-lg font-bold">{data?.summary.totalBookings}</div>
           </CardContent>
         </Card>
 
@@ -202,7 +202,7 @@ export default function AnalyticsDashboardPage() {
             <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.totalTenants}</div>
+            <div className="text-lg font-bold">{data?.summary.totalTenants}</div>
           </CardContent>
         </Card>
 
@@ -212,7 +212,7 @@ export default function AnalyticsDashboardPage() {
             <MessageSquare className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.pendingInquiries}</div>
+            <div className="text-lg font-bold">{data?.summary.pendingInquiries}</div>
             <p className="text-muted-foreground text-xs">
               Conversion rate: {data?.summary.conversionRate}%
             </p>
@@ -225,7 +225,7 @@ export default function AnalyticsDashboardPage() {
             <AlertCircle className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-lg font-bold text-orange-600">
               {formatCurrency(data?.summary.outstandingPayments || 0)}
             </div>
             <p className="text-muted-foreground text-xs">Unpaid balances</p>

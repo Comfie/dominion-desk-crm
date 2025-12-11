@@ -79,7 +79,8 @@ export default function OccupancyReportPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -201,7 +202,7 @@ export default function OccupancyReportPage() {
             <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.overallOccupancy}%</div>
+            <div className="text-lg font-bold">{data?.summary.overallOccupancy}%</div>
             <p className="text-muted-foreground text-xs">
               {data?.summary.totalOccupiedDays} of {data?.summary.totalAvailableDays} days
             </p>
@@ -214,7 +215,7 @@ export default function OccupancyReportPage() {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {formatCurrency(data?.summary.totalRevenue || 0)}
             </div>
             <p className="text-muted-foreground text-xs">From {data?.summary.daysInRange} days</p>
@@ -227,7 +228,7 @@ export default function OccupancyReportPage() {
             <Building2 className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.summary.totalProperties}</div>
+            <div className="text-lg font-bold">{data?.summary.totalProperties}</div>
             <p className="text-muted-foreground text-xs">In this report</p>
           </CardContent>
         </Card>
@@ -238,7 +239,7 @@ export default function OccupancyReportPage() {
             <TrendingDown className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {(data?.summary.totalAvailableDays || 0) - (data?.summary.totalOccupiedDays || 0)}
             </div>
             <p className="text-muted-foreground text-xs">Available for booking</p>

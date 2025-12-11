@@ -67,7 +67,7 @@ export default function ExpensesPage() {
               <Receipt className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-lg font-bold text-red-600">
                 {formatCurrency(data.summary.totalAmount)}
               </div>
               <p className="text-muted-foreground text-xs">{data.summary.count} expenses</p>
@@ -80,7 +80,7 @@ export default function ExpensesPage() {
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(summary.paidAmount)}</div>
+              <div className="text-lg font-bold">{formatCurrency(summary.paidAmount)}</div>
             </CardContent>
           </Card>
 
@@ -90,7 +90,7 @@ export default function ExpensesPage() {
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-lg font-bold text-yellow-600">
                 {formatCurrency(data.summary.unpaidAmount)}
               </div>
             </CardContent>
@@ -102,7 +102,7 @@ export default function ExpensesPage() {
               <FileText className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg font-bold">
                 {formatCurrency(data.summary.deductibleAmount)}
               </div>
             </CardContent>

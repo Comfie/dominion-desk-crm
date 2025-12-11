@@ -93,7 +93,8 @@ export default function LeaseExpirationReportPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -243,7 +244,7 @@ export default function LeaseExpirationReportPage() {
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-lg font-bold text-red-600">
               {data?.byWindow['0-30'].count || 0}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -258,7 +259,7 @@ export default function LeaseExpirationReportPage() {
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-lg font-bold text-yellow-600">
               {data?.byWindow['31-60'].count || 0}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -273,7 +274,7 @@ export default function LeaseExpirationReportPage() {
             <Calendar className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-lg font-bold text-blue-600">
               {data?.byWindow['61-90'].count || 0}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -288,7 +289,7 @@ export default function LeaseExpirationReportPage() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.byWindow['90+'].count || 0}</div>
+            <div className="text-lg font-bold">{data?.byWindow['90+'].count || 0}</div>
             <p className="text-muted-foreground text-xs">
               {formatCurrency(data?.byWindow['90+'].rentAtRisk || 0)} rent
             </p>

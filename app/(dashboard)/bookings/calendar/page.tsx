@@ -38,13 +38,15 @@ async function fetchBookings(filters: Record<string, string>) {
   const params = new URLSearchParams(filters);
   const response = await fetch(`/api/bookings?${params}`);
   if (!response.ok) throw new Error('Failed to fetch bookings');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
-  const allProperties = await response.json();
+  const result = await response.json();
+  const allProperties = result.data || [];
   // Filter to only show SHORT_TERM or BOTH properties (properties that can have bookings)
   return allProperties.filter(
     (p: { rentalType: string }) => p.rentalType === 'SHORT_TERM' || p.rentalType === 'BOTH'

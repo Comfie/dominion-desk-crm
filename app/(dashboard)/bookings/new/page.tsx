@@ -36,7 +36,8 @@ type BookingFormData = z.infer<typeof bookingSchema>;
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
-  const allProperties = await response.json();
+  const result = await response.json();
+  const allProperties = result.data || [];
   // Filter to only show SHORT_TERM or BOTH properties
   return allProperties.filter(
     (p: { rentalType: string }) => p.rentalType === 'SHORT_TERM' || p.rentalType === 'BOTH'

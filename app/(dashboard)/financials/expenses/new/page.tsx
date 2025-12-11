@@ -34,7 +34,8 @@ type ExpenseFormData = z.infer<typeof expenseSchema>;
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 export default function NewExpensePage() {

@@ -107,7 +107,8 @@ export default function AgingReceivablesReportPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -240,7 +241,7 @@ export default function AgingReceivablesReportPage() {
           <DollarSign className="h-6 w-6 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold text-red-600">
+          <div className="text-2xl font-bold text-red-600">
             {formatCurrency(data?.summary.totalOutstanding || 0)}
           </div>
           <p className="text-muted-foreground text-sm">
@@ -257,7 +258,7 @@ export default function AgingReceivablesReportPage() {
             <Clock className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-lg font-bold text-green-600">
               {formatCurrency(data?.summary.current || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -272,7 +273,7 @@ export default function AgingReceivablesReportPage() {
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-lg font-bold text-yellow-600">
               {formatCurrency(data?.summary['1-30'] || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -287,7 +288,7 @@ export default function AgingReceivablesReportPage() {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-lg font-bold text-orange-600">
               {formatCurrency(data?.summary['31-60'] || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -302,7 +303,7 @@ export default function AgingReceivablesReportPage() {
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">
+            <div className="text-lg font-bold text-red-500">
               {formatCurrency(data?.summary['61-90'] || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -317,7 +318,7 @@ export default function AgingReceivablesReportPage() {
             <AlertTriangle className="h-4 w-4 text-red-700" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-700">
+            <div className="text-lg font-bold text-red-700">
               {formatCurrency(data?.summary['90+'] || 0)}
             </div>
             <p className="text-muted-foreground text-xs">

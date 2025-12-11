@@ -67,7 +67,7 @@ export default function PaymentsPage() {
               <DollarSign className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(data.summary.totalAmount)}</div>
+              <div className="text-lg font-bold">{formatCurrency(data.summary.totalAmount)}</div>
               <p className="text-muted-foreground text-xs">{data.summary.count} payments</p>
             </CardContent>
           </Card>
@@ -78,7 +78,7 @@ export default function PaymentsPage() {
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-lg font-bold text-green-600">
                 {formatCurrency(data.summary.paidAmount)}
               </div>
             </CardContent>
@@ -90,7 +90,7 @@ export default function PaymentsPage() {
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-lg font-bold text-yellow-600">
                 {formatCurrency(data.summary.pendingAmount)}
               </div>
             </CardContent>
@@ -102,7 +102,7 @@ export default function PaymentsPage() {
               <TrendingUp className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(data.summary.totalAmount)}</div>
+              <div className="text-lg font-bold">{formatCurrency(data.summary.totalAmount)}</div>
             </CardContent>
           </Card>
         </div>

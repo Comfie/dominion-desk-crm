@@ -83,7 +83,8 @@ export default function RevenueReportPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -198,7 +199,7 @@ export default function RevenueReportPage() {
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg font-bold">
               {formatCurrency(data?.summary.totalRevenue || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -213,7 +214,7 @@ export default function RevenueReportPage() {
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-lg font-bold text-red-600">
               {formatCurrency(data?.summary.totalExpenses || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -233,7 +234,7 @@ export default function RevenueReportPage() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
+              className={`text-lg font-bold ${
                 (data?.summary.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
@@ -256,7 +257,7 @@ export default function RevenueReportPage() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
+              className={`text-lg font-bold ${
                 (data?.summary.yoyGrowth || 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
