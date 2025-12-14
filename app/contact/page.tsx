@@ -16,6 +16,7 @@ export default function ContactPage() {
     propertyCount: '',
     message: '',
     requestType: 'demo',
+    website: '', // Honeypot field
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -34,7 +35,13 @@ export default function ContactPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const data = await response.json();
+        if (response.status === 429) {
+          throw new Error(
+            'You have submitted too many requests. Please wait an hour before trying again.'
+          );
+        }
+        throw new Error(data.error || 'Failed to send message');
       }
 
       setIsSuccess(true);
@@ -46,9 +53,14 @@ export default function ContactPage() {
         propertyCount: '',
         message: '',
         requestType: 'demo',
+        website: '',
       });
     } catch (err) {
-      setError('Failed to send message. Please try again or email us directly.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to send message. Please try again or email us directly.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -291,6 +303,30 @@ export default function ContactPage() {
                     className="focus:border-brand-500 focus:ring-brand-500/20 w-full rounded-lg border border-slate-300 px-4 py-3 focus:ring-2 focus:outline-none"
                     placeholder="Tell us about your needs..."
                     required
+                  />
+                </div>
+
+                {/* Honeypot field - hidden from users, visible to bots */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    left: '-9999px',
+                    top: '-9999px',
+                    opacity: 0,
+                    height: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <label htmlFor="website">Website (leave blank)</label>
+                  <input
+                    type="text"
+                    id="website"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                    tabIndex={-1}
+                    autoComplete="off"
                   />
                 </div>
 

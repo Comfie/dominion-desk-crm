@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { sendEmail } from '@/lib/email';
+import { headers } from 'next/headers';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -10,20 +11,112 @@ const contactSchema = z.object({
   propertyCount: z.string().optional(),
   message: z.string().min(10, 'Message must be at least 10 characters'),
   requestType: z.enum(['demo', 'trial', 'pricing', 'support', 'other']),
+  website: z.string().optional(), // Honeypot field
 });
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_WINDOW = 3;
+
+// In-memory rate limiting store (resets on server restart)
+// For production at scale, consider Redis or similar
+const rateLimitStore = new Map<string, { count: number; firstRequest: number }>();
+
+function getClientIp(headersList: Headers): string {
+  const forwardedFor = headersList.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  return headersList.get('x-real-ip') || 'unknown';
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetTime: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(ip);
+
+  if (!record || now - record.firstRequest > RATE_LIMIT_WINDOW_MS) {
+    // New window
+    rateLimitStore.set(ip, { count: 1, firstRequest: now });
+    return {
+      allowed: true,
+      remaining: MAX_REQUESTS_PER_WINDOW - 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetTime: record.firstRequest + RATE_LIMIT_WINDOW_MS,
+    };
+  }
+
+  record.count++;
+  return {
+    allowed: true,
+    remaining: MAX_REQUESTS_PER_WINDOW - record.count,
+    resetTime: record.firstRequest + RATE_LIMIT_WINDOW_MS,
+  };
+}
+
+// Clean up old entries periodically (every 10 minutes)
+if (typeof setInterval !== 'undefined') {
+  setInterval(
+    () => {
+      const now = Date.now();
+      for (const [ip, record] of rateLimitStore.entries()) {
+        if (now - record.firstRequest > RATE_LIMIT_WINDOW_MS) {
+          rateLimitStore.delete(ip);
+        }
+      }
+    },
+    10 * 60 * 1000
+  );
+}
+
+const requestTypeLabels: Record<string, string> = {
+  demo: 'Demo Request',
+  trial: 'Free Trial',
+  pricing: 'Pricing Inquiry',
+  support: 'Technical Support',
+  other: 'General Inquiry',
+};
 
 export async function POST(request: Request) {
   try {
+    // Get client IP for rate limiting
+    const headersList = await headers();
+    const clientIp = getClientIp(headersList);
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+      const resetDate = new Date(rateLimit.resetTime);
+      return NextResponse.json(
+        {
+          error: 'Too many requests. Please try again later.',
+          resetTime: resetDate.toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetTime.toString(),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const validatedData = contactSchema.parse(body);
 
-    const requestTypeLabels = {
-      demo: 'Demo Request',
-      trial: 'Free Trial',
-      pricing: 'Pricing Inquiry',
-      support: 'Technical Support',
-      other: 'General Inquiry',
-    };
+    // Honeypot check - if website field is filled, it's likely a bot
+    if (validatedData.website && validatedData.website.trim() !== '') {
+      // Silently accept but don't process - makes bot think it succeeded
+      console.log(`Honeypot triggered from IP: ${clientIp}`);
+      return NextResponse.json({ message: 'Contact form submitted successfully' }, { status: 200 });
+    }
 
     // Email to admin
     const adminEmailResult = await sendEmail({

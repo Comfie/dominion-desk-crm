@@ -19,10 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SubscriptionTierBadge, SubscriptionStatusBadge } from '@/components/admin';
+import { SubscriptionStatusBadge } from '@/components/admin';
 import { Button } from '@/components/ui/button';
-import { Search, RefreshCw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Search, RefreshCw, Building2, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/lib/utils';
 
 interface Subscription {
   id: string;
@@ -33,6 +35,9 @@ interface Subscription {
   subscriptionStatus: string;
   trialEndsAt: string | null;
   subscriptionEndsAt: string | null;
+  propertyCount: number;
+  activePropertyCount: number;
+  freePropertyCount: number;
   mrr: number;
   nextBillingDate: string | null;
 }
@@ -73,11 +78,47 @@ export default function AdminSubscriptionsPage() {
     fetchSubscriptions();
   }, [search, statusFilter]);
 
+  // Calculate summary stats
+  const totalMRR = subscriptions
+    .filter((s) => s.subscriptionStatus === 'ACTIVE')
+    .reduce((sum, s) => sum + s.mrr, 0);
+  const activeCount = subscriptions.filter((s) => s.subscriptionStatus === 'ACTIVE').length;
+  const trialCount = subscriptions.filter((s) => s.subscriptionStatus === 'TRIAL').length;
+  const totalProperties = subscriptions.reduce((sum, s) => sum + s.propertyCount, 0);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Subscription Management</h1>
         <p className="text-muted-foreground">Manage landlord subscriptions and billing</p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total MRR</CardDescription>
+            <CardTitle className="text-2xl">{formatCurrency(totalMRR)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Active Subscriptions</CardDescription>
+            <CardTitle className="text-2xl">{activeCount}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>On Trial</CardDescription>
+            <CardTitle className="text-2xl">{trialCount}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Properties</CardDescription>
+            <CardTitle className="text-2xl">{totalProperties}</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
 
       <Card>
@@ -119,7 +160,7 @@ export default function AdminSubscriptionsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Subscriptions ({subscriptions.length})</CardTitle>
-          <CardDescription>All active and inactive subscriptions</CardDescription>
+          <CardDescription>Pricing: R299/month base + 4% of rent for properties 3+</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -133,17 +174,16 @@ export default function AdminSubscriptionsPage() {
                   <TableRow>
                     <TableHead>User</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Tier</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Properties</TableHead>
                     <TableHead>MRR</TableHead>
-                    <TableHead>Next Billing Date</TableHead>
                     <TableHead>Trial Ends</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {subscriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-muted-foreground text-center">
+                      <TableCell colSpan={6} className="text-muted-foreground text-center">
                         No subscriptions found
                       </TableCell>
                     </TableRow>
@@ -155,18 +195,26 @@ export default function AdminSubscriptionsPage() {
                         </TableCell>
                         <TableCell>{sub.email}</TableCell>
                         <TableCell>
-                          <SubscriptionTierBadge tier={sub.subscriptionTier as any} />
-                        </TableCell>
-                        <TableCell>
                           <SubscriptionStatusBadge status={sub.subscriptionStatus as any} />
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {sub.mrr > 0 ? `R${sub.mrr}` : '-'}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1 text-sm">
+                              <Building2 className="h-3 w-3" />
+                              {sub.propertyCount}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                              ({sub.activePropertyCount} active)
+                            </span>
+                          </div>
+                          {sub.propertyCount > sub.freePropertyCount && (
+                            <Badge variant="secondary" className="mt-1 text-xs">
+                              +{sub.propertyCount - sub.freePropertyCount} chargeable
+                            </Badge>
+                          )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {sub.nextBillingDate
-                            ? format(new Date(sub.nextBillingDate), 'MMM dd, yyyy')
-                            : '-'}
+                        <TableCell className="font-medium">
+                          {sub.mrr > 0 ? formatCurrency(sub.mrr) : '-'}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {sub.trialEndsAt

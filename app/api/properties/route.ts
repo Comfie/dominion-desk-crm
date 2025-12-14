@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { canAddProperty } from '@/lib/services/subscription.service';
 
 const propertySchema = z.object({
   name: z.string().min(1, 'Property name is required'),
@@ -135,21 +136,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = propertySchema.parse(body);
 
-    // Check property limit based on subscription
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { propertyLimit: true },
-    });
+    // Check subscription status and property limits
+    const canAdd = await canAddProperty(session.user.id);
 
-    const propertyCount = await prisma.property.count({
-      where: { userId: session.user.id },
-    });
-
-    if (user && propertyCount >= user.propertyLimit) {
+    if (!canAdd.allowed) {
       return NextResponse.json(
-        {
-          error: `You have reached your property limit (${user.propertyLimit}). Please upgrade your plan.`,
-        },
+        { error: canAdd.reason || 'Cannot add more properties. Please subscribe to continue.' },
         { status: 403 }
       );
     }

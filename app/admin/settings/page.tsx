@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Key, User, Bell } from 'lucide-react';
+import { Save, Key, User, Bell, CreditCard, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminSettingsPage() {
   const { data: session } = useSession();
@@ -186,6 +187,10 @@ export default function AdminSettingsPage() {
             <Key className="mr-2 h-4 w-4" />
             Security
           </TabsTrigger>
+          <TabsTrigger value="subscription">
+            <CreditCard className="mr-2 h-4 w-4" />
+            Subscription
+          </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className="mr-2 h-4 w-4" />
             Notifications
@@ -347,6 +352,59 @@ export default function AdminSettingsPage() {
                   <p className="text-muted-foreground text-sm">
                     {session?.user ? 'Active' : 'Loading...'}
                   </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Subscription Settings Tab */}
+        <TabsContent value="subscription" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Configuration</CardTitle>
+              <CardDescription>
+                Configure global subscription pricing, trial periods, and access restrictions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 rounded-lg border p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">Manage Subscription Settings</h3>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      Configure trial days, pricing percentages, property limits, and grace periods
+                    </p>
+                  </div>
+                  <Link href="/admin/settings/subscription">
+                    <Button>
+                      Configure
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-medium">Trial Settings</h4>
+                  <p className="text-muted-foreground text-sm">Trial period, property limits</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-medium">Pricing Settings</h4>
+                  <p className="text-muted-foreground text-sm">
+                    Base fee, percentage, min/max fees
+                  </p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-medium">Access Restrictions</h4>
+                  <p className="text-muted-foreground text-sm">Grace periods after trial expiry</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-medium">Billing Integration</h4>
+                  <p className="text-muted-foreground text-sm">Coming soon</p>
                 </div>
               </div>
             </CardContent>

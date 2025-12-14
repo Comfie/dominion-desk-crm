@@ -33,8 +33,15 @@ model User {
   trialEndsAt     DateTime?
   subscriptionEndsAt DateTime?
 
+  // Tiered subscription billing configuration
+  baseSubscriptionFee  Decimal   @default(299.00) @db.Decimal(10, 2)  // R299 base
+  percentageFee        Decimal   @default(4.0) @db.Decimal(5, 2)      // 4% rate
+  minPropertyFee       Decimal   @default(99.00) @db.Decimal(10, 2)   // R99 min
+  maxPropertyFee       Decimal   @default(999.00) @db.Decimal(10, 2)  // R999 max
+  freePropertyCount    Int       @default(2)                          // 2 free properties
+
   // Limits based on subscription
-  propertyLimit   Int       @default(1)
+  propertyLimit   Int       @default(2)  // Changed from 1 to 2 for trial
 
   // Status
   isActive        Boolean   @default(true)
@@ -1512,4 +1519,21 @@ model SubscriptionHistory {
   createdAt       DateTime  @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ============== SYSTEM SETTINGS ==============
+
+model SystemSettings {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  value           String    @db.Text
+  description     String?
+  category        String    @default("general")
+  
+  // Metadata
+  updatedBy       String?   // Admin ID who last updated
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([category])
 }

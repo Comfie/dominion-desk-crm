@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireSuperAdmin } from '@/lib/auth-helpers';
 import prisma from '@/lib/db';
+import { calculateSubscriptionBilling } from '@/lib/services/subscription.service';
 
 const updateSubscriptionSchema = z.object({
   userId: z.string(),
@@ -46,36 +47,60 @@ export async function GET(request: Request) {
         subscriptionStatus: true,
         trialEndsAt: true,
         subscriptionEndsAt: true,
+        propertyLimit: true,
+        baseSubscriptionFee: true,
+        freePropertyCount: true,
         createdAt: true,
         updatedAt: true,
+        _count: {
+          select: {
+            properties: true,
+            propertyTenants: {
+              where: { isActive: true },
+            },
+          },
+        },
       },
       orderBy:
         sortBy === 'subscriptionEndsAt' ? { subscriptionEndsAt: 'asc' } : { updatedAt: 'desc' },
     });
 
-    // Calculate MRR for each user
-    const subscriptions = users.map((user) => {
-      let mrr = 0;
-      if (user.subscriptionStatus === 'ACTIVE') {
-        switch (user.subscriptionTier) {
-          case 'STARTER':
-            mrr = 199;
-            break;
-          case 'PROFESSIONAL':
-            mrr = 499;
-            break;
-          case 'ENTERPRISE':
-            mrr = 999;
-            break;
-        }
-      }
+    // Calculate MRR for each user based on new tiered model
+    const subscriptions = await Promise.all(
+      users.map(async (user) => {
+        let mrr = 0;
+        let estimatedBilling: any = null;
 
-      return {
-        ...user,
-        mrr,
-        nextBillingDate: user.subscriptionEndsAt,
-      };
-    });
+        if (user.subscriptionStatus === 'ACTIVE') {
+          try {
+            // Calculate using the new subscription service
+            const billing = await calculateSubscriptionBilling(user.id);
+            mrr = billing.totalMonthlyFee;
+            estimatedBilling = billing;
+          } catch {
+            // If calculation fails, use base fee
+            mrr = Number(user.baseSubscriptionFee);
+          }
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          subscriptionTier: user.subscriptionTier,
+          subscriptionStatus: user.subscriptionStatus,
+          trialEndsAt: user.trialEndsAt,
+          subscriptionEndsAt: user.subscriptionEndsAt,
+          propertyCount: user._count.properties,
+          activePropertyCount: user._count.propertyTenants,
+          freePropertyCount: user.freePropertyCount,
+          mrr,
+          estimatedBilling,
+          nextBillingDate: user.subscriptionEndsAt,
+        };
+      })
+    );
 
     return NextResponse.json({ subscriptions });
   } catch (error) {

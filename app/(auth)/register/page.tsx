@@ -91,7 +91,7 @@ export default function RegisterPage() {
       <div className="space-y-2 text-center lg:text-left">
         <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
         <p className="text-muted-foreground">
-          Start your 14-day free trial. No credit card required.
+          Start your 2-month free trial. Manage up to 2 properties free.
         </p>
       </div>
 

@@ -276,12 +276,12 @@ export default function App() {
               >
                 Log in
               </a>
-              <Link href="/contact">
+              <Link href="/register">
                 <Button variant="ghost" size="sm">
-                  Contact Us
+                  Register
                 </Button>
               </Link>
-              <Link href="/contact">
+              <Link href="/register">
                 <Button variant="accent" size="sm">
                   Start Free Trial
                 </Button>
@@ -316,14 +316,14 @@ export default function App() {
               </a>
             ))}
             <div className="my-2 h-px bg-slate-100" />
-            <Link href="/contact" className="block">
+            <Link href="/login" className="block">
               <Button fullWidth variant="secondary">
-                Contact Us
+                Log In
               </Button>
             </Link>
-            <Link href="/contact" className="block">
+            <Link href="/register" className="block">
               <Button fullWidth variant="primary">
-                Get Started Free
+                Start Free Trial
               </Button>
             </Link>
           </div>
@@ -372,9 +372,9 @@ export default function App() {
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/contact" className="w-full sm:w-auto">
+            <Link href="/register" className="w-full sm:w-auto">
               <Button size="xl" variant="accent" className="group w-full">
-                Start Your Free 14-Day Trial
+                Start Your Free 2-Month Trial
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
@@ -1080,67 +1080,68 @@ export default function App() {
             <div className="mx-auto mb-16 max-w-3xl text-center">
               <Badge color="green">Transparent Pricing</Badge>
               <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
-                Pay for what you use
+                Simple, Fair Pricing
               </h2>
               <p className="mt-4 text-slate-600">
-                Simple monthly pricing in ZAR. No hidden fees. 14-day free trial.
+                R299/month for up to 2 properties. Scale with 4% of rent for additional properties.
+                2-month free trial.
               </p>
             </div>
           </RevealOnScroll>
 
           <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-3">
-            {/* Starter */}
+            {/* Free Trial */}
             <RevealOnScroll delay={100}>
               <div className="h-full rounded-2xl border border-slate-200 p-8">
-                <h3 className="text-lg font-semibold text-slate-900">Starter</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Free Trial</h3>
                 <div className="my-4 flex items-baseline">
-                  <span className="text-3xl font-bold tracking-tight text-slate-900">R299</span>
-                  <span className="text-sm text-slate-500">/month</span>
+                  <span className="text-3xl font-bold tracking-tight text-slate-900">R0</span>
+                  <span className="text-sm text-slate-500">/2 months</span>
                 </div>
                 <p className="mb-6 text-sm text-slate-500">
-                  Perfect for getting started with up to 5 properties.
+                  Try free for 2 months with up to 2 properties.
                 </p>
-                <Link href="/contact" className="block">
+                <Link href="/register" className="block">
                   <Button fullWidth variant="secondary">
                     Start Free Trial
                   </Button>
                 </Link>
                 <ul className="mt-8 space-y-3 text-sm text-slate-600">
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 5 Properties
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 2 Properties
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Standard Support
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Full Feature Access
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Basic Reports
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> No Credit Card Required
                   </li>
                 </ul>
               </div>
             </RevealOnScroll>
 
-            {/* Pro - Highlighted */}
+            {/* Starter - Highlighted */}
             <RevealOnScroll delay={200}>
               <div className="border-brand-500 bg-brand-50/30 shadow-brand-100 relative h-full rounded-2xl border-2 p-8 shadow-2xl lg:-mt-4 lg:mb-4">
                 <div className="bg-brand-500 absolute top-0 right-0 translate-x-2 -translate-y-1/2 rounded-full px-3 py-1 text-xs font-bold tracking-wide text-white uppercase">
                   Most Popular
                 </div>
-                <h3 className="text-brand-700 text-lg font-semibold">Professional</h3>
+                <h3 className="text-brand-700 text-lg font-semibold">Starter</h3>
                 <div className="my-4 flex items-baseline">
-                  <span className="text-4xl font-bold tracking-tight text-slate-900">R599</span>
+                  <span className="text-4xl font-bold tracking-tight text-slate-900">R299</span>
                   <span className="text-sm text-slate-500">/month</span>
                 </div>
                 <p className="mb-6 text-sm text-slate-500">
-                  For growing portfolios (6-20 properties).
+                  Perfect for landlords with up to 2 properties.
                 </p>
-                <Link href="/contact" className="block">
+                <Link href="/register" className="block">
                   <Button fullWidth variant="primary">
-                    Start Free Trial
+                    Get Started
                   </Button>
                 </Link>
                 <ul className="mt-8 space-y-3 text-sm text-slate-600">
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 20 Properties
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Up to 2 Properties
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="text-brand-600 h-4 w-4" />{' '}
@@ -1148,32 +1149,32 @@ export default function App() {
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="text-brand-600 h-4 w-4" />{' '}
-                    <strong>Smart Calendar Sync</strong>
+                    <strong>Tenant Portal Access</strong>
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Tenant Portal Access
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Financial Reports
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Priority Email Support
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Email Support
                   </li>
                 </ul>
               </div>
             </RevealOnScroll>
 
-            {/* Enterprise */}
+            {/* Growth */}
             <RevealOnScroll delay={300}>
               <div className="h-full rounded-2xl border border-slate-200 p-8">
-                <h3 className="text-lg font-semibold text-slate-900">Enterprise</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Growth</h3>
                 <div className="my-4 flex items-baseline">
-                  <span className="text-3xl font-bold tracking-tight text-slate-900">R999</span>
-                  <span className="text-sm text-slate-500">/month</span>
+                  <span className="text-3xl font-bold tracking-tight text-slate-900">R299</span>
+                  <span className="text-sm text-slate-500">+ 4% per property</span>
                 </div>
                 <p className="mb-6 text-sm text-slate-500">
-                  Unlimited properties and advanced team features.
+                  For growing portfolios with 3+ properties.
                 </p>
-                <Link href="/contact" className="block">
+                <Link href="/register" className="block">
                   <Button fullWidth variant="secondary">
-                    Contact Sales
+                    Get Started
                   </Button>
                 </Link>
                 <ul className="mt-8 space-y-3 text-sm text-slate-600">
@@ -1181,13 +1182,17 @@ export default function App() {
                     <CheckCircle2 className="text-brand-600 h-4 w-4" /> Unlimited Properties
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Multi-user Management
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> R299 base + 4% of rent
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> API Access
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Min R99 / Max R999 per
+                    property
                   </li>
                   <li className="flex gap-2">
-                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Phone Support
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> First 2 properties free
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="text-brand-600 h-4 w-4" /> Priority Support
                   </li>
                 </ul>
               </div>
