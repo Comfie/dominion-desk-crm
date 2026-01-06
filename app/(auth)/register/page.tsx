@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Mail, Lock, Eye, EyeOff, User, Phone, Check } from 'lucide-react';
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '';
 
 const registerSchema = z
   .object({
@@ -33,10 +36,11 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const {
     register,
@@ -56,35 +60,47 @@ export default function RegisterPage() {
     { label: 'One number', met: /[0-9]/.test(password) },
   ];
 
-  const onSubmit = async (data: RegisterFormData) => {
-    setError(null);
+  const onSubmit = useCallback(
+    async (data: RegisterFormData) => {
+      setError(null);
 
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          password: data.password,
-          phone: data.phone,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setError(result.error || 'Registration failed');
+      // Get reCAPTCHA token
+      if (!executeRecaptcha) {
+        setError('reCAPTCHA not loaded. Please refresh the page.');
         return;
       }
 
-      // Redirect to login with success message
-      router.push('/login?registered=true');
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
-    }
-  };
+      try {
+        const recaptchaToken = await executeRecaptcha('register');
+
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            password: data.password,
+            phone: data.phone,
+            recaptchaToken,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          setError(result.error || 'Registration failed');
+          return;
+        }
+
+        // Redirect to login with success message
+        router.push('/login?registered=true');
+      } catch {
+        setError('An unexpected error occurred. Please try again.');
+      }
+    },
+    [executeRecaptcha, router]
+  );
 
   return (
     <>
@@ -228,5 +244,13 @@ export default function RegisterPage() {
         </Link>
       </div>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+      <RegisterForm />
+    </GoogleReCaptchaProvider>
   );
 }
