@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
 import { Search, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -31,18 +32,36 @@ interface User {
   tenantsCount: number;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+const ITEMS_PER_PAGE = 20;
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: ITEMS_PER_PAGE,
+    total: 0,
+    totalPages: 0,
+  });
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page: number = currentPage) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', ITEMS_PER_PAGE.toString());
       if (search) params.append('search', search);
       if (tierFilter !== 'all') params.append('tier', tierFilter);
       if (statusFilter !== 'all') params.append('status', statusFilter);
@@ -53,6 +72,7 @@ export default function AdminUsersPage() {
       }
       const data = await response.json();
       setUsers(data.users);
+      setPagination(data.pagination);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -65,9 +85,20 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    fetchUsers();
+    setCurrentPage(1);
+    fetchUsers(1);
   }, [search, tierFilter, statusFilter]);
+
+  // Fetch when page changes
+  useEffect(() => {
+    fetchUsers(currentPage);
+  }, [currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleAction = async (userId: string, action: string) => {
     if (action === 'activate' || action === 'deactivate') {
@@ -86,7 +117,7 @@ export default function AdminUsersPage() {
           title: 'Success',
           description: `User ${action === 'activate' ? 'activated' : 'deactivated'} successfully.`,
         });
-        fetchUsers();
+        fetchUsers(currentPage);
       } catch (error) {
         toast({
           title: 'Error',
@@ -104,7 +135,7 @@ export default function AdminUsersPage() {
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Manage landlords and their subscriptions</p>
         </div>
-        <CreateUserDialog onUserCreated={fetchUsers} />
+        <CreateUserDialog onUserCreated={() => fetchUsers(1)} />
       </div>
 
       <Card>
@@ -148,7 +179,7 @@ export default function AdminUsersPage() {
                 <SelectItem value="EXPIRED">Expired</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={fetchUsers} variant="outline" size="icon">
+            <Button onClick={() => fetchUsers(currentPage)} variant="outline" size="icon">
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
@@ -157,16 +188,26 @@ export default function AdminUsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Users ({users.length})</CardTitle>
+          <CardTitle>Users ({pagination.total})</CardTitle>
           <CardDescription>All landlord accounts on the platform</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="text-muted-foreground h-8 w-8 animate-spin" />
             </div>
           ) : (
-            <UserTable users={users} onAction={handleAction} />
+            <>
+              <UserTable users={users} onAction={handleAction} />
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.total}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={handlePageChange}
+                showFirstLast={pagination.totalPages > 5}
+              />
+            </>
           )}
         </CardContent>
       </Card>

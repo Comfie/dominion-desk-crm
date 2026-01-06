@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { SubscriptionTierBadge, SubscriptionStatusBadge } from './subscription-badge';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -48,22 +47,18 @@ export function UserTable({ users, onAction }: UserTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Email</TableHead>
+            <TableHead className="w-[220px]">User</TableHead>
             <TableHead>Subscription</TableHead>
-            <TableHead>Sub. Status</TableHead>
-            <TableHead>Account Status</TableHead>
-            <TableHead>Properties</TableHead>
-            <TableHead>MRR</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead>Last Login</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="w-[140px]">Properties</TableHead>
+            <TableHead className="w-[100px]">Joined</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {users.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-muted-foreground text-center">
+              <TableCell colSpan={6} className="text-muted-foreground text-center">
                 No users found
               </TableCell>
             </TableRow>
@@ -72,12 +67,14 @@ export function UserTable({ users, onAction }: UserTableProps) {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div>
-                    <div>
+                    <div className="font-medium">
                       {user.firstName} {user.lastName}
+                    </div>
+                    <div className="text-muted-foreground max-w-[200px] truncate text-sm">
+                      {user.email}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <SubscriptionTierBadge tier={user.subscriptionTier as any} />
                 </TableCell>
@@ -85,33 +82,13 @@ export function UserTable({ users, onAction }: UserTableProps) {
                   <SubscriptionStatusBadge status={user.subscriptionStatus as any} />
                 </TableCell>
                 <TableCell>
-                  {user.isActive ? (
-                    <Badge
-                      variant="outline"
-                      className="border-green-300 bg-green-100 text-green-800"
-                    >
-                      Active
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-red-300 bg-red-100 text-red-800">
-                      Inactive
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
                   <div className="text-sm">
                     <div>{user.propertiesCount} properties</div>
                     <div className="text-muted-foreground">{user.tenantsCount} tenants</div>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">{user.mrr > 0 ? `R${user.mrr}` : '-'}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {user.lastLogin
-                    ? formatDistanceToNow(new Date(user.lastLogin), { addSuffix: true })
-                    : 'Never'}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
