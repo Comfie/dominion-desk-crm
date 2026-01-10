@@ -125,6 +125,175 @@ const featuresList = {
 
 // --- Helper Components ---
 
+// Counter animation hook
+const useCountUp = (end: number, duration: number = 2000, startOnView: boolean = true) => {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!startOnView) {
+      setHasStarted(true);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasStarted, startOnView]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    let startTime: number;
+    let animationFrame: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(easeOutQuart * end));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [end, duration, hasStarted]);
+
+  return { count, ref };
+};
+
+// Animated counter component with optional decimal display
+const AnimatedCounter = ({
+  value,
+  prefix = '',
+  suffix = '',
+  className = '',
+  decimals = 0,
+}: {
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  className?: string;
+  decimals?: number;
+}) => {
+  const { count, ref } = useCountUp(value * 10, 2000); // Multiply by 10 for decimal precision
+
+  const formatNumber = () => {
+    const actualValue = count / 10;
+    if (decimals > 0) {
+      return actualValue.toFixed(decimals);
+    }
+    return Math.floor(actualValue).toLocaleString();
+  };
+
+  return (
+    <div ref={ref} className={className}>
+      {prefix}
+      {formatNumber()}
+      {suffix}
+    </div>
+  );
+};
+
+// Text reveal animation component
+const TextReveal = ({
+  children,
+  className = '',
+  delay = 0,
+}: {
+  children: string;
+  className?: string;
+  delay?: number;
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <span ref={ref} className={`inline-block overflow-hidden ${className}`}>
+      <span
+        className={`inline-block transition-all duration-700 ease-out ${
+          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+        }`}
+        style={{ transitionDelay: `${delay}ms` }}
+      >
+        {children}
+      </span>
+    </span>
+  );
+};
+
+// Parallax wrapper component
+const ParallaxSection = ({
+  children,
+  className = '',
+  speed = 0.5,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  speed?: number;
+}) => {
+  const [offset, setOffset] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        const scrolled = window.innerHeight - rect.top;
+        setOffset(scrolled * speed * 0.1);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [speed]);
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <div
+        className="absolute inset-0 transition-transform duration-100"
+        style={{ transform: `translateY(${offset}px)` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
 const RevealOnScroll = ({
   children,
   className = '',
@@ -332,69 +501,84 @@ export default function App() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 pt-32 pb-20 lg:pt-48 lg:pb-32">
-        {/* Dynamic Background */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+        {/* Parallax Background */}
+        <div
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay transition-transform duration-300"
+          style={{ transform: `translateY(${scrolled ? '20px' : '0px'})` }}
+        ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-50"></div>
+
+        {/* Animated gradient orbs for hero */}
+        <div className="animate-float-slow from-brand-500/20 absolute top-20 left-10 h-72 w-72 rounded-full bg-gradient-to-r to-purple-500/20 blur-3xl"></div>
+        <div className="animate-float absolute right-10 bottom-20 h-96 w-96 rounded-full bg-gradient-to-l from-cyan-500/15 to-blue-500/15 blur-3xl"></div>
 
         <div
           className={`relative z-10 mx-auto max-w-7xl transform px-4 text-center transition-all duration-1000 ease-out sm:px-6 lg:px-8 ${heroLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
         >
-          {/* Trust Badge with Rating */}
-          {/* <div className="mb-6 flex flex-col items-center gap-3">
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-            <div className="text-slate-300">
-              <span className="font-bold text-white">4.9/5</span> from 127+ property managers
-            </div>
-          </div> */}
-
-          <div className="bg-brand-500/10 border-brand-500/20 text-brand-300 mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium backdrop-blur-sm">
-            <Sparkles className="text-brand-400 h-4 w-4" />
-            <span>Trusted Property Management Partner</span>
+          {/* Trust Badge with Animation */}
+          <div
+            className={`mb-6 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm font-semibold text-amber-300 backdrop-blur-sm transition-all duration-700 ${heroLoaded ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}
+            style={{ transitionDelay: '200ms' }}
+          >
+            <Zap className="h-4 w-4 animate-pulse text-amber-400" />
+            <span>Join 500+ SA Property Managers Saving 13+ Hours/Week</span>
           </div>
 
           <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white md:text-6xl lg:text-7xl">
-            Streamline Your Property <br className="hidden md:block" />
-            <span className="from-brand-300 bg-gradient-to-r to-white bg-clip-text text-transparent">
-              Management Business
+            <span
+              className={`inline-block transition-all duration-700 ${heroLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+              style={{ transitionDelay: '400ms' }}
+            >
+              Stop Chasing Rent.
+            </span>
+            <br className="hidden md:block" />
+            <span
+              className={`from-brand-300 inline-block bg-gradient-to-r to-white bg-clip-text text-transparent transition-all duration-700 ${heroLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+              style={{ transitionDelay: '600ms' }}
+            >
+              Start Growing Your Portfolio.
             </span>
           </h1>
 
           <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-slate-300 md:text-xl">
-            The complete property management solution built for South African{' '}
-            <span className="font-semibold text-white">landlords</span>,{' '}
-            <span className="font-semibold text-white">rental agencies</span>, and{' '}
-            <span className="font-semibold text-white">property managers</span>. Manage long-term
-            tenants, short-term rentals, or both—all from one powerful platform.
+            Tired of Excel spreadsheets, WhatsApp chaos, and late-night payment reminders?{' '}
+            <span className="font-semibold text-white">DominionDesk</span> automates rent
+            collection, tenant communication, and maintenance tracking—so you can focus on{' '}
+            <span className="font-semibold text-white">what matters: building wealth</span>.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/register" className="w-full sm:w-auto">
-              <Button size="xl" variant="accent" className="group w-full">
-                Start Your Free 2-Month Trial
+              <Button
+                size="xl"
+                variant="accent"
+                className="group w-full shadow-lg shadow-amber-500/25"
+              >
+                Get 2 Months Free — Start Now
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link href="/contact" className="w-full sm:w-auto">
-              <Button size="xl" variant="outline" className="w-full gap-2">
+              <Button
+                size="xl"
+                variant="outline"
+                className="w-full gap-2 border-white/30 text-white hover:bg-white/10"
+              >
                 <PlayCircle className="h-5 w-5" />
-                Watch 2-Min Demo
+                See How It Works
               </Button>
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-400">
-            <span className="flex items-center gap-2">
-              <CheckCircle className="text-brand-400 h-4 w-4" /> No credit card required
+          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm font-semibold">
+            <span className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white backdrop-blur-sm">
+              <CheckCircle className="h-4 w-4 text-green-400" /> No credit card required
             </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle className="text-brand-400 h-4 w-4" /> Cancel anytime
+            <span className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white backdrop-blur-sm">
+              <CheckCircle className="h-4 w-4 text-green-400" /> Cancel anytime
             </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle className="text-brand-400 h-4 w-4" /> Built for SA Market
+            <span className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white backdrop-blur-sm">
+              <CheckCircle className="h-4 w-4 text-green-400" /> Built for SA Market
             </span>
           </div>
         </div>
@@ -403,31 +587,46 @@ export default function App() {
       {/* Social Proof / Stats Bar */}
       <section className="relative z-20 mx-4 -mt-10 max-w-6xl md:mx-8 lg:mx-auto">
         <RevealOnScroll delay={200}>
-          <div className="rounded-2xl border-b border-slate-200 bg-white p-8 shadow-xl lg:p-12">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-2xl lg:p-12">
+            <p className="mb-6 text-center text-sm font-medium tracking-wider text-slate-500 uppercase">
+              Trusted by property managers across South Africa
+            </p>
             <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
-              <div>
-                <div className="text-3xl font-bold text-slate-900 md:text-4xl">R4.2M+</div>
-                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
-                  Rent Processed
+              <div className="group">
+                <AnimatedCounter
+                  value={4.2}
+                  prefix="R"
+                  suffix="M+"
+                  decimals={1}
+                  className="text-brand-600 text-3xl font-bold md:text-4xl"
+                />
+                <div className="mt-1 text-sm font-medium text-slate-600">
+                  Rent Collected Monthly
                 </div>
               </div>
-              <div>
-                <div className="text-3xl font-bold text-slate-900 md:text-4xl">98%</div>
-                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
-                  Occupancy Rate
-                </div>
+              <div className="group">
+                <AnimatedCounter
+                  value={90}
+                  suffix="%"
+                  className="text-3xl font-bold text-green-600 md:text-4xl"
+                />
+                <div className="mt-1 text-sm font-medium text-slate-600">On-Time Payments</div>
               </div>
-              <div>
-                <div className="text-3xl font-bold text-slate-900 md:text-4xl">13hrs</div>
-                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
-                  Saved Per Week
-                </div>
+              <div className="group">
+                <AnimatedCounter
+                  value={13}
+                  suffix="hrs"
+                  className="text-3xl font-bold text-purple-600 md:text-4xl"
+                />
+                <div className="mt-1 text-sm font-medium text-slate-600">Saved Per Week</div>
               </div>
-              <div>
-                <div className="text-3xl font-bold text-slate-900 md:text-4xl">500+</div>
-                <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
-                  Properties Managed
-                </div>
+              <div className="group">
+                <AnimatedCounter
+                  value={500}
+                  suffix="+"
+                  className="text-3xl font-bold text-amber-600 md:text-4xl"
+                />
+                <div className="mt-1 text-sm font-medium text-slate-600">Properties Managed</div>
               </div>
             </div>
           </div>
@@ -469,8 +668,8 @@ export default function App() {
               </div>
 
               {/* Floating Feature Cards */}
-              <div className="absolute top-1/4 -left-4 hidden lg:block">
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+              <div className="animate-float absolute top-1/4 -left-4 hidden lg:block">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
                       <TrendingUp className="h-5 w-5 text-green-600" />
@@ -483,8 +682,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="absolute top-1/3 -right-4 hidden lg:block">
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+              <div className="animate-float-delayed absolute top-1/3 -right-4 hidden lg:block">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
                       <Clock className="h-5 w-5 text-blue-600" />
@@ -673,13 +872,14 @@ export default function App() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealOnScroll>
             <div className="mx-auto mb-16 max-w-3xl text-center">
-              <Badge color="amber">The Reality Check</Badge>
+              <Badge color="amber">Sound Familiar?</Badge>
               <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
-                Running Properties Shouldn't <br /> Feel Like a Full-Time Crisis.
+                You Didn't Become a Landlord <br /> to Become a Full-Time Admin
               </h2>
               <p className="mt-4 text-lg text-slate-600">
-                If you're using Excel, WhatsApp, and mental notes to manage your portfolio, you're
-                bleeding time and money.
+                If you're spending your weekends chasing rent, juggling WhatsApp messages, and
+                losing sleep over missed maintenance requests—
+                <span className="font-semibold text-slate-900">there's a better way</span>.
               </p>
             </div>
           </RevealOnScroll>
@@ -954,11 +1154,13 @@ export default function App() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <RevealOnScroll>
               <div>
-                <h2 className="mb-6 text-3xl font-bold md:text-4xl">
+                <Badge color="blue">Made for Mzansi</Badge>
+                <h2 className="mt-4 mb-6 text-3xl font-bold md:text-4xl">
                   Built for the South African Reality
                 </h2>
                 <p className="mb-8 text-lg text-slate-300">
-                  Global tools don't understand our unique challenges. DominionDesk does.
+                  International tools don't get loadshedding, POPIA, or the ZAR. We do—because we're
+                  built here, for here.
                 </p>
 
                 <div className="space-y-6">
@@ -1036,11 +1238,13 @@ export default function App() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealOnScroll>
             <div className="mb-16 text-center">
-              <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
-                Don't Just Take Our Word For It
+              <Badge color="green">Real Results</Badge>
+              <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
+                Property Managers Like You Are Already Winning
               </h2>
-              <p className="mt-4 text-slate-600">
-                Join 500+ happy property managers across the country.
+              <p className="mt-4 text-lg text-slate-600">
+                See how landlords across South Africa transformed their property management—and
+                reclaimed their lives.
               </p>
             </div>
           </RevealOnScroll>
@@ -1078,13 +1282,15 @@ export default function App() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealOnScroll>
             <div className="mx-auto mb-16 max-w-3xl text-center">
-              <Badge color="green">Transparent Pricing</Badge>
+              <Badge color="green">Pricing That Makes Sense</Badge>
               <h2 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">
-                Simple, Fair Pricing
+                Pay Less Than One Hour of Admin Work
               </h2>
-              <p className="mt-4 text-slate-600">
-                R299/month for up to 2 properties. Scale with 4% of rent for additional properties.
-                2-month free trial.
+              <p className="mt-4 text-lg text-slate-600">
+                At R299/month, DominionDesk costs less than what you'd pay an assistant for a single
+                hour— but saves you{' '}
+                <span className="font-semibold text-slate-900">13+ hours every week</span>. Start
+                with 2 months free.
               </p>
             </div>
           </RevealOnScroll>
@@ -1242,27 +1448,49 @@ export default function App() {
       </section>
 
       {/* Final CTA */}
-      <section className="bg-brand-600 relative overflow-hidden py-20">
-        <div className="bg-brand-500 absolute top-0 right-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-purple-500 opacity-50 blur-3xl"></div>
+      <section className="relative overflow-hidden bg-slate-950 py-24">
+        {/* Modern mesh gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900"></div>
+
+        {/* Animated gradient orbs */}
+        <div className="absolute top-0 -left-40 h-[500px] w-[500px] rounded-full bg-gradient-to-r from-violet-600/30 to-indigo-600/30 blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-3xl"></div>
+        <div className="absolute -right-40 bottom-0 h-[500px] w-[500px] rounded-full bg-gradient-to-l from-fuchsia-600/30 to-pink-600/30 blur-3xl"></div>
+
+        {/* Subtle grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 
         <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
           <RevealOnScroll>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md">
+              <Clock className="h-4 w-4 text-cyan-400" />
+              <span>Takes less than 5 minutes to set up</span>
+            </div>
             <h2 className="mb-6 text-3xl font-bold text-white md:text-5xl">
-              Stop managing. Start growing.
+              Your Tenants Won't Pay Themselves. <br className="hidden md:block" />
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+                But DominionDesk Can Remind Them.
+              </span>
             </h2>
-            <p className="text-brand-100 mx-auto mb-10 max-w-2xl text-lg md:text-xl">
-              Join 500+ South African property managers who have reclaimed their time. Try
-              DominionDesk completely risk-free.
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-400 md:text-xl">
+              Join 500+ South African property managers who've stopped chasing rent and started
+              building wealth. Get your first 2 months completely free—no credit card required.
             </p>
-            <Button
-              size="xl"
-              variant="accent"
-              className="shadow-2xl shadow-slate-900/20 transition-transform hover:scale-105"
-            >
-              Start Your Free 14-Day Trial
-              <ArrowRight className="ml-2 h-6 w-6" />
-            </Button>
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link href="/register">
+                <Button
+                  size="xl"
+                  variant="accent"
+                  className="shadow-2xl shadow-amber-500/25 transition-all duration-300 hover:scale-105 hover:shadow-amber-500/40"
+                >
+                  Get 2 Months Free — Start Now
+                  <ArrowRight className="ml-2 h-6 w-6" />
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-6 text-sm text-slate-500">
+              No credit card required. Set up in 5 minutes. Cancel anytime.
+            </p>
           </RevealOnScroll>
         </div>
       </section>

@@ -590,4 +590,251 @@
       0 0 0 4px hsl(var(--primary)),
       0 0 20px hsl(var(--primary) / 0.3);
   }
+
+  /* ==========================================
+     LANDING PAGE ANIMATIONS
+     ========================================== */
+
+  /* Floating Animation */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float 8s ease-in-out infinite;
+  }
+
+  .animate-float-fast {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 6s ease-in-out infinite;
+    animation-delay: 2s;
+  }
+
+  /* Pulse Glow Animation */
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  /* Shimmer Effect */
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  /* Gradient Shift Animation */
+  .animate-gradient {
+    animation: gradientShift 8s ease infinite;
+    background-size: 200% 200%;
+  }
+
+  /* Scale on Hover with Spring */
+  .hover-scale {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  /* Card Hover Lift */
+  .card-hover {
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow:
+      0 20px 40px -10px rgb(0 0 0 / 0.15),
+      0 10px 20px -5px rgb(0 0 0 / 0.1);
+  }
+
+  /* Stagger Animation Classes */
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
+  .stagger-5 {
+    animation-delay: 0.5s;
+  }
+
+  /* Slide Animations */
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.6s ease-out forwards;
+  }
+
+  .animate-slide-left {
+    animation: slideLeft 0.6s ease-out forwards;
+  }
+
+  .animate-slide-right {
+    animation: slideRight 0.6s ease-out forwards;
+  }
+
+  /* Fade In Animation */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  /* Bounce Animation */
+  .animate-bounce-in {
+    animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Rotate Animation */
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  /* Parallax Speed Classes */
+  .parallax-slow {
+    will-change: transform;
+  }
+
+  .parallax-medium {
+    will-change: transform;
+  }
+
+  .parallax-fast {
+    will-change: transform;
+  }
+}
+
+/* Keyframe Definitions */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.6);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
