@@ -89,7 +89,7 @@ export default function TenantPaymentsPage() {
   const totalPending = pendingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background flex min-h-screen flex-col">
       {/* Header */}
       <header className="bg-gradient-header border-b border-white/10 shadow-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-4">
@@ -115,7 +115,7 @@ export default function TenantPaymentsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         <div className="mb-6">
           <Link href="/portal/dashboard">
             <Button variant="ghost" size="sm" className="mb-4 -ml-2">
@@ -315,9 +315,9 @@ export default function TenantPaymentsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6">
+      <footer className="border-border bg-background border-t py-6">
         <div className="mx-auto max-w-6xl px-4 text-center">
-          <p className="text-sm text-slate-600">
+          <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} DominionDesk. All rights reserved.
           </p>
         </div>

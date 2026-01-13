@@ -148,7 +148,7 @@ export default function TenantDashboardPage() {
   const { tenant, maintenanceRequests, recentPayments } = data;
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background flex min-h-screen flex-col">
       {/* Header */}
       <header className="bg-gradient-header border-b border-white/10 shadow-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-4">
@@ -174,7 +174,7 @@ export default function TenantDashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
         <h1 className="mb-6 text-2xl font-bold">Welcome, {tenant.firstName}!</h1>
 
         {/* Property Info */}
@@ -441,9 +441,9 @@ export default function TenantDashboardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6">
+      <footer className="border-border bg-background border-t py-6">
         <div className="mx-auto max-w-4xl px-4 text-center">
-          <p className="text-sm text-slate-600">
+          <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} DominionDesk. All rights reserved.
           </p>
         </div>

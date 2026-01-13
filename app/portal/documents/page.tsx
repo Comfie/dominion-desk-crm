@@ -71,8 +71,8 @@ export default function TenantDocumentsPage() {
   const currentFolder = folders.find((f) => f.id === selectedFolderId);
 
   return (
-    <div className="bg-background min-h-screen">
-      <div className="container mx-auto space-y-6 px-4 py-8">
+    <div className="bg-background flex min-h-screen flex-col">
+      <div className="container mx-auto flex-1 space-y-6 px-4 py-8">
         {/* Header */}
         <div>
           <Breadcrumb>
@@ -201,16 +201,15 @@ export default function TenantDocumentsPage() {
             </Card>
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="border-t border-slate-200 bg-white py-6">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-sm text-slate-600">
-              © {new Date().getFullYear()} DominionDesk. All rights reserved.
-            </p>
-          </div>
-        </footer>
       </div>
+      {/* Footer */}
+      <footer className="border-border bg-background border-t py-6">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-muted-foreground text-sm">
+            © {new Date().getFullYear()} DominionDesk. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -176,8 +176,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
           {!isCollapsed ? (
             <div className="flex items-center justify-between">
               <div className="text-sidebar-foreground/50 text-xs">
-                <p>Dominion Desk v0.1.0</p>
-                <p>© 2025 All rights reserved</p>
+                <p>Dominion Desk v0.2.0</p>
+                <p>© 2026. All rights reserved</p>
               </div>
               {toggleCollapse && (
                 <Button

@@ -614,7 +614,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-slate-200/50 bg-white/80 py-8 backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-900/80">
         <div className="mx-auto max-w-7xl px-4 text-center text-sm text-slate-500 sm:px-6 lg:px-8 dark:text-slate-400">
-          <p>© 2025 Dominion Desk. All rights reserved.</p>
+          <p>© 2026 Dominion Desk. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -46,7 +46,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        <div className="text-xs opacity-60">© 2025 Dominion Desk. All rights reserved.</div>
+        <div className="text-xs opacity-60">© 2026 Dominion Desk. All rights reserved.</div>
       </div>
 
       {/* Right side - Auth forms */}
