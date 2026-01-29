@@ -511,6 +511,17 @@ export default function AnalyticsDashboardPage() {
                 </CardContent>
               </Card>
             </Link>
+            <Link href="/reports/tax-summary">
+              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <DollarSign className="text-accent h-8 w-8" />
+                  <div>
+                    <p className="font-medium">Tax Summary</p>
+                    <p className="text-muted-foreground text-sm">Annual tax report</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
             <Link href="/financials/income">
               <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
                 <CardContent className="flex items-center gap-3 p-4">

@@ -1,25 +1,30 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
 import { Receipt, Calendar, Building2, Tag } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ExpenseDetailsModal } from './expense-details-modal';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface ExpenseCardProps {
   expense: {
     id: string;
     title: string;
+    description?: string | null;
     category: string;
     amount: number;
     expenseDate: string;
     status: string;
     vendor?: string | null;
+    vendorInvoice?: string | null;
     isDeductible: boolean;
+    notes?: string | null;
     property?: {
       id: string;
       name: string;
+      address?: string | null;
     } | null;
   };
 }
@@ -35,6 +40,12 @@ const categoryLabels: Record<string, string> = {
   UTILITIES: 'Utilities',
   INSURANCE: 'Insurance',
   PROPERTY_TAX: 'Property Tax',
+  LEVIES: 'Levies',
+  RATES: 'Rates',
+  MUNICIPAL_CHARGES: 'Municipal Charges',
+  CONSTRUCTION: 'Construction',
+  LEGAL_FEES: 'Legal Fees',
+  CAPITAL_IMPROVEMENT: 'Capital Improvement',
   MORTGAGE: 'Mortgage',
   CLEANING: 'Cleaning',
   SUPPLIES: 'Supplies',
@@ -45,9 +56,14 @@ const categoryLabels: Record<string, string> = {
 };
 
 export function ExpenseCard({ expense }: ExpenseCardProps) {
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   return (
-    <Link href={`/financials/expenses/${expense.id}`}>
-      <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+    <>
+      <Card
+        className="hover:bg-muted/50 cursor-pointer transition-colors"
+        onClick={() => setShowDetailsModal(true)}
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">
@@ -93,6 +109,12 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
           </div>
         </CardContent>
       </Card>
-    </Link>
+
+      <ExpenseDetailsModal
+        expense={expense}
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+      />
+    </>
   );
 }

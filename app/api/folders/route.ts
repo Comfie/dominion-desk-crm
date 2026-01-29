@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getOrCreateDefaultPersonalFolders } from '@/lib/document-folders';
 
 // GET - List folders for a tenant or current user
 export async function GET(request: NextRequest) {
@@ -41,10 +42,22 @@ export async function GET(request: NextRequest) {
 
       if (tenantId) {
         where.tenantId = tenantId;
+      } else {
+        // If no tenantId is specified, only show folders without a tenantId
+        where.tenantId = null;
       }
 
       if (propertyId) {
         where.propertyId = propertyId;
+      } else {
+        // If no propertyId is specified, only show folders without a propertyId
+        // This prevents property-specific folders from appearing on the main documents page
+        where.propertyId = null;
+      }
+
+      // For personal documents page (no tenantId, no propertyId), ensure default folders exist
+      if (!tenantId && !propertyId) {
+        await getOrCreateDefaultPersonalFolders(prisma, session.user.id);
       }
     }
 

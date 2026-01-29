@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const expenseSchema = z.object({
   propertyId: z.string().optional(),
@@ -38,8 +39,10 @@ async function fetchProperties() {
   return result.data || [];
 }
 
-export default function NewExpensePage() {
+function NewExpenseForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedPropertyId = searchParams.get('propertyId') || '';
   const [error, setError] = useState<string | null>(null);
 
   const { data: properties } = useQuery({
@@ -50,16 +53,25 @@ export default function NewExpensePage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
+      propertyId: preselectedPropertyId,
       category: 'MAINTENANCE',
       status: 'UNPAID',
       isDeductible: false,
       expenseDate: new Date().toISOString().split('T')[0],
     },
   });
+
+  // Set property value when preselectedPropertyId is available
+  useEffect(() => {
+    if (preselectedPropertyId) {
+      setValue('propertyId', preselectedPropertyId);
+    }
+  }, [preselectedPropertyId, setValue]);
 
   const createMutation = useMutation({
     mutationFn: async (data: ExpenseFormData) => {
@@ -127,6 +139,12 @@ export default function NewExpensePage() {
                   <option value="UTILITIES">Utilities</option>
                   <option value="INSURANCE">Insurance</option>
                   <option value="PROPERTY_TAX">Property Tax</option>
+                  <option value="LEVIES">Levies (Body Corporate / HOA)</option>
+                  <option value="RATES">Rates (Municipal)</option>
+                  <option value="MUNICIPAL_CHARGES">Municipal Charges</option>
+                  <option value="CONSTRUCTION">Construction / Renovation</option>
+                  <option value="LEGAL_FEES">Legal Fees</option>
+                  <option value="CAPITAL_IMPROVEMENT">Capital Improvement</option>
                   <option value="MORTGAGE">Mortgage</option>
                   <option value="CLEANING">Cleaning</option>
                   <option value="SUPPLIES">Supplies</option>
@@ -175,11 +193,12 @@ export default function NewExpensePage() {
                   {...register('propertyId')}
                 >
                   <option value="">General expense</option>
-                  {properties?.map((property: { id: string; name: string }) => (
-                    <option key={property.id} value={property.id}>
-                      {property.name}
-                    </option>
-                  ))}
+                  {Array.isArray(properties) &&
+                    properties.map((property: { id: string; name: string }) => (
+                      <option key={property.id} value={property.id}>
+                        {property.name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -266,5 +285,20 @@ export default function NewExpensePage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewExpensePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      }
+    >
+      <NewExpenseForm />
+    </Suspense>
   );
 }

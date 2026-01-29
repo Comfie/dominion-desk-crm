@@ -1,6 +1,6 @@
 # Property CRM - Project Status
 
-**Last Updated**: December 7, 2025  
+**Last Updated**: January 29, 2026  
 **Project Start**: November 2025  
 **Status**: ✅ Core Features Implemented | 🚧 Advanced Features In Progress
 
@@ -509,6 +509,129 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 ---
 
+### ✅ Phase 15: Property Valuation Management
+
+#### Valuation Features
+
+- ✅ Create, read, update, delete property valuations
+- ✅ Multiple valuation types (Purchase, Market, Bank, Municipal, Insurance)
+- ✅ Valuation date tracking with same-day tiebreaking
+- ✅ Valued by (appraiser/source) tracking
+- ✅ Notes and document URL attachment
+- ✅ Automatic property value recalculation
+- ✅ Purchase price tracking from PURCHASE type valuations
+- ✅ Current valuation based on most recent date
+
+#### Valuation Summary Cards
+
+- ✅ Purchase Price with date
+- ✅ Current Value with last valuation date
+- ✅ Appreciation percentage and amount
+- ✅ Visual indicators (green for appreciation, red for depreciation)
+
+#### Valuation History
+
+- ✅ Full history list with timeline display
+- ✅ Edit valuation via dialog
+- ✅ Delete valuation with confirmation
+- ✅ Automatic property recalculation on edit/delete
+
+#### Valuation API Endpoints
+
+- ✅ GET/POST `/api/properties/[id]/valuations`
+- ✅ GET/PUT/DELETE `/api/properties/[id]/valuations/[valuationId]`
+- ✅ Property card with valuation summary on details page
+
+---
+
+### ✅ Phase 16: Enhanced Expense Management & UI Improvements
+
+#### Enhanced Expense Features
+
+- ✅ New expense categories (Levies, Rates, Municipal Charges, Construction, Legal Fees, Capital Improvement)
+- ✅ Property pre-selection from URL query parameter
+- ✅ Expense detail modal (click to view instead of 404)
+- ✅ Mark expense as Paid functionality
+- ✅ Expense property linking with auto-population
+- ✅ Tax deductible tracking
+
+#### Expense Detail Modal
+
+- ✅ Full expense information display
+- ✅ Property linking display
+- ✅ Status badge with color coding
+- ✅ Mark as Paid action button
+- ✅ Edit and delete actions
+
+#### Sidebar Navigation Improvements
+
+- ✅ Financials submenu with nested navigation
+- ✅ Income & Payments sub-item
+- ✅ Expenses sub-item
+- ✅ Submenu expansion/collapse
+- ✅ Active state tracking for sub-items
+
+#### Property Detail Page Enhancements
+
+- ✅ Expenses tab showing property-specific expenses
+- ✅ Quick "Add Expense" button with property pre-selection
+- ✅ Valuation Card in sidebar (always visible)
+- ✅ Add Valuation link to full valuation page
+
+---
+
+### ✅ Phase 17: Property Document Management
+
+#### Property Documents Tab
+
+- ✅ Documents tab added to property view page
+- ✅ Folder-based organization for property documents
+- ✅ Property-specific folder API endpoint (`/api/properties/[id]/folders`)
+- ✅ Default property folder templates (Title Deeds, Insurance, Inspection Reports, Maintenance Records, Tax Documents, Warranties & Manuals)
+- ✅ Document upload within property context
+- ✅ Folder create, edit, delete operations
+
+#### Folder Organization Improvements
+
+- ✅ Fixed duplicate folders appearing on main documents page
+- ✅ Separated personal folders from property-specific folders
+- ✅ Auto-create default personal folders for landlords
+- ✅ Proper filtering by tenantId and propertyId
+
+#### Property Document API Endpoints
+
+- ✅ GET/POST `/api/properties/[id]/folders`
+- ✅ Automatic folder creation for new properties
+
+---
+
+### ✅ Phase 18: Inspections Module
+
+#### Inspection Features
+
+- ✅ Inspections page with listing view
+- ✅ Inspections API endpoint (`/api/inspections`)
+- ✅ Sidebar navigation for inspections
+- ✅ Database schema for inspections
+
+#### Inspection API Endpoints
+
+- ✅ GET/POST `/api/inspections`
+
+---
+
+### ✅ Phase 19: Tax Summary Reporting
+
+#### Tax Summary Features
+
+- ✅ Tax summary report page (`/reports/tax-summary`)
+- ✅ Income vs expenses breakdown
+- ✅ Tax deductible expense categorization
+- ✅ Property-level tax summary
+- ✅ Report link added to analytics page
+
+---
+
 ## Automated Jobs (Vercel Cron)
 
 | Job                       | Schedule     | Endpoint                         | Purpose                           |
@@ -536,7 +659,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ⏭️ Revenue analytics
 - ⏭️ Tenant payment history
 - ⏭️ Financial forecasting
-- ⏭️ Tax reports
+- ✅ Tax Summary Report (implemented)
 
 #### Payment Gateway Integration
 
@@ -620,9 +743,9 @@ property-crm/
 - **TypeScript Errors**: 0
 - **Test Coverage**: Manual testing (automated tests pending)
 
-### Features Completed (14 major phases)
+### Features Completed (16 major phases)
 
-- **Properties**: ✅ Full CRUD + Import/Export
+- **Properties**: ✅ Full CRUD + Import/Export + Valuations
 - **Bookings**: ✅ Full CRUD + Availability + Pricing
 - **Tenants**: ✅ Full CRUD + Documents + Portal
 - **Payments**: ✅ Full CRUD + Automation + Reminders
@@ -630,10 +753,15 @@ property-crm/
 - **Auth**: ✅ Multi-role + Password Management
 - **Admin**: ✅ User Creation + Management
 - **Maintenance**: ✅ Full CRUD + Status Workflow + Cost Tracking
-- **Expenses**: ✅ Full CRUD + Categories + Reports
+- **Expenses**: ✅ Full CRUD + Categories + Reports + Detail Modal
 - **Documents**: ✅ Full CRUD + Folders + Upload
 - **Inquiries**: ✅ Full CRUD + Status + Conversion
 - **Tasks**: ✅ Full CRUD + Status + Due Dates
+- **Valuations**: ✅ Full CRUD + Edit/Delete + Auto-recalculation
+- **UI/UX**: ✅ Nested Sidebar + Expense Modal + Valuation Card
+- **Property Docs**: ✅ Folder-based organization + Auto-creation
+- **Inspections**: ✅ Listing page + API endpoints
+- **Tax Reports**: ✅ Tax summary report page
 
 ---
 
@@ -653,6 +781,7 @@ property-crm/
 ### Supporting Models
 
 - PropertyTenant (lease assignments)
+- PropertyValuation (property value history)
 - TeamMember (organization members)
 - Document (file storage)
 - AuditLog (change tracking)
@@ -748,7 +877,12 @@ UPLOADTHING_APP_ID
 ✅ Email notifications working  
 ✅ Cron jobs running automatically  
 ✅ Role-based access control functional  
-✅ Expense-maintenance linking implemented
+✅ Expense-maintenance linking implemented  
+✅ Property valuation tracking with appreciation calculations  
+✅ Enhanced UI with nested navigation and detail modals  
+✅ Property document management with folder organization  
+✅ Inspections module foundation implemented  
+✅ Tax summary reporting functional
 
 ---
 

@@ -33,14 +33,16 @@ async function fetchBookings() {
   const response = await fetch('/api/bookings');
   if (!response.ok) throw new Error('Failed to fetch bookings');
   const result = await response.json();
-  return result.data || [];
+  // Ensure we always return an array
+  return Array.isArray(result.data) ? result.data : [];
 }
 
 async function fetchTenants() {
   const response = await fetch('/api/tenants');
   if (!response.ok) throw new Error('Failed to fetch tenants');
   const result = await response.json();
-  return result.data || [];
+  // Ensure we always return an array - API returns { data: [...], pagination: {...} }
+  return Array.isArray(result.data) ? result.data : [];
 }
 
 export default function NewPaymentPage() {

@@ -90,13 +90,23 @@ const featuresList = {
     },
     {
       title: 'Expense Tracking',
-      desc: 'Track property expenses, categorize for tax season, and generate reports.',
+      desc: 'Track property expenses by category, link to maintenance, and mark tax-deductible items.',
       icon: BarChart3,
     },
     {
       title: 'Document Vault',
       desc: 'Securely store FICA docs, leases, inspections, and all property documents.',
       icon: FileText,
+    },
+    {
+      title: 'Property Valuations',
+      desc: 'Track property values over time with bank, market, and municipal valuations. See appreciation at a glance.',
+      icon: TrendingUp,
+    },
+    {
+      title: 'Tax-Ready Reports',
+      desc: 'Annual tax summary report with deductible expenses, income breakdown, and one-click export.',
+      icon: Download,
     },
   ],
   shortTerm: [
@@ -119,6 +129,16 @@ const featuresList = {
       title: 'Cleaning Schedule',
       desc: 'Auto-notify cleaning teams when guests check out for seamless turnover.',
       icon: Sparkles,
+    },
+    {
+      title: 'Revenue Analytics',
+      desc: 'Track income per property, compare performance, and identify top earners.',
+      icon: TrendingUp,
+    },
+    {
+      title: 'Financial Reports',
+      desc: 'Cash flow statements, expense breakdowns, and profitability analysis for each property.',
+      icon: DollarSign,
     },
   ],
 };
@@ -923,8 +943,9 @@ export default function App() {
                   {[
                     'Automated rent reminders & payment tracking',
                     'Centralized document storage & management',
-                    'Tenant portal for maintenance requests & communication',
-                    'One-click financial reports & tax-ready exports',
+                    'Tenant portal for maintenance & communication',
+                    'Tax-ready reports with expense categorization',
+                    'Property valuations & appreciation tracking',
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 font-medium text-slate-800">
                       <CheckCircle2 className="text-brand-500 h-5 w-5 flex-shrink-0" />
@@ -1055,7 +1076,7 @@ export default function App() {
                       <div>
                         <div className="font-semibold text-slate-900">Financial Insights</div>
                         <div className="text-sm text-slate-600">
-                          Real-time reports, expense tracking, tax-ready exports
+                          Real-time reports, valuations tracking, tax-ready exports
                         </div>
                       </div>
                     </div>
@@ -1131,7 +1152,7 @@ export default function App() {
           </RevealOnScroll>
 
           {/* Feature Grid */}
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {featuresList[activeTab].map((feature, idx) => (
               <RevealOnScroll key={idx} delay={idx * 100}>
                 <Card className="hover:border-brand-200 h-full transition-colors">

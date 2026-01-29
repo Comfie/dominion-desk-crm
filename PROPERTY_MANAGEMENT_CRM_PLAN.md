@@ -354,6 +354,39 @@ model Property {
   expenses        Expense[]
   documents       Document[]
   reviews         Review[]
+  valuations      PropertyValuation[]
+}
+
+// ============== PROPERTY VALUATION ==============
+
+model PropertyValuation {
+  id              String    @id @default(cuid())
+  propertyId      String
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Valuation Details
+  valuationAmount Decimal   @db.Decimal(12, 2)
+  valuationType   ValuationType @default(MARKET)
+  valuedBy        String?   // Appraiser/bank/agency name
+  valuationDate   DateTime
+
+  // Additional Info
+  notes           String?   @db.Text
+  documentUrl     String?   // Supporting document
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([propertyId, valuationDate])
+}
+
+enum ValuationType {
+  PURCHASE      // Original purchase price
+  MARKET        // Market valuation
+  BANK          // Bank valuation for bond purposes
+  MUNICIPAL     // Municipal valuation for rates
+  INSURANCE     // Insurance valuation
 }
 
 enum PropertyType {

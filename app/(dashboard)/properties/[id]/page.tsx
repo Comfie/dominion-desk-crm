@@ -24,6 +24,9 @@ import {
   Loader2,
   Link as LinkIcon,
   Copy,
+  Eye,
+  FolderOpen,
+  FileText,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -219,9 +222,10 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
           {/* Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              <TabsTrigger value="expenses">Expenses</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -558,13 +562,126 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
             <TabsContent value="documents" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Documents</CardTitle>
-                  <CardDescription>Property documents and files</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Document Management</CardTitle>
+                    <Button asChild>
+                      <Link href={`/properties/${id}/documents`}>
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        Open Document Manager
+                      </Link>
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground py-4 text-center">
-                    No documents uploaded yet
-                  </p>
+                  <div className="flex flex-col items-center justify-center space-y-4 py-12 text-center">
+                    <div className="rounded-full bg-blue-100 p-6">
+                      <FileText className="h-12 w-12 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="mb-2 text-lg font-semibold">
+                        Folder-Based Document Organization
+                      </h3>
+                      <p className="max-w-md text-sm text-gray-500">
+                        Manage all property documents in organized folders. Upload, view, and
+                        organize documents like title deeds, insurance policies, inspection reports,
+                        and more.
+                      </p>
+                    </div>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <Button asChild size="lg">
+                        <Link href={`/properties/${id}/documents`}>
+                          <FolderOpen className="mr-2 h-5 w-5" />
+                          Open Document Manager
+                        </Link>
+                      </Button>
+                      <p className="text-xs text-gray-400">
+                        View and manage documents with folder organization
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="expenses" className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Property Expenses</CardTitle>
+                    <CardDescription>
+                      {property._count?.expenses || 0} total expenses
+                    </CardDescription>
+                  </div>
+                  <Button asChild size="sm">
+                    <Link href={`/financials/expenses/new?propertyId=${id}`}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Expense
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {property.expenses?.length > 0 ? (
+                    <div className="space-y-4">
+                      {property.expenses.map(
+                        (expense: {
+                          id: string;
+                          title: string;
+                          category: string;
+                          amount: number;
+                          expenseDate: string;
+                          status: string;
+                          isDeductible: boolean;
+                        }) => (
+                          <div
+                            key={expense.id}
+                            className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                          >
+                            <div>
+                              <p className="font-medium">{expense.title}</p>
+                              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                                <Badge variant="outline">
+                                  {expense.category.replace('_', ' ')}
+                                </Badge>
+                                <span>{formatDate(expense.expenseDate)}</span>
+                                {expense.isDeductible && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Tax Deductible
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-red-600">
+                                {formatCurrency(Number(expense.amount))}
+                              </p>
+                              <Badge
+                                className={`text-xs ${
+                                  expense.status === 'PAID'
+                                    ? 'bg-green-100 text-green-800'
+                                    : expense.status === 'OVERDUE'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
+                                {expense.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <DollarSign className="text-muted-foreground/50 mx-auto h-12 w-12" />
+                      <p className="text-muted-foreground mt-4">No expenses recorded</p>
+                      <Button asChild className="mt-4">
+                        <Link href={`/financials/expenses/new?propertyId=${id}`}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add First Expense
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -614,6 +731,89 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   </span>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Valuation Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center gap-2">
+                <Home className="h-5 w-5" />
+                Valuation
+              </CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/properties/${id}/valuations`}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {property.purchasePrice || property.currentValuation ? (
+                <>
+                  {property.purchasePrice && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Purchase Price</span>
+                      <span className="text-lg font-semibold">
+                        {formatCurrency(Number(property.purchasePrice))}
+                      </span>
+                    </div>
+                  )}
+                  {property.purchaseDate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Purchase Date</span>
+                      <span className="font-medium">{formatDate(property.purchaseDate)}</span>
+                    </div>
+                  )}
+                  {property.currentValuation && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Current Value</span>
+                      <span className="text-lg font-semibold text-green-600">
+                        {formatCurrency(Number(property.currentValuation))}
+                      </span>
+                    </div>
+                  )}
+                  {property.lastValuationDate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Last Valued</span>
+                      <span className="font-medium">{formatDate(property.lastValuationDate)}</span>
+                    </div>
+                  )}
+                  {property.purchasePrice && property.currentValuation && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Appreciation</span>
+                        <span
+                          className={`font-medium ${
+                            Number(property.currentValuation) >= Number(property.purchasePrice)
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {(
+                            ((Number(property.currentValuation) - Number(property.purchasePrice)) /
+                              Number(property.purchasePrice)) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground py-2 text-center text-sm">
+                  No valuation data yet. Add a purchase price or valuation to track property value.
+                </p>
+              )}
+              <Separator />
+              <Button variant="outline" size="sm" asChild className="w-full">
+                <Link href={`/properties/${id}/valuations`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Valuations
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 

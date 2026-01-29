@@ -84,6 +84,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           take: 5,
           orderBy: { createdAt: 'desc' },
         },
+        expenses: {
+          take: 10,
+          orderBy: { expenseDate: 'desc' },
+        },
         _count: {
           select: {
             bookings: true,
