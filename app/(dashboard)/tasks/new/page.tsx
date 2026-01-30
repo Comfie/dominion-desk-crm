@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Save, AlertCircle, ListChecks, X, Check } from 'lucide-react';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/shared';
@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TemplateSelector } from '@/components/tasks/template-selector';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -40,9 +42,30 @@ const taskSchema = z.object({
 
 type TaskFormData = z.infer<typeof taskSchema>;
 
+interface ChecklistItem {
+  item: string;
+  isRequired: boolean;
+  sortOrder: number;
+}
+
+interface TaskTemplate {
+  id: string;
+  userId: string | null;
+  name: string;
+  description: string | null;
+  taskType: string;
+  priority: string;
+  checklist: ChecklistItem[] | null;
+  isSystem: boolean;
+  category: string | null;
+}
+
 export default function NewTaskPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
 
   const {
     register,
@@ -67,7 +90,8 @@ export default function NewTaskPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -77,7 +101,8 @@ export default function NewTaskPage() {
     queryFn: async () => {
       const response = await fetch('/api/tenants');
       if (!response.ok) throw new Error('Failed to fetch tenants');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -87,7 +112,8 @@ export default function NewTaskPage() {
     queryFn: async () => {
       const response = await fetch('/api/bookings');
       if (!response.ok) throw new Error('Failed to fetch bookings');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
@@ -97,12 +123,14 @@ export default function NewTaskPage() {
     queryFn: async () => {
       const response = await fetch('/api/maintenance');
       if (!response.ok) throw new Error('Failed to fetch maintenance requests');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
   });
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: TaskFormData) => {
+      // Create the task
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,15 +148,57 @@ export default function NewTaskPage() {
         const error = await response.json();
         throw new Error(error.error || 'Failed to create task');
       }
-      return response.json();
+      const task = await response.json();
+
+      // If there are checklist items, add them to the task
+      if (checklistItems.length > 0) {
+        const checklistResponse = await fetch(`/api/tasks/${task.id}/checklist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: checklistItems }),
+        });
+        if (!checklistResponse.ok) {
+          console.error('Failed to create checklist items');
+        }
+      }
+
+      return task;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       router.push('/tasks');
     },
     onError: (error: Error) => {
       setError(error.message);
     },
   });
+
+  // Handle template selection
+  const handleTemplateSelect = (template: TaskTemplate) => {
+    setSelectedTemplate(template);
+    setValue('title', template.name);
+    if (template.description) {
+      setValue('description', template.description);
+    }
+    setValue('taskType', template.taskType);
+    setValue('priority', template.priority);
+
+    // Set checklist items from template
+    if (template.checklist && template.checklist.length > 0) {
+      setChecklistItems(template.checklist);
+    }
+  };
+
+  // Clear template
+  const handleClearTemplate = () => {
+    setSelectedTemplate(null);
+    setChecklistItems([]);
+  };
+
+  // Remove a checklist item
+  const handleRemoveChecklistItem = (index: number) => {
+    setChecklistItems((items) => items.filter((_, i) => i !== index));
+  };
 
   const onSubmit = (data: TaskFormData) => {
     setError(null);
@@ -154,6 +224,41 @@ export default function NewTaskPage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Template Selector */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5" />
+              Quick Start with Template
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedTemplate ? (
+              <div className="bg-muted text-foreground flex items-center justify-between rounded-lg border p-4">
+                <div>
+                  <p className="font-medium">
+                    Using template: <span className="text-primary">{selectedTemplate.name}</span>
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {selectedTemplate.checklist?.length || 0} checklist items will be added
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleClearTemplate}>
+                  <X className="mr-1 h-4 w-4" />
+                  Clear
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-muted-foreground text-sm">
+                  Select a template to auto-fill task details and checklist items
+                </p>
+                <TemplateSelector onSelect={handleTemplateSelect} selectedTemplateId={undefined} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Task Details</CardTitle>
@@ -375,6 +480,52 @@ export default function NewTaskPage() {
             <Textarea {...register('notes')} placeholder="Add any additional notes..." rows={4} />
           </CardContent>
         </Card>
+
+        {/* Checklist Preview */}
+        {checklistItems.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Check className="h-5 w-5" />
+                Checklist Items
+                <Badge variant="secondary" className="ml-auto">
+                  {checklistItems.length} items
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4 text-sm">
+                These checklist items will be added to the task when created.
+              </p>
+              <ul className="space-y-2">
+                {checklistItems.map((item, index) => (
+                  <li
+                    key={index}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground">{item.isRequired ? '●' : '○'}</span>
+                      <span className={item.isRequired ? 'font-medium' : ''}>{item.item}</span>
+                      {item.isRequired && (
+                        <Badge variant="outline" className="text-orange-600">
+                          Required
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveChecklistItem(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end gap-4">
           <Link href="/tasks">

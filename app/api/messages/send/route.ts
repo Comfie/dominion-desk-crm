@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { requireAuth } from '@/lib/auth-helpers';
 import { logAudit } from '@/lib/shared/audit';
 import { sendEmail, emailTemplates } from '@/lib/email';
+import { threadRepository } from '@/lib/features/messaging/repositories/thread.repository';
 
 // POST /api/messages/send - Send a message (email/SMS)
 export async function POST(request: Request) {
@@ -14,9 +15,20 @@ export async function POST(request: Request) {
     const data = await request.json();
 
     // Validate required fields
-    if (!data.messageType || !data.recipientEmail) {
+    if (!data.messageType) {
+      return NextResponse.json({ error: 'Message type is required' }, { status: 400 });
+    }
+
+    if (data.messageType === 'EMAIL' && !data.recipientEmail) {
       return NextResponse.json(
-        { error: 'Message type and recipient email are required' },
+        { error: 'Recipient email is required for email messages' },
+        { status: 400 }
+      );
+    }
+
+    if ((data.messageType === 'SMS' || data.messageType === 'WHATSAPP') && !data.recipientPhone) {
+      return NextResponse.json(
+        { error: 'Recipient phone is required for SMS/WhatsApp messages' },
         { status: 400 }
       );
     }
@@ -86,18 +98,40 @@ export async function POST(request: Request) {
       });
     }
 
-    // Generate thread ID
-    const threadId =
-      data.threadId || `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Resolve or create a thread (Message.threadId must reference MessageThread)
+    let threadId: string | null = data.threadId || null;
+    if (threadId) {
+      const existingThread = await threadRepository.findById(threadId, session.user.organizationId);
+      if (!existingThread) {
+        return NextResponse.json({ error: 'Message thread not found' }, { status: 404 });
+      }
+    } else {
+      const participantName =
+        data.recipientName || data.recipientEmail || data.recipientPhone || 'Recipient';
+      const initialMessage = data.message || emailContent.text;
+      const thread = await threadRepository.create(session.user.organizationId, {
+        participantName,
+        participantEmail: data.recipientEmail,
+        participantPhone: data.recipientPhone,
+        subject: emailContent.subject,
+        bookingId: data.bookingId || undefined,
+        tenantId: data.tenantId || undefined,
+        initialMessage,
+      });
+      threadId = thread.id;
+    }
 
     // Send the email
-    const emailResult = await sendEmail({
-      to: data.recipientEmail,
-      subject: emailContent.subject,
-      html: emailContent.html,
-      text: emailContent.text,
-      replyTo: data.replyTo,
-    });
+    const emailResult =
+      data.messageType === 'EMAIL'
+        ? await sendEmail({
+            to: data.recipientEmail,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            replyTo: data.replyTo,
+          })
+        : { success: false, error: 'Only email delivery is currently supported.' };
 
     // Create message record
     const message = await prisma.message.create({
@@ -113,7 +147,7 @@ export async function POST(request: Request) {
         recipientPhone: data.recipientPhone || null,
         status: emailResult.success ? 'SENT' : 'FAILED',
         sentAt: emailResult.success ? new Date() : null,
-        threadId,
+        threadId: threadId || null,
         replyTo: data.replyToMessageId || null,
         attachments: data.attachments ? data.attachments : Prisma.JsonNull,
       },
@@ -141,6 +175,10 @@ export async function POST(request: Request) {
       },
     });
 
+    if (threadId) {
+      await threadRepository.updateLastMessage(threadId, data.message || emailContent.text);
+    }
+
     // Audit log
     await logAudit(session, 'created', 'message', message.id, undefined, request);
 
@@ -162,6 +200,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error sending message:', error);
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
+    if (error instanceof Response) {
+      return error;
+    }
+    return NextResponse.json(
+      { error: 'Failed to send message', details: error instanceof Error ? error.message : error },
+      { status: 500 }
+    );
   }
 }

@@ -44,7 +44,8 @@ export default function NewInspectionPage() {
     queryFn: async () => {
       const res = await fetch('/api/properties');
       if (!res.ok) throw new Error('Failed to fetch properties');
-      return res.json();
+      const result = await res.json();
+      return result.data || [];
     },
   });
 
@@ -58,7 +59,7 @@ export default function NewInspectionPage() {
     },
   });
 
-  const properties = propertiesData?.data || [];
+  const properties = Array.isArray(propertiesData) ? propertiesData : [];
   const tenants = tenantsData?.data || [];
 
   const createMutation = useMutation({

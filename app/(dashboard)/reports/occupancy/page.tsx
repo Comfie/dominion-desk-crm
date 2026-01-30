@@ -255,8 +255,8 @@ export default function OccupancyReportPage() {
         <CardContent>
           {data?.charts.monthlyTrend && data.charts.monthlyTrend.length > 0 ? (
             <div className="space-y-2">
-              {data.charts.monthlyTrend.map((item) => (
-                <div key={item.month} className="flex items-center gap-2">
+              {data.charts.monthlyTrend.map((item, index) => (
+                <div key={`${item.month}-${index}`} className="flex items-center gap-2">
                   <div className="w-20 text-sm text-gray-500">
                     {new Date(item.month + '-01').toLocaleDateString('en-ZA', {
                       month: 'short',

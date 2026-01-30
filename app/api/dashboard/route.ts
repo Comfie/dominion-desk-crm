@@ -29,11 +29,11 @@ export async function GET() {
       monthlyRevenue,
       recentBookings,
       upcomingTasks,
-      upcomingCheckIns,
       outstandingPayments,
       staleMaintenance,
       propertyStats,
       rawRevenueHistory,
+      activeLeases,
     ] = await Promise.all([
       // Total properties
       prisma.property.count({ where: { userId } }),
@@ -115,30 +115,6 @@ export async function GET() {
         },
       }),
 
-      // Upcoming check-ins (next 7 days)
-      prisma.booking.findMany({
-        where: {
-          userId,
-          status: 'CONFIRMED',
-          checkInDate: {
-            gte: today,
-            lte: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
-          },
-        },
-        orderBy: { checkInDate: 'asc' },
-        take: 5,
-        select: {
-          id: true,
-          guestName: true,
-          guestPhone: true,
-          checkInDate: true,
-          numberOfGuests: true,
-          property: {
-            select: { name: true },
-          },
-        },
-      }),
-
       // Outstanding payments
       prisma.booking.findMany({
         where: {
@@ -172,6 +148,34 @@ export async function GET() {
           },
         },
         _sum: { amount: true },
+      }),
+
+      // Active long-term leases
+      prisma.propertyTenant.findMany({
+        where: {
+          userId,
+          isActive: true,
+          OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: today } }],
+        },
+        select: {
+          id: true,
+          propertyId: true,
+          leaseStartDate: true,
+          leaseEndDate: true,
+          moveInDate: true,
+          property: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          tenant: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       }),
     ]);
 
@@ -237,6 +241,85 @@ export async function GET() {
 
     const occupancyRate = totalPropertyDays > 0 ? (occupiedDays / totalPropertyDays) * 100 : 0;
 
+    // Long-term lease stats
+    const upcomingMoveInWindow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const propertySummaryMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        tenantCount: number;
+        movedInCount: number;
+        scheduledMoveInCount: number;
+        nextMoveInDate: Date | null;
+      }
+    >();
+    let tenantsMovedIn = 0;
+    let tenantsScheduledMoveIn = 0;
+
+    activeLeases.forEach((lease) => {
+      const moveInDate = lease.moveInDate ?? lease.leaseStartDate;
+      const hasMovedIn = moveInDate <= today;
+
+      if (hasMovedIn) {
+        tenantsMovedIn += 1;
+      } else {
+        tenantsScheduledMoveIn += 1;
+      }
+
+      const entry = propertySummaryMap.get(lease.propertyId) ?? {
+        id: lease.property.id,
+        name: lease.property.name,
+        tenantCount: 0,
+        movedInCount: 0,
+        scheduledMoveInCount: 0,
+        nextMoveInDate: null,
+      };
+
+      entry.tenantCount += 1;
+      if (hasMovedIn) {
+        entry.movedInCount += 1;
+      } else {
+        entry.scheduledMoveInCount += 1;
+        if (!entry.nextMoveInDate || moveInDate < entry.nextMoveInDate) {
+          entry.nextMoveInDate = moveInDate;
+        }
+      }
+
+      propertySummaryMap.set(lease.propertyId, entry);
+    });
+
+    const propertiesWithTenants = propertySummaryMap.size;
+
+    const propertySummaries = Array.from(propertySummaryMap.values())
+      .sort((a, b) => b.tenantCount - a.tenantCount || a.name.localeCompare(b.name))
+      .slice(0, 6)
+      .map((summary) => ({
+        ...summary,
+        nextMoveInDate: summary.nextMoveInDate ? summary.nextMoveInDate.toISOString() : null,
+      }));
+
+    const upcomingMoveIns = activeLeases
+      .map((lease) => {
+        const moveInDate = lease.moveInDate ?? lease.leaseStartDate;
+        return {
+          id: lease.id,
+          moveInDate,
+          tenantName: `${lease.tenant.firstName} ${lease.tenant.lastName}`.trim(),
+          property: {
+            id: lease.property.id,
+            name: lease.property.name,
+          },
+        };
+      })
+      .filter((lease) => lease.moveInDate > today && lease.moveInDate <= upcomingMoveInWindow)
+      .sort((a, b) => a.moveInDate.getTime() - b.moveInDate.getTime())
+      .slice(0, 5)
+      .map((lease) => ({
+        ...lease,
+        moveInDate: lease.moveInDate.toISOString(),
+      }));
+
     // Process revenue history
     const revenueHistory: Array<{ name: string; total: number }> = [];
     for (let i = 5; i >= 0; i--) {
@@ -273,11 +356,19 @@ export async function GET() {
         outstandingPayments: totalOutstanding,
         occupancyRate: Math.round(occupancyRate * 10) / 10,
         staleMaintenanceCount: staleMaintenance.length,
+        activeLeases: activeLeases.length,
+        propertiesWithTenants,
+        tenantsMovedIn,
+        tenantsScheduledMoveIn,
       },
       recentBookings,
       upcomingTasks,
-      upcomingCheckIns,
       staleMaintenance,
+      longTerm: {
+        properties: propertySummaries,
+        propertyTotal: propertiesWithTenants,
+        upcomingMoveIns,
+      },
       charts: {
         propertyStatus: propertyStats.map((stat) => ({
           name: stat.status,

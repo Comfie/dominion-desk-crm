@@ -31,6 +31,8 @@ interface PropertyCardProps {
     status: string;
     primaryImageUrl: string | null;
     isAvailable: boolean;
+    hasActiveTenant?: boolean;
+    activeTenantCount?: number;
     _count?: {
       bookings: number;
       tenants: number;
@@ -70,6 +72,9 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
   const priceLabel =
     property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH' ? '/night' : '/month';
 
+  const activeTenantCount = property.activeTenantCount ?? 0;
+  const isOccupied = property.hasActiveTenant ?? activeTenantCount > 0;
+
   if (variant === 'list') {
     return (
       <Card className="group overflow-hidden transition-all hover:shadow-md">
@@ -90,10 +95,15 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
                 </div>
               )}
               {/* Status Badge */}
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-2 left-2 flex flex-col gap-1">
                 <Badge className={statusColors[property.status] || statusColors.ACTIVE}>
                   {property.status}
                 </Badge>
+                {isOccupied && (
+                  <Badge className="border-red-200 bg-red-100 text-red-800">
+                    Occupied{activeTenantCount > 1 ? ` · ${activeTenantCount}` : ''}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -185,9 +195,10 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
                     <p className="text-muted-foreground text-sm">Price not set</p>
                   )}
                 </div>
-                {property._count && (
+                {(property._count || property.activeTenantCount !== undefined) && (
                   <div className="text-muted-foreground text-sm">
-                    {property._count.bookings} bookings • {property._count.tenants} tenants
+                    {property._count?.bookings ?? 0} bookings •{' '}
+                    {property.activeTenantCount ?? property._count?.tenants ?? 0} tenant(s)
                   </div>
                 )}
               </div>
@@ -216,10 +227,15 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
         )}
 
         {/* Status Badge */}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
           <Badge className={statusColors[property.status] || statusColors.ACTIVE}>
             {property.status}
           </Badge>
+          {isOccupied && (
+            <Badge className="border-red-200 bg-red-100 text-red-800">
+              Occupied{activeTenantCount > 1 ? ` · ${activeTenantCount}` : ''}
+            </Badge>
+          )}
         </div>
 
         {/* Actions Menu */}

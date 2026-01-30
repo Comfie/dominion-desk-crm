@@ -129,6 +129,11 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // Handle requirePasswordChange update (after password change)
+      if (trigger === 'update' && typeof updateSession?.requirePasswordChange === 'boolean') {
+        token.requirePasswordChange = updateSession.requirePasswordChange;
+      }
+
       return token;
     },
     async session({ session, token }) {

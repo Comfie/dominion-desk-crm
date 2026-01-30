@@ -1,36 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-
 import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/db';
+import {
+  maintenanceService,
+  createMaintenanceSchema,
+  listMaintenanceSchema,
+} from '@/lib/features/maintenance';
 import { notifyMaintenanceRequest } from '@/lib/notifications';
+import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
 
-const maintenanceSchema = z.object({
-  propertyId: z.string().min(1, 'Property is required'),
-  tenantId: z.string().optional().nullable(),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  category: z.enum([
-    'PLUMBING',
-    'ELECTRICAL',
-    'HVAC',
-    'APPLIANCE',
-    'STRUCTURAL',
-    'PAINTING',
-    'CLEANING',
-    'LANDSCAPING',
-    'PEST_CONTROL',
-    'SECURITY',
-    'OTHER',
-  ]),
-  priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
-  location: z.string().optional().nullable(),
-  scheduledDate: z.string().optional().nullable(),
-  estimatedCost: z.number().optional().nullable(),
-  assignedTo: z.string().optional().nullable(),
-});
-
+/**
+ * GET /api/maintenance - List maintenance requests
+ */
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,72 +22,28 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const status = searchParams.get('status');
-    const priority = searchParams.get('priority');
-    const category = searchParams.get('category');
-    const propertyId = searchParams.get('propertyId');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
-    const where: Record<string, unknown> = {
-      userId: session.user.id,
-    };
+    // Parse and validate filters
+    const filters = listMaintenanceSchema.parse({
+      propertyId: searchParams.get('propertyId') || undefined,
+      status: searchParams.get('status') || undefined,
+      priority: searchParams.get('priority') || undefined,
+      category: searchParams.get('category') || undefined,
+      search: searchParams.get('search') || undefined,
+    });
 
-    if (status) {
-      where.status = status;
-    }
+    // Use service layer
+    const maintenanceRequests = await maintenanceService.list(session.user.id, filters);
 
-    if (priority) {
-      where.priority = priority;
-    }
-
-    if (category) {
-      where.category = category;
-    }
-
-    if (propertyId) {
-      where.propertyId = propertyId;
-    }
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' as const } },
-        { description: { contains: search, mode: 'insensitive' as const } },
-        { assignedTo: { contains: search, mode: 'insensitive' as const } },
-      ];
-    }
-
-    const [maintenanceRequests, total] = await Promise.all([
-      prisma.maintenanceRequest.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          property: {
-            select: {
-              id: true,
-              name: true,
-              address: true,
-              city: true,
-            },
-          },
-          tenant: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phone: true,
-            },
-          },
-        },
-        orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
-      }),
-      prisma.maintenanceRequest.count({ where }),
-    ]);
+    // Apply pagination
+    const total = maintenanceRequests.length;
+    const startIndex = (page - 1) * limit;
+    const paginatedData = maintenanceRequests.slice(startIndex, startIndex + limit);
 
     return NextResponse.json({
-      data: maintenanceRequests,
+      data: paginatedData,
       pagination: {
         page,
         limit,
@@ -114,11 +52,17 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 });
+    }
     console.error('Error fetching maintenance requests:', error);
     return NextResponse.json({ error: 'Failed to fetch maintenance requests' }, { status: 500 });
   }
 }
 
+/**
+ * POST /api/maintenance - Create a maintenance request
+ */
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -128,76 +72,52 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const validatedData = maintenanceSchema.parse(body);
+    const validatedData = createMaintenanceSchema.parse(body);
 
-    // Verify property belongs to user
-    const property = await prisma.property.findFirst({
-      where: {
-        id: validatedData.propertyId,
-        userId: session.user.id,
-      },
+    // Use service layer - handles property/tenant verification
+    const maintenanceRequest = await maintenanceService.create(session.user.id, {
+      propertyId: validatedData.propertyId,
+      tenantId: validatedData.tenantId,
+      title: validatedData.title,
+      description: validatedData.description,
+      category: validatedData.category,
+      priority: validatedData.priority,
+      scheduledDate: validatedData.scheduledDate,
+      estimatedCost: validatedData.estimatedCost,
     });
 
-    if (!property) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
-    }
-
-    // Verify tenant if provided
-    if (validatedData.tenantId) {
-      const tenant = await prisma.tenant.findFirst({
-        where: {
-          id: validatedData.tenantId,
-          userId: session.user.id,
-        },
-      });
-
-      if (!tenant) {
-        return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
-      }
-    }
-
-    const maintenanceRequest = await prisma.maintenanceRequest.create({
-      data: {
-        userId: session.user.id,
-        propertyId: validatedData.propertyId,
-        tenantId: validatedData.tenantId,
-        title: validatedData.title,
-        description: validatedData.description,
-        category: validatedData.category,
-        priority: validatedData.priority,
-        location: validatedData.location,
-        scheduledDate: validatedData.scheduledDate ? new Date(validatedData.scheduledDate) : null,
-        estimatedCost: validatedData.estimatedCost,
-        assignedTo: validatedData.assignedTo,
-        status: 'PENDING',
-      },
-      include: {
-        property: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    // Create notification for new maintenance request
+    // Create notification
     try {
-      await notifyMaintenanceRequest(
-        session.user.id,
-        validatedData.title,
-        property.name,
-        maintenanceRequest.id
-      );
+      if (maintenanceRequest.property) {
+        await notifyMaintenanceRequest(
+          session.user.id,
+          validatedData.title,
+          maintenanceRequest.property.name,
+          maintenanceRequest.id
+        );
+      }
     } catch (notifyError) {
       console.error('Failed to create notification:', notifyError);
     }
 
     return NextResponse.json(maintenanceRequest, { status: 201 });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 });
     }
+
     console.error('Error creating maintenance request:', error);
     return NextResponse.json({ error: 'Failed to create maintenance request' }, { status: 500 });
   }

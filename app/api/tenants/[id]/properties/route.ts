@@ -6,15 +6,27 @@ import { Prisma } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 
-const assignPropertySchema = z.object({
-  propertyId: z.string().min(1, 'Property is required'),
-  leaseStartDate: z.string().min(1, 'Lease start date is required'),
-  leaseEndDate: z.string().optional().nullable(),
-  monthlyRent: z.number().min(0, 'Monthly rent must be a positive number'),
-  depositPaid: z.number().min(0, 'Deposit must be a positive number').optional().default(0),
-  moveInDate: z.string().optional().nullable(),
-  leaseDocumentUrl: z.string().optional().nullable(),
-});
+const assignPropertySchema = z
+  .object({
+    propertyId: z.string().min(1, 'Property is required'),
+    leaseStartDate: z.string().min(1, 'Lease start date is required'),
+    leaseEndDate: z.string().min(1, 'Lease end date is required'),
+    monthlyRent: z.number().min(0, 'Monthly rent must be a positive number'),
+    depositPaid: z.number().min(0, 'Deposit must be a positive number').optional().default(0),
+    moveInDate: z.string().optional().nullable(),
+    leaseDocumentUrl: z.string().optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      const startDate = new Date(data.leaseStartDate);
+      const endDate = new Date(data.leaseEndDate);
+      return endDate > startDate;
+    },
+    {
+      message: 'Lease end date must be after lease start date',
+      path: ['leaseEndDate'],
+    }
+  );
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -128,7 +140,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // Check for overlapping bookings
     const leaseStart = new Date(validatedData.leaseStartDate);
-    const leaseEnd = validatedData.leaseEndDate ? new Date(validatedData.leaseEndDate) : null;
+    const leaseEnd = new Date(validatedData.leaseEndDate);
 
     const overlappingBookings = await prisma.booking.findMany({
       where: {
@@ -184,7 +196,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         propertyId: validatedData.propertyId,
         tenantId: id,
         leaseStartDate: new Date(validatedData.leaseStartDate),
-        leaseEndDate: validatedData.leaseEndDate ? new Date(validatedData.leaseEndDate) : null,
+        leaseEndDate: new Date(validatedData.leaseEndDate),
         monthlyRent: new Prisma.Decimal(validatedData.monthlyRent),
         depositPaid: new Prisma.Decimal(validatedData.depositPaid),
         moveInDate: validatedData.moveInDate ? new Date(validatedData.moveInDate) : null,

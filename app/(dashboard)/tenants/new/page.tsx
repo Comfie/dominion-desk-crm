@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const tenantSchema = z
   .object({
@@ -63,14 +64,33 @@ const tenantSchema = z
       if (data.assignProperty && !data.leaseStartDate) {
         return false;
       }
+      if (data.assignProperty && !data.leaseEndDate) {
+        return false;
+      }
       if (data.assignProperty && !data.propertyMonthlyRent) {
         return false;
       }
       return true;
     },
     {
-      message: 'Property, lease start date, and monthly rent are required when assigning property',
+      message:
+        'Property, lease start date, lease end date, and monthly rent are required when assigning property',
       path: ['propertyId'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Validate that lease end date is after start date
+      if (data.assignProperty && data.leaseStartDate && data.leaseEndDate) {
+        const startDate = new Date(data.leaseStartDate);
+        const endDate = new Date(data.leaseEndDate);
+        return endDate > startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Lease end date must be after lease start date',
+      path: ['leaseEndDate'],
     }
   );
 
@@ -103,6 +123,7 @@ function NewTenantForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const propertyIdFromUrl = searchParams.get('propertyId');
   const leaseStartFromUrl = searchParams.get('leaseStartDate');
@@ -179,10 +200,19 @@ function NewTenantForm() {
       return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: 'Tenant created',
+        description: 'The tenant has been successfully created',
+      });
       router.push('/tenants');
     },
     onError: (error: Error) => {
       setError(error.message);
+      toast({
+        title: 'Failed to create tenant',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -439,10 +469,10 @@ function NewTenantForm() {
               <input
                 type="checkbox"
                 id="createPortalAccess"
-                checked={createPortalAccess}
-                {...register('createPortalAccess')}
-                onChange={(e) => setCreatePortalAccess(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
+                {...register('createPortalAccess', {
+                  onChange: (e) => setCreatePortalAccess(e.target.checked),
+                })}
               />
               <Label htmlFor="createPortalAccess" className="cursor-pointer font-normal">
                 Create portal account for this tenant
@@ -475,10 +505,10 @@ function NewTenantForm() {
               <input
                 type="checkbox"
                 id="assignProperty"
-                checked={assignProperty}
-                {...register('assignProperty')}
-                onChange={(e) => setAssignProperty(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
+                {...register('assignProperty', {
+                  onChange: (e) => setAssignProperty(e.target.checked),
+                })}
               />
               <Label htmlFor="assignProperty" className="cursor-pointer font-normal">
                 Assign tenant to a property
@@ -528,12 +558,13 @@ function NewTenantForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="leaseEndDate">Lease End Date</Label>
+                    <Label htmlFor="leaseEndDate">Lease End Date *</Label>
                     <Input
                       id="leaseEndDate"
                       type="date"
                       {...register('leaseEndDate')}
                       onChange={(e) => setLeaseEndDate(e.target.value)}
+                      required={assignProperty}
                     />
                   </div>
                 </div>

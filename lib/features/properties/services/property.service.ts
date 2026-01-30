@@ -108,7 +108,7 @@ export class PropertyService {
     userId: string,
     data: {
       name?: string;
-      description?: string;
+      description?: string | null;
       propertyType?: PropertyType;
       address?: string;
       city?: string;
@@ -116,27 +116,27 @@ export class PropertyService {
       postalCode?: string;
       bedrooms?: number;
       bathrooms?: number;
-      size?: number;
+      size?: number | null;
       furnished?: boolean;
       parkingSpaces?: number;
       amenities?: string[];
-      primaryImageUrl?: string;
+      primaryImageUrl?: string | null;
       rentalType?: RentalType;
-      monthlyRent?: number;
-      dailyRate?: number;
-      weeklyRate?: number;
-      monthlyRate?: number;
-      cleaningFee?: number;
-      securityDeposit?: number;
+      monthlyRent?: number | null;
+      dailyRate?: number | null;
+      weeklyRate?: number | null;
+      monthlyRate?: number | null;
+      cleaningFee?: number | null;
+      securityDeposit?: number | null;
       isAvailable?: boolean;
-      availableFrom?: Date;
-      minimumStay?: number;
-      maximumStay?: number;
+      availableFrom?: Date | null;
+      minimumStay?: number | null;
+      maximumStay?: number | null;
       petsAllowed?: boolean;
       smokingAllowed?: boolean;
-      checkInTime?: string;
-      checkOutTime?: string;
-      houseRules?: string;
+      checkInTime?: string | null;
+      checkOutTime?: string | null;
+      houseRules?: string | null;
       status?: PropertyStatus;
     }
   ) {
@@ -254,7 +254,24 @@ export class PropertyService {
       search?: string;
     }
   ) {
-    return propertyRepository.findByUserId(userId, filters);
+    const properties = await propertyRepository.findByUserId(userId, filters);
+
+    return properties.map(({ tenants, ...property }) => {
+      const today = new Date();
+      const activeTenantCount =
+        tenants?.filter((lease) => {
+          const moveInDate = lease.moveInDate ?? lease.leaseStartDate;
+          const leaseEndDate = lease.leaseEndDate;
+          const hasStarted = moveInDate <= today;
+          const notEnded = !leaseEndDate || leaseEndDate >= today;
+          return hasStarted && notEnded;
+        }).length ?? 0;
+      return {
+        ...property,
+        activeTenantCount,
+        hasActiveTenant: activeTenantCount > 0,
+      };
+    });
   }
 
   /**

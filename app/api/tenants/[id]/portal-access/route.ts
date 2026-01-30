@@ -116,6 +116,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           });
 
           if (propertyAssignment && propertyAssignment.property) {
+            // Send email with property details
             const property = propertyAssignment.property;
             const propertyAddress = `${property.address}, ${property.city}`;
             const moveInDate = propertyAssignment.moveInDate
@@ -144,6 +145,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
               deposit,
               leaseStartDate,
               leaseEndDate,
+              loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/portal/login`,
+            });
+
+            await sendEmail({
+              to: tenant.email,
+              subject: emailData.subject,
+              html: emailData.html,
+              text: emailData.text,
+            });
+          } else {
+            // Send simpler email without property details (tenant not yet assigned)
+            const emailData = emailTemplates.tenantWelcomeWithPortal({
+              tenantName: `${tenant.firstName} ${tenant.lastName}`,
+              email: tenant.email,
+              password: generatedPassword,
+              landlordName,
+              landlordEmail,
+              landlordPhone,
+              propertyName: 'Your Property',
+              propertyAddress: 'To be assigned',
+              monthlyRent: 'TBD',
+              deposit: 'TBD',
+              leaseStartDate: 'TBD',
               loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/portal/login`,
             });
 

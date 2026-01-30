@@ -79,6 +79,7 @@ model User {
   inquiries       Inquiry[]
   maintenanceRequests MaintenanceRequest[]
   tasks           Task[]
+  taskTemplates   TaskTemplate[]
   expenses        Expense[]
   payments        Payment[]
   documents       Document[]
@@ -1293,6 +1294,9 @@ model Task {
   // Metadata
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  // Relations
+  checklist       TaskChecklist[]
 }
 
 enum TaskType {
@@ -1312,6 +1316,61 @@ enum TaskStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+// ============== TASK CHECKLIST ==============
+
+model TaskChecklist {
+  id          String    @id @default(cuid())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Item Details
+  item        String
+  isCompleted Boolean   @default(false)
+  isRequired  Boolean   @default(false)
+  sortOrder   Int       @default(0)
+
+  // Completion Tracking
+  completedAt DateTime?
+  completedBy String?
+
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([taskId])
+  @@index([taskId, sortOrder])
+}
+
+// ============== TASK TEMPLATES ==============
+
+model TaskTemplate {
+  id          String    @id @default(cuid())
+  userId      String?   // null for system templates
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Template Details
+  name        String
+  description String?   @db.Text
+  taskType    TaskType
+  priority    Priority  @default(NORMAL)
+
+  // Checklist items stored as JSON
+  // Format: [{ item: string, isRequired: boolean, sortOrder: number }]
+  checklist   Json?
+
+  // Template Classification
+  isSystem    Boolean   @default(false)
+  category    String?   // "check-in", "check-out", "inspection", "move-in", "move-out", "lease"
+
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([isSystem])
+  @@index([category])
 }
 
 // ============== REVIEWS ==============

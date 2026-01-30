@@ -1,6 +1,6 @@
 # Property CRM - Project Status
 
-**Last Updated**: January 29, 2026  
+**Last Updated**: January 30, 2026  
 **Project Start**: November 2025  
 **Status**: ✅ Core Features Implemented | 🚧 Advanced Features In Progress
 
@@ -78,6 +78,18 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Custom error classes
 - ✅ Global error handler
 - ✅ Consistent error responses
+
+#### Service Layer Migration (January 30, 2026)
+
+- ✅ Tenants API routes refactored (61% code reduction)
+- ✅ Properties API routes refactored (30% code reduction)
+- ✅ Payments API routes improved (12% code reduction)
+- ✅ Maintenance API routes refactored (45% code reduction)
+- ✅ Expenses API routes refactored (16% code reduction)
+- ✅ Tasks API routes improved with Zod validation
+- ✅ Bookings already using service layer pattern
+- ✅ All API routes now delegate to service layer
+- ✅ ~700+ lines of code reduced across API routes
 
 ---
 

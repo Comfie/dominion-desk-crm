@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TaskChecklist } from '@/components/tasks/task-checklist';
 import {
   Select,
   SelectContent,
@@ -54,6 +55,12 @@ const taskSchema = z.object({
 
 type TaskFormData = z.infer<typeof taskSchema>;
 
+interface ChecklistProgress {
+  requiredTotal: number;
+  requiredCompleted: number;
+  allRequiredComplete: boolean;
+}
+
 const statusColors: Record<string, string> = {
   TODO: 'bg-gray-100 text-gray-800',
   IN_PROGRESS: 'bg-blue-100 text-blue-800',
@@ -87,6 +94,17 @@ export default function TaskDetailPage() {
     },
   });
 
+  // Fetch checklist progress for completion gating
+  const { data: checklistData } = useQuery({
+    queryKey: ['task-checklist', taskId],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks/${taskId}/checklist`);
+      if (!response.ok) throw new Error('Failed to fetch checklist');
+      return response.json() as Promise<{ progress?: ChecklistProgress }>;
+    },
+    enabled: !!taskId,
+  });
+
   const {
     register,
     handleSubmit,
@@ -106,7 +124,8 @@ export default function TaskDetailPage() {
     queryFn: async () => {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
+      const result = await response.json();
+      return result.data || [];
     },
     enabled: isEditing,
   });
@@ -229,8 +248,25 @@ export default function TaskDetailPage() {
     }
   };
 
+  const checklistProgress = checklistData?.progress;
+  const requiredRemaining = checklistProgress
+    ? checklistProgress.requiredTotal - checklistProgress.requiredCompleted
+    : 0;
+  const canComplete =
+    !checklistProgress ||
+    checklistProgress.requiredTotal === 0 ||
+    checklistProgress.allRequiredComplete;
+
   const onSubmit = (data: TaskFormData) => {
     setError(null);
+    if (data.status === 'COMPLETED' && !canComplete) {
+      setError(
+        `Complete ${requiredRemaining} required checklist item${
+          requiredRemaining === 1 ? '' : 's'
+        } before marking this task complete.`
+      );
+      return;
+    }
     updateMutation.mutate(data);
   };
 
@@ -386,10 +422,20 @@ export default function TaskDetailPage() {
                     <SelectContent>
                       <SelectItem value="TODO">To Do</SelectItem>
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                      <SelectItem
+                        value="COMPLETED"
+                        disabled={!canComplete && task.status !== 'COMPLETED'}
+                      >
+                        Completed
+                      </SelectItem>
                       <SelectItem value="CANCELLED">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
+                  {!canComplete && task.status !== 'COMPLETED' && (
+                    <p className="text-muted-foreground text-xs">
+                      Complete all required checklist items to mark this task complete.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -453,13 +499,12 @@ export default function TaskDetailPage() {
                         <SelectValue placeholder="Select property" />
                       </SelectTrigger>
                       <SelectContent>
-                        {propertiesData?.properties?.map(
-                          (property: { id: string; name: string }) => (
+                        {Array.isArray(propertiesData) &&
+                          propertiesData.map((property: { id: string; name: string }) => (
                             <SelectItem key={property.id} value={property.id}>
                               {property.name}
                             </SelectItem>
-                          )
-                        )}
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -594,8 +639,18 @@ export default function TaskDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => quickStatusUpdate.mutate('COMPLETED')}
-                    disabled={quickStatusUpdate.isPending}
+                    onClick={() => {
+                      if (!canComplete) {
+                        setError(
+                          `Complete ${requiredRemaining} required checklist item${
+                            requiredRemaining === 1 ? '' : 's'
+                          } before marking this task complete.`
+                        );
+                        return;
+                      }
+                      quickStatusUpdate.mutate('COMPLETED');
+                    }}
+                    disabled={quickStatusUpdate.isPending || !canComplete}
                     className="text-green-600 hover:text-green-700"
                   >
                     <CheckCircle2 className="mr-1 h-3 w-3" />
@@ -603,6 +658,11 @@ export default function TaskDetailPage() {
                   </Button>
                 )}
               </div>
+              {!canComplete && task.status !== 'COMPLETED' && (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  Complete all required checklist items to mark this task complete.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -675,6 +735,9 @@ export default function TaskDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Checklist */}
+          <TaskChecklist taskId={taskId} readOnly={false} />
 
           {/* Related Entity */}
           {task.relatedEntity && (

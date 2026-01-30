@@ -1,52 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { canAddProperty } from '@/lib/services/subscription.service';
+import { propertyService, createPropertySchema } from '@/lib/features/properties';
+import { ValidationError, ForbiddenError } from '@/lib/shared/errors/app-error';
 
-const propertySchema = z.object({
-  name: z.string().min(1, 'Property name is required'),
-  description: z.string().optional(),
-  propertyType: z.enum([
-    'APARTMENT',
-    'HOUSE',
-    'TOWNHOUSE',
-    'COTTAGE',
-    'ROOM',
-    'STUDIO',
-    'DUPLEX',
-    'PENTHOUSE',
-    'VILLA',
-    'OTHER',
-  ]),
-  address: z.string().min(1, 'Address is required'),
-  city: z.string().min(1, 'City is required'),
-  province: z.string().min(1, 'Province is required'),
-  postalCode: z.string().min(1, 'Postal code is required'),
-  bedrooms: z.number().min(0),
-  bathrooms: z.number().min(0),
-  size: z.number().optional(),
-  furnished: z.boolean().default(false),
-  parkingSpaces: z.number().default(0),
-  amenities: z.array(z.string()).optional(),
-  rentalType: z.enum(['LONG_TERM', 'SHORT_TERM', 'BOTH']).default('LONG_TERM'),
-  monthlyRent: z.number().optional(),
-  dailyRate: z.number().optional(),
-  weeklyRate: z.number().optional(),
-  cleaningFee: z.number().optional(),
-  securityDeposit: z.number().optional(),
-  minimumStay: z.number().optional(),
-  maximumStay: z.number().optional(),
-  petsAllowed: z.boolean().default(false),
-  smokingAllowed: z.boolean().default(false),
-  checkInTime: z.string().optional(),
-  checkOutTime: z.string().optional(),
-  houseRules: z.string().optional(),
+// Query params schema for list endpoint
+const listQuerySchema = z.object({
+  status: z.string().optional(),
+  type: z.string().optional(),
+  search: z.string().optional(),
+  occupied: z.coerce.boolean().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-// GET - List all properties for the user
+/**
+ * GET /api/properties - List all properties for the user
+ */
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -56,75 +27,54 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
-    const typeParam = searchParams.get('type');
-    const search = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
+    const params = listQuerySchema.parse({
+      status: searchParams.get('status') || undefined,
+      type: searchParams.get('type') || undefined,
+      search: searchParams.get('search') || undefined,
+      occupied: searchParams.get('occupied') || undefined,
+      page: searchParams.get('page') || 1,
+      limit: searchParams.get('limit') || 20,
+    });
 
-    // Handle multiple statuses (comma-separated)
-    const statusFilter = statusParam ? statusParam.split(',').filter(Boolean) : undefined;
+    // Parse comma-separated filters
+    const statusFilter = params.status?.split(',').filter(Boolean);
+    const typeFilter = params.type?.split(',').filter(Boolean);
 
-    // Handle multiple rental types (comma-separated)
-    const typeFilter = typeParam ? typeParam.split(',').filter(Boolean) : undefined;
+    let result = await propertyService.list(session.user.id, {
+      status: statusFilter?.[0] as any, // Service handles single status
+      rentalType: typeFilter?.[0] as any,
+      search: params.search,
+    });
 
-    const where = {
-      userId: session.user.id,
-      ...(statusFilter &&
-        statusFilter.length > 0 && {
-          status: {
-            in: statusFilter as Array<
-              'ACTIVE' | 'INACTIVE' | 'OCCUPIED' | 'MAINTENANCE' | 'ARCHIVED'
-            >,
-          },
-        }),
-      ...(typeFilter &&
-        typeFilter.length > 0 && {
-          rentalType: { in: typeFilter as Array<'LONG_TERM' | 'SHORT_TERM' | 'BOTH'> },
-        }),
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { address: { contains: search, mode: 'insensitive' as const } },
-          { city: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    if (params.occupied) {
+      result = result.filter((property) => property.hasActiveTenant);
+    }
 
-    const [properties, total] = await Promise.all([
-      prisma.property.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          _count: {
-            select: {
-              bookings: true,
-              tenants: true,
-            },
-          },
-        },
-      }),
-      prisma.property.count({ where }),
-    ]);
+    // Apply pagination (service returns all, we paginate here)
+    const start = (params.page - 1) * params.limit;
+    const paginatedData = result.slice(start, start + params.limit);
 
     return NextResponse.json({
-      data: properties,
+      data: paginatedData,
       pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        page: params.page,
+        limit: params.limit,
+        total: result.length,
+        totalPages: Math.ceil(result.length / params.limit),
       },
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 });
+    }
     console.error('Error fetching properties:', error);
     return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
   }
 }
 
-// POST - Create a new property
+/**
+ * POST /api/properties - Create a new property
+ */
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -134,28 +84,20 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const validatedData = propertySchema.parse(body);
+    const validatedData = createPropertySchema.parse(body);
 
-    // Check subscription status and property limits
-    const canAdd = await canAddProperty(session.user.id);
-
-    if (!canAdd.allowed) {
-      return NextResponse.json(
-        { error: canAdd.reason || 'Cannot add more properties. Please subscribe to continue.' },
-        { status: 403 }
-      );
-    }
-
-    const property = await prisma.property.create({
-      data: {
-        userId: session.user.id,
-        ...validatedData,
-        amenities: validatedData.amenities || [],
-      },
-    });
+    const property = await propertyService.create(session.user.id, validatedData);
 
     return NextResponse.json(property, { status: 201 });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 });
     }

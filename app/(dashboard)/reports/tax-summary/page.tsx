@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, FileText, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import Link from 'next/link';
+import { Download, FileText, TrendingUp, TrendingDown, DollarSign, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { PageHeader } from '@/components/shared';
@@ -94,6 +95,12 @@ export default function TaxSummaryPage() {
         description="Annual income and expense summary for tax purposes"
       >
         <div className="flex items-center gap-4">
+          <Link href="/reports/analytics">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Analytics
+            </Button>
+          </Link>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}

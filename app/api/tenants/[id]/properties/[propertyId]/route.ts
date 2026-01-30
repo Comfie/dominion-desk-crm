@@ -6,16 +6,32 @@ import { Prisma } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 
-const updateAssignmentSchema = z.object({
-  leaseStartDate: z.string().optional(),
-  leaseEndDate: z.string().optional().nullable(),
-  monthlyRent: z.number().min(0, 'Monthly rent must be a positive number').optional(),
-  depositPaid: z.number().min(0, 'Deposit must be a positive number').optional(),
-  moveInDate: z.string().optional().nullable(),
-  moveOutDate: z.string().optional().nullable(),
-  leaseDocumentUrl: z.string().optional().nullable(),
-  isActive: z.boolean().optional(),
-});
+const updateAssignmentSchema = z
+  .object({
+    leaseStartDate: z.string().optional(),
+    leaseEndDate: z.string().min(1, 'Lease end date cannot be empty').optional(),
+    monthlyRent: z.number().min(0, 'Monthly rent must be a positive number').optional(),
+    depositPaid: z.number().min(0, 'Deposit must be a positive number').optional(),
+    moveInDate: z.string().optional().nullable(),
+    moveOutDate: z.string().optional().nullable(),
+    leaseDocumentUrl: z.string().optional().nullable(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      // If both dates are provided, validate that end date is after start date
+      if (data.leaseStartDate && data.leaseEndDate) {
+        const startDate = new Date(data.leaseStartDate);
+        const endDate = new Date(data.leaseEndDate);
+        return endDate > startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Lease end date must be after lease start date',
+      path: ['leaseEndDate'],
+    }
+  );
 
 const terminateLeaseSchema = z.object({
   moveOutDate: z.string().min(1, 'Move-out date is required to terminate lease'),
@@ -77,16 +93,33 @@ export async function PUT(
       return NextResponse.json({ error: 'Property assignment not found' }, { status: 404 });
     }
 
+    // Additional validation: Check date consistency with existing data
+    const newStartDate = validatedData.leaseStartDate
+      ? new Date(validatedData.leaseStartDate)
+      : assignment.leaseStartDate;
+    const newEndDate = validatedData.leaseEndDate
+      ? new Date(validatedData.leaseEndDate)
+      : assignment.leaseEndDate;
+
+    if (newEndDate && newEndDate <= newStartDate) {
+      return NextResponse.json(
+        { error: 'Lease end date must be after lease start date' },
+        { status: 400 }
+      );
+    }
+
+    if (!newEndDate && assignment.isActive) {
+      return NextResponse.json({ error: 'Active leases must have an end date' }, { status: 400 });
+    }
+
     // Update the assignment
     const updateData: Prisma.PropertyTenantUpdateInput = {};
 
     if (validatedData.leaseStartDate) {
       updateData.leaseStartDate = new Date(validatedData.leaseStartDate);
     }
-    if (validatedData.leaseEndDate !== undefined) {
-      updateData.leaseEndDate = validatedData.leaseEndDate
-        ? new Date(validatedData.leaseEndDate)
-        : null;
+    if (validatedData.leaseEndDate) {
+      updateData.leaseEndDate = new Date(validatedData.leaseEndDate);
     }
     if (validatedData.monthlyRent !== undefined) {
       updateData.monthlyRent = new Prisma.Decimal(validatedData.monthlyRent);

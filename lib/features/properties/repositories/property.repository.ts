@@ -39,6 +39,7 @@ export class PropertyRepository {
       search?: string;
     }
   ) {
+    const today = new Date();
     const where: Prisma.PropertyWhereInput = { userId };
 
     if (filters?.status) {
@@ -69,6 +70,32 @@ export class PropertyRepository {
     return prisma.property.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            bookings: true,
+            tenants: true,
+          },
+        },
+        tenants: {
+          where: {
+            isActive: true,
+            OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: today } }],
+          },
+          select: {
+            id: true,
+            leaseStartDate: true,
+            leaseEndDate: true,
+            moveInDate: true,
+            tenant: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 

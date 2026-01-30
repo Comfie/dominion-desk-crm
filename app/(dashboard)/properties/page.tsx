@@ -32,11 +32,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
-async function fetchProperties(search?: string, status?: string, type?: string, page = 1) {
+async function fetchProperties(
+  search?: string,
+  status?: string,
+  type?: string,
+  page = 1,
+  occupied?: boolean
+) {
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   if (status) params.set('status', status);
   if (type) params.set('type', type);
+  if (occupied) params.set('occupied', 'true');
   params.set('page', page.toString());
 
   const response = await fetch(`/api/properties?${params.toString()}`);
@@ -60,13 +67,15 @@ export default function PropertiesPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [occupiedOnly, setOccupiedOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['properties', search, statusFilter, typeFilter, page],
-    queryFn: () => fetchProperties(search, statusFilter.join(','), typeFilter.join(','), page),
+    queryKey: ['properties', search, statusFilter, typeFilter, occupiedOnly, page],
+    queryFn: () =>
+      fetchProperties(search, statusFilter.join(','), typeFilter.join(','), page, occupiedOnly),
   });
 
   const deleteMutation = useMutation({
@@ -111,6 +120,7 @@ export default function PropertiesPage() {
   const clearFilters = () => {
     setStatusFilter([]);
     setTypeFilter([]);
+    setOccupiedOnly(false);
     setPage(1);
   };
 
@@ -122,7 +132,7 @@ export default function PropertiesPage() {
   const properties = data?.data || [];
   const pagination = data?.pagination;
 
-  const hasActiveFilters = statusFilter.length > 0 || typeFilter.length > 0;
+  const hasActiveFilters = statusFilter.length > 0 || typeFilter.length > 0 || occupiedOnly;
 
   return (
     <div className="space-y-6">
@@ -181,6 +191,17 @@ export default function PropertiesPage() {
                 onCheckedChange={() => toggleStatusFilter('MAINTENANCE')}
               >
                 Maintenance
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Occupancy</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={occupiedOnly}
+                onCheckedChange={(checked) => {
+                  setOccupiedOnly(Boolean(checked));
+                  setPage(1);
+                }}
+              >
+                Occupied only
               </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Rental Type</DropdownMenuLabel>

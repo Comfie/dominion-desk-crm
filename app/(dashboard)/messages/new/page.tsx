@@ -40,15 +40,15 @@ type MessageFormData = z.infer<typeof messageSchema>;
 async function fetchBookings() {
   const response = await fetch('/api/bookings?limit=100');
   if (!response.ok) throw new Error('Failed to fetch bookings');
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  const result = await response.json();
+  return result.data || [];
 }
 
 async function fetchTenants() {
   const response = await fetch('/api/tenants?limit=100');
   if (!response.ok) throw new Error('Failed to fetch tenants');
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  const result = await response.json();
+  return result.data || [];
 }
 
 function ComposeMessageForm() {
@@ -117,7 +117,7 @@ function ComposeMessageForm() {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to send message');
+        throw new Error(error.details || error.error || 'Failed to send message');
       }
       return response.json();
     },

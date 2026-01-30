@@ -27,6 +27,7 @@ import {
   Eye,
   FolderOpen,
   FileText,
+  Users,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -134,6 +135,36 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     navigator.clipboard.writeText(text);
   };
 
+  const isShortTerm = property?.rentalType === 'SHORT_TERM' || property?.rentalType === 'BOTH';
+  const isLongTerm = property?.rentalType === 'LONG_TERM' || property?.rentalType === 'BOTH';
+  const showBookings = Boolean(isShortTerm);
+  const showCalendar = Boolean(isShortTerm);
+  const tabsCount = 4 + (showBookings ? 1 : 0) + (showCalendar ? 1 : 0);
+  const tabsGridClass =
+    tabsCount === 4 ? 'grid-cols-4' : tabsCount === 6 ? 'grid-cols-6' : 'grid-cols-5';
+
+  const today = new Date();
+  const activeLeases = (property?.tenants || []).filter(
+    (lease: {
+      isActive: boolean;
+      leaseStartDate?: string;
+      leaseEndDate?: string | null;
+      moveInDate?: string | null;
+    }) => {
+      if (!lease.isActive) return false;
+      const startDate = lease.moveInDate || lease.leaseStartDate;
+      if (!startDate) return false;
+      const hasStarted = new Date(startDate) <= today;
+      const notEnded = !lease.leaseEndDate || new Date(lease.leaseEndDate) >= today;
+      return hasStarted && notEnded;
+    }
+  );
+  const activeLease = activeLeases[0] as { monthlyRent?: number | string | null } | undefined;
+  const leaseMonthlyRent =
+    activeLease?.monthlyRent !== undefined && activeLease?.monthlyRent !== null
+      ? Number(activeLease.monthlyRent)
+      : null;
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -222,11 +253,11 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
           {/* Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className={`grid w-full ${tabsGridClass}`}>
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              {showBookings && <TabsTrigger value="bookings">Bookings</TabsTrigger>}
               <TabsTrigger value="expenses">Expenses</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              {showCalendar && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
             </TabsList>
@@ -331,189 +362,198 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
               )}
             </TabsContent>
 
-            <TabsContent value="bookings" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Bookings</CardTitle>
-                  <CardDescription>{property._count?.bookings || 0} total bookings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {property.bookings?.length > 0 ? (
-                    <div className="space-y-4">
-                      {property.bookings.map(
-                        (booking: {
-                          id: string;
-                          guestName: string;
-                          checkInDate: string;
-                          checkOutDate: string;
-                          status: string;
-                          totalAmount: number;
-                        }) => (
-                          <div
-                            key={booking.id}
-                            className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
-                          >
-                            <div>
-                              <p className="font-medium">{booking.guestName}</p>
-                              <p className="text-muted-foreground text-sm">
-                                {formatDate(booking.checkInDate)} -{' '}
-                                {formatDate(booking.checkOutDate)}
-                              </p>
+            {showBookings && (
+              <TabsContent value="bookings" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Bookings</CardTitle>
+                    <CardDescription>
+                      {property._count?.bookings || 0} total bookings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {property.bookings?.length > 0 ? (
+                      <div className="space-y-4">
+                        {property.bookings.map(
+                          (booking: {
+                            id: string;
+                            guestName: string;
+                            checkInDate: string;
+                            checkOutDate: string;
+                            status: string;
+                            totalAmount: number;
+                          }) => (
+                            <div
+                              key={booking.id}
+                              className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                            >
+                              <div>
+                                <p className="font-medium">{booking.guestName}</p>
+                                <p className="text-muted-foreground text-sm">
+                                  {formatDate(booking.checkInDate)} -{' '}
+                                  {formatDate(booking.checkOutDate)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant="outline">{booking.status}</Badge>
+                                <p className="mt-1 text-sm font-medium">
+                                  {formatCurrency(Number(booking.totalAmount))}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <Badge variant="outline">{booking.status}</Badge>
-                              <p className="mt-1 text-sm font-medium">
-                                {formatCurrency(Number(booking.totalAmount))}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground py-4 text-center">No bookings yet</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="calendar" className="space-y-4">
-              {/* Import External Calendar */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <RefreshCw className="h-5 w-5" />
-                    Import External Calendar
-                  </CardTitle>
-                  <CardDescription>
-                    Sync bookings from Airbnb, Booking.com, or other platforms
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="calendarSource">Source</Label>
-                      <select
-                        id="calendarSource"
-                        value={calendarSource}
-                        onChange={(e) =>
-                          setCalendarSource(e.target.value as 'AIRBNB' | 'BOOKING_COM' | 'OTHER')
-                        }
-                        className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                      >
-                        <option value="AIRBNB">Airbnb</option>
-                        <option value="BOOKING_COM">Booking.com</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="calendarUrl">iCal URL</Label>
-                      <Input
-                        id="calendarUrl"
-                        placeholder="https://..."
-                        value={newCalendarUrl}
-                        onChange={(e) => setNewCalendarUrl(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() =>
-                      syncCalendarMutation.mutate({ url: newCalendarUrl, source: calendarSource })
-                    }
-                    disabled={!newCalendarUrl || syncCalendarMutation.isPending}
-                  >
-                    {syncCalendarMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Syncing...
-                      </>
+                          )
+                        )}
+                      </div>
                     ) : (
-                      <>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Import Calendar
-                      </>
+                      <p className="text-muted-foreground py-4 text-center">No bookings yet</p>
                     )}
-                  </Button>
-                  {syncCalendarMutation.isSuccess && (
-                    <p className="text-sm text-green-600">
-                      Successfully imported {syncCalendarMutation.data.imported} bookings, updated{' '}
-                      {syncCalendarMutation.data.updated} bookings
-                    </p>
-                  )}
-                  {syncCalendarMutation.isError && (
-                    <p className="text-sm text-red-600">
-                      Failed to sync calendar. Please check the URL and try again.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
 
-              {/* Export Calendar */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Download className="h-5 w-5" />
-                    Export Calendar
-                  </CardTitle>
-                  <CardDescription>Share your calendar with external platforms</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Button variant="outline" asChild>
-                      <a href={`/api/calendar/export?propertyId=${id}`} download>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download .ics File
-                      </a>
-                    </Button>
+            {showCalendar && (
+              <TabsContent value="calendar" className="space-y-4">
+                {/* Import External Calendar */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <RefreshCw className="h-5 w-5" />
+                      Import External Calendar
+                    </CardTitle>
+                    <CardDescription>
+                      Sync bookings from Airbnb, Booking.com, or other platforms
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="calendarSource">Source</Label>
+                        <select
+                          id="calendarSource"
+                          value={calendarSource}
+                          onChange={(e) =>
+                            setCalendarSource(e.target.value as 'AIRBNB' | 'BOOKING_COM' | 'OTHER')
+                          }
+                          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        >
+                          <option value="AIRBNB">Airbnb</option>
+                          <option value="BOOKING_COM">Booking.com</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="calendarUrl">iCal URL</Label>
+                        <Input
+                          id="calendarUrl"
+                          placeholder="https://..."
+                          value={newCalendarUrl}
+                          onChange={(e) => setNewCalendarUrl(e.target.value)}
+                        />
+                      </div>
+                    </div>
                     <Button
-                      variant="outline"
-                      onClick={() => getExportUrlMutation.mutate()}
-                      disabled={getExportUrlMutation.isPending}
+                      onClick={() =>
+                        syncCalendarMutation.mutate({
+                          url: newCalendarUrl,
+                          source: calendarSource,
+                        })
+                      }
+                      disabled={!newCalendarUrl || syncCalendarMutation.isPending}
                     >
-                      {getExportUrlMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {syncCalendarMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Syncing...
+                        </>
                       ) : (
-                        <LinkIcon className="mr-2 h-4 w-4" />
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Import Calendar
+                        </>
                       )}
-                      Get Shareable URL
                     </Button>
-                  </div>
-                  {showExportUrl && exportUrl && (
-                    <div className="bg-muted flex items-center gap-2 rounded-md p-3">
-                      <Input value={exportUrl} readOnly className="flex-1" />
+                    {syncCalendarMutation.isSuccess && (
+                      <p className="text-sm text-green-600">
+                        Successfully imported {syncCalendarMutation.data.imported} bookings, updated{' '}
+                        {syncCalendarMutation.data.updated} bookings
+                      </p>
+                    )}
+                    {syncCalendarMutation.isError && (
+                      <p className="text-sm text-red-600">
+                        Failed to sync calendar. Please check the URL and try again.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Export Calendar */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Download className="h-5 w-5" />
+                      Export Calendar
+                    </CardTitle>
+                    <CardDescription>Share your calendar with external platforms</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                      <Button variant="outline" asChild>
+                        <a href={`/api/calendar/export?propertyId=${id}`} download>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download .ics File
+                        </a>
+                      </Button>
                       <Button
-                        size="sm"
                         variant="outline"
-                        onClick={() => copyToClipboard(exportUrl)}
+                        onClick={() => getExportUrlMutation.mutate()}
+                        disabled={getExportUrlMutation.isPending}
                       >
-                        <Copy className="h-4 w-4" />
+                        {getExportUrlMutation.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                        )}
+                        Get Shareable URL
                       </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    {showExportUrl && exportUrl && (
+                      <div className="bg-muted flex items-center gap-2 rounded-md p-3">
+                        <Input value={exportUrl} readOnly className="flex-1" />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(exportUrl)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-              {/* Sync Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>How Calendar Sync Works</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-muted-foreground text-sm">
-                    <strong>Import:</strong> Paste your iCal URL from Airbnb or Booking.com to
-                    import blocked dates as bookings.
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    <strong>Export:</strong> Use the shareable URL in your Airbnb/Booking.com
-                    settings to block dates automatically.
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    <strong>Tip:</strong> Set up both import and export to keep all platforms in
-                    sync and prevent double bookings.
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                {/* Sync Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>How Calendar Sync Works</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-muted-foreground text-sm">
+                      <strong>Import:</strong> Paste your iCal URL from Airbnb or Booking.com to
+                      import blocked dates as bookings.
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      <strong>Export:</strong> Use the shareable URL in your Airbnb/Booking.com
+                      settings to block dates automatically.
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      <strong>Tip:</strong> Set up both import and export to keep all platforms in
+                      sync and prevent double bookings.
+                    </p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
 
             <TabsContent value="maintenance" className="space-y-4">
               <Card>
@@ -690,6 +730,99 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Current Lease */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Current Lease
+              </CardTitle>
+              <CardDescription>
+                {activeLeases.length > 0
+                  ? `${activeLeases.length} active lease${activeLeases.length > 1 ? 's' : ''}`
+                  : 'No active lease'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {activeLeases.length > 0 ? (
+                activeLeases.map(
+                  (lease: {
+                    id: string;
+                    leaseStartDate?: string;
+                    leaseEndDate?: string | null;
+                    moveInDate?: string | null;
+                    monthlyRent?: number | null;
+                    tenant?: {
+                      id: string;
+                      firstName: string;
+                      lastName: string;
+                      email: string;
+                      phone: string;
+                    };
+                  }) => (
+                    <div key={lease.id} className="space-y-3 rounded-lg border p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {lease.tenant
+                              ? `${lease.tenant.firstName} ${lease.tenant.lastName}`
+                              : 'Tenant'}
+                          </p>
+                          {lease.tenant?.email && (
+                            <p className="text-muted-foreground text-xs">{lease.tenant.email}</p>
+                          )}
+                          {lease.tenant?.phone && (
+                            <p className="text-muted-foreground text-xs">{lease.tenant.phone}</p>
+                          )}
+                        </div>
+                        {lease.tenant?.id && (
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/tenants/${lease.tenant.id}`}>View</Link>
+                          </Button>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Lease Start</span>
+                          <span className="font-medium">
+                            {lease.leaseStartDate ? formatDate(lease.leaseStartDate) : 'TBD'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Move-in</span>
+                          <span className="font-medium">
+                            {lease.moveInDate ? formatDate(lease.moveInDate) : 'TBD'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Lease End</span>
+                          <span className="font-medium">
+                            {lease.leaseEndDate ? formatDate(lease.leaseEndDate) : 'Open-ended'}
+                          </span>
+                        </div>
+                        {lease.monthlyRent && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Monthly Rent</span>
+                            <span className="font-medium">
+                              {formatCurrency(Number(lease.monthlyRent))}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                )
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  This property does not have an active lease right now.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Pricing Card */}
           <Card>
             <CardHeader>
@@ -699,36 +832,63 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {property.monthlyRent && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Monthly Rent</span>
-                  <span className="text-lg font-semibold">
-                    {formatCurrency(Number(property.monthlyRent))}
-                  </span>
+              {isLongTerm && (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-xs font-semibold uppercase">Long-term</p>
+                  {(leaseMonthlyRent || property.monthlyRent) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Monthly Rent</span>
+                      <span className="text-lg font-semibold">
+                        {formatCurrency(leaseMonthlyRent ?? Number(property.monthlyRent))}
+                      </span>
+                    </div>
+                  )}
+                  {property.securityDeposit && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Security Deposit</span>
+                      <span className="font-medium">
+                        {formatCurrency(Number(property.securityDeposit))}
+                      </span>
+                    </div>
+                  )}
+                  {!leaseMonthlyRent && !property.monthlyRent && !property.securityDeposit && (
+                    <p className="text-muted-foreground text-sm">No long-term pricing set.</p>
+                  )}
                 </div>
               )}
-              {property.dailyRate && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Daily Rate</span>
-                  <span className="text-lg font-semibold">
-                    {formatCurrency(Number(property.dailyRate))}
-                  </span>
-                </div>
-              )}
-              {property.securityDeposit && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Security Deposit</span>
-                  <span className="font-medium">
-                    {formatCurrency(Number(property.securityDeposit))}
-                  </span>
-                </div>
-              )}
-              {property.cleaningFee && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Cleaning Fee</span>
-                  <span className="font-medium">
-                    {formatCurrency(Number(property.cleaningFee))}
-                  </span>
+
+              {isShortTerm && (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-xs font-semibold uppercase">
+                    Short-term
+                  </p>
+                  {property.dailyRate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Daily Rate</span>
+                      <span className="text-lg font-semibold">
+                        {formatCurrency(Number(property.dailyRate))}
+                      </span>
+                    </div>
+                  )}
+                  {property.cleaningFee && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Cleaning Fee</span>
+                      <span className="font-medium">
+                        {formatCurrency(Number(property.cleaningFee))}
+                      </span>
+                    </div>
+                  )}
+                  {property.securityDeposit && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Security Deposit</span>
+                      <span className="font-medium">
+                        {formatCurrency(Number(property.securityDeposit))}
+                      </span>
+                    </div>
+                  )}
+                  {!property.dailyRate && !property.cleaningFee && !property.securityDeposit && (
+                    <p className="text-muted-foreground text-sm">No short-term pricing set.</p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -835,7 +995,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
           </Card>
 
           {/* Check-in/out Times */}
-          {(property.checkInTime || property.checkOutTime) && (
+          {showCalendar && (property.checkInTime || property.checkOutTime) && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -869,10 +1029,12 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Bookings</span>
-                <span className="font-medium">{property._count?.bookings || 0}</span>
-              </div>
+              {showBookings && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Bookings</span>
+                  <span className="font-medium">{property._count?.bookings || 0}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Reviews</span>
                 <span className="font-medium">{property._count?.reviews || 0}</span>

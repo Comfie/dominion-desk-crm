@@ -58,6 +58,8 @@ export default function NewMaintenancePage() {
     queryFn: fetchTenants,
   });
 
+  const propertyOptions = Array.isArray(properties) ? properties : [];
+
   const {
     register,
     handleSubmit,
@@ -212,7 +214,7 @@ export default function NewMaintenancePage() {
                 {...register('propertyId')}
               >
                 <option value="">Select property</option>
-                {properties?.map((property: { id: string; name: string; address: string }) => (
+                {propertyOptions.map((property: { id: string; name: string; address: string }) => (
                   <option key={property.id} value={property.id}>
                     {property.name} - {property.address}
                   </option>

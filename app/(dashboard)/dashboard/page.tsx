@@ -38,6 +38,10 @@ interface DashboardData {
     outstandingPayments: number;
     occupancyRate: number;
     staleMaintenanceCount: number;
+    activeLeases: number;
+    propertiesWithTenants: number;
+    tenantsMovedIn: number;
+    tenantsScheduledMoveIn: number;
   };
   charts: {
     revenue: Array<{ name: string; total: number }>;
@@ -59,14 +63,6 @@ interface DashboardData {
     priority: string;
     taskType: string;
   }>;
-  upcomingCheckIns: Array<{
-    id: string;
-    guestName: string;
-    guestPhone: string;
-    checkInDate: string;
-    numberOfGuests: number;
-    property: { name: string };
-  }>;
   staleMaintenance: Array<{
     id: string;
     title: string;
@@ -75,6 +71,26 @@ interface DashboardData {
     daysStale: number;
     property: { id: string; name: string };
   }>;
+  longTerm: {
+    propertyTotal: number;
+    properties: Array<{
+      id: string;
+      name: string;
+      tenantCount: number;
+      movedInCount: number;
+      scheduledMoveInCount: number;
+      nextMoveInDate: string | null;
+    }>;
+    upcomingMoveIns: Array<{
+      id: string;
+      moveInDate: string;
+      tenantName: string;
+      property: {
+        id: string;
+        name: string;
+      };
+    }>;
+  };
 }
 
 export default function DashboardPage() {
@@ -109,6 +125,7 @@ export default function DashboardPage() {
   }
 
   const stats = data?.stats;
+  const longTerm = data?.longTerm;
 
   return (
     <div className="space-y-8">
@@ -160,13 +177,12 @@ export default function DashboardPage() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted-foreground text-sm font-medium">Active Bookings</p>
-                <p className="mt-2 text-lg font-bold tracking-tight">
-                  {stats?.activeBookings || 0}
-                </p>
+                <p className="text-muted-foreground text-sm font-medium">Active Leases</p>
+                <p className="mt-2 text-lg font-bold tracking-tight">{stats?.activeLeases || 0}</p>
+                <p className="text-muted-foreground/70 text-xs">Long-term tenants</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20">
-                <Calendar className="text-chart-2 h-6 w-6" />
+                <Users className="text-chart-2 h-6 w-6" />
               </div>
             </div>
           </CardContent>
@@ -189,6 +205,115 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Long-term Overview */}
+      <Card variant="elevated" className="hover-lift">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-xl">Long-term Tenancies</CardTitle>
+            <CardDescription>Active leases, move-ins, and occupied properties</CardDescription>
+          </div>
+          <Link href="/tenants">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+              View Tenants
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-muted/30 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-muted-foreground text-sm font-medium">Properties with Tenants</p>
+                <Building2 className="text-primary h-4 w-4" />
+              </div>
+              <p className="mt-2 text-2xl font-bold tracking-tight">
+                {stats?.propertiesWithTenants || 0}
+              </p>
+              <p className="text-muted-foreground/70 text-xs">Active lease properties</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-muted-foreground text-sm font-medium">Tenants Moved In</p>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </div>
+              <p className="mt-2 text-2xl font-bold tracking-tight">{stats?.tenantsMovedIn || 0}</p>
+              <p className="text-muted-foreground/70 text-xs">Currently occupying</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-muted-foreground text-sm font-medium">Scheduled Move-ins</p>
+                <Calendar className="h-4 w-4 text-blue-600" />
+              </div>
+              <p className="mt-2 text-2xl font-bold tracking-tight">
+                {stats?.tenantsScheduledMoveIn || 0}
+              </p>
+              <p className="text-muted-foreground/70 text-xs">Future lease starts</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-muted-foreground text-sm font-medium">Active Leases</p>
+                <Users className="text-chart-3 h-4 w-4" />
+              </div>
+              <p className="mt-2 text-2xl font-bold tracking-tight">{stats?.activeLeases || 0}</p>
+              <p className="text-muted-foreground/70 text-xs">Open lease records</p>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold">Properties with tenants</p>
+              <Link href="/properties">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  View Properties
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+            {longTerm?.properties && longTerm.properties.length > 0 ? (
+              <div className="space-y-3">
+                {longTerm.properties.map((property) => (
+                  <Link key={property.id} href={`/properties/${property.id}`}>
+                    <div className="hover:bg-muted/50 group flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm">
+                      <div>
+                        <p className="group-hover:text-primary font-semibold">{property.name}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {property.movedInCount} moved in · {property.scheduledMoveInCount}{' '}
+                          scheduled
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="secondary" className="mb-1">
+                          {property.tenantCount} tenant(s)
+                        </Badge>
+                        {property.nextMoveInDate && (
+                          <p className="text-muted-foreground text-xs">
+                            Next move-in {formatDate(property.nextMoveInDate)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground flex h-32 items-center justify-center rounded-lg border border-dashed text-sm">
+                No active long-term tenants yet
+              </div>
+            )}
+            {longTerm?.propertyTotal && longTerm.propertyTotal > longTerm.properties.length && (
+              <p className="text-muted-foreground mt-3 text-xs">
+                Showing {longTerm.properties.length} of {longTerm.propertyTotal} properties with
+                tenants.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Secondary Stats */}
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -307,14 +432,14 @@ export default function DashboardPage() {
 
       {/* Content Grid */}
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Upcoming Check-ins */}
+        {/* Upcoming Move-ins */}
         <Card variant="elevated" className="hover-lift h-full">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="space-y-1">
-              <CardTitle className="text-xl">Upcoming Check-ins</CardTitle>
-              <CardDescription>Guests arriving in the next 7 days</CardDescription>
+              <CardTitle className="text-xl">Upcoming Move-ins</CardTitle>
+              <CardDescription>Tenants moving in within 30 days</CardDescription>
             </div>
-            <Link href="/bookings">
+            <Link href="/tenants">
               <Button
                 variant="ghost"
                 size="sm"
@@ -326,25 +451,23 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            {data?.upcomingCheckIns && data.upcomingCheckIns.length > 0 ? (
+            {longTerm?.upcomingMoveIns && longTerm.upcomingMoveIns.length > 0 ? (
               <div className="space-y-4">
-                {data.upcomingCheckIns.map((booking) => (
-                  <Link key={booking.id} href={`/bookings/${booking.id}`}>
+                {longTerm.upcomingMoveIns.map((lease) => (
+                  <Link key={lease.id} href={`/properties/${lease.property.id}`}>
                     <div className="hover:bg-muted/50 group hover:border-primary/20 flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm">
                       <div className="flex items-center gap-4">
                         <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full">
                           <Users className="text-primary h-5 w-5" />
                         </div>
                         <div>
-                          <p className="font-semibold">{booking.guestName}</p>
-                          <p className="text-muted-foreground text-sm">{booking.property.name}</p>
+                          <p className="font-semibold">{lease.tenantName || 'Tenant'}</p>
+                          <p className="text-muted-foreground text-sm">{lease.property.name}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{formatDate(booking.checkInDate)}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {booking.numberOfGuests} guest(s)
-                        </p>
+                        <p className="text-sm font-medium">{formatDate(lease.moveInDate)}</p>
+                        <p className="text-muted-foreground text-xs">Scheduled move-in</p>
                       </div>
                     </div>
                   </Link>
@@ -353,7 +476,7 @@ export default function DashboardPage() {
             ) : (
               <div className="text-muted-foreground flex h-48 flex-col items-center justify-center text-center">
                 <Calendar className="mb-4 h-10 w-10 opacity-20" />
-                <p>No upcoming check-ins</p>
+                <p>No upcoming move-ins</p>
               </div>
             )}
           </CardContent>

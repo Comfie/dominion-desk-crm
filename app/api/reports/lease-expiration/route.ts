@@ -42,19 +42,26 @@ export async function GET(request: NextRequest) {
     if (window !== 'all') {
       const windowDays = parseInt(window);
       where.leaseEndDate = {
-        ...where.leaseEndDate,
+        not: null,
         gte: today,
         lte: addDays(today, windowDays),
       };
     } else {
       // For 'all', only show future leases (not already expired)
       where.leaseEndDate = {
-        ...where.leaseEndDate,
+        not: null,
         gte: today,
       };
     }
 
     // Get all active leases with tenant and property info
+    console.log('Lease expiration query params:', {
+      userId: session.user.id,
+      propertyId,
+      window,
+      whereClause: JSON.stringify(where, null, 2),
+    });
+
     const leases = await prisma.propertyTenant.findMany({
       where,
       include: {
@@ -79,6 +86,8 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { leaseEndDate: 'asc' },
     });
+
+    console.log(`Found ${leases.length} leases matching criteria`);
 
     // Calculate days until expiry and group by window
     const leasesWithExpiry = leases.map((lease) => {
@@ -183,7 +192,19 @@ export async function GET(request: NextRequest) {
       summary,
     });
   } catch (error) {
-    console.error('Error fetching lease expiration report:', error);
-    return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 });
+    console.error('Error fetching lease expiration report:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch report',
+        ...(process.env.NODE_ENV === 'development' && {
+          details: error instanceof Error ? error.message : String(error),
+        }),
+      },
+      { status: 500 }
+    );
   }
 }

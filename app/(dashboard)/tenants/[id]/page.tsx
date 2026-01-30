@@ -50,6 +50,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 async function fetchTenant(id: string) {
   const response = await fetch(`/api/tenants/${id}`);
@@ -97,6 +98,7 @@ const employmentLabels: Record<string, string> = {
 export default function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showRevokeDialog, setShowRevokeDialog] = useState(false);
@@ -150,11 +152,29 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tenant-portal-access', id] });
       setShowPasswordDialog(false);
       setShowRevokeDialog(false);
       setPassword('');
+
+      const messages = {
+        create: {
+          title: 'Portal access created',
+          description: 'Tenant can now log in to the portal',
+        },
+        reset: { title: 'Password reset', description: 'The portal password has been reset' },
+        revoke: { title: 'Access revoked', description: 'Portal access has been revoked' },
+      };
+
+      toast(messages[variables.action]);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to manage portal access',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -174,7 +194,11 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
   const handlePasswordSubmit = () => {
     if (password.length < 6) {
-      alert('Password must be at least 6 characters');
+      toast({
+        title: 'Invalid password',
+        description: 'Password must be at least 6 characters',
+        variant: 'destructive',
+      });
       return;
     }
     portalAccessMutation.mutate({ action: actionType, password });
@@ -220,6 +244,17 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       setMonthlyRent('');
       setDepositPaid('');
       setMoveInDate('');
+      toast({
+        title: 'Property assigned',
+        description: 'The property has been successfully assigned to the tenant',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to assign property',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -241,6 +276,17 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       setShowTerminateLeaseDialog(false);
       setMoveOutDate('');
       setPropertyToTerminate(null);
+      toast({
+        title: 'Lease terminated',
+        description: 'The lease has been successfully terminated',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to terminate lease',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -273,6 +319,17 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       setMonthlyRent('');
       setDepositPaid('');
       setMoveInDate('');
+      toast({
+        title: 'Property updated',
+        description: 'The property assignment has been successfully updated',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to update property',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -281,15 +338,31 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   };
 
   const handleAssignPropertySubmit = () => {
-    if (!selectedProperty || !leaseStartDate || !monthlyRent) {
-      alert('Please fill in all required fields');
+    if (!selectedProperty || !leaseStartDate || !leaseEndDate || !monthlyRent) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Property, Lease Start Date, Lease End Date, and Monthly Rent are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate that lease end date is after start date
+    const startDate = new Date(leaseStartDate);
+    const endDate = new Date(leaseEndDate);
+    if (endDate <= startDate) {
+      toast({
+        title: 'Invalid date range',
+        description: 'Lease end date must be after lease start date',
+        variant: 'destructive',
+      });
       return;
     }
 
     assignPropertyMutation.mutate({
       propertyId: selectedProperty,
       leaseStartDate,
-      leaseEndDate: leaseEndDate || undefined,
+      leaseEndDate,
       monthlyRent: parseFloat(monthlyRent),
       depositPaid: depositPaid ? parseFloat(depositPaid) : 0,
       moveInDate: moveInDate || undefined,
@@ -309,15 +382,31 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   };
 
   const handleEditPropertySubmit = () => {
-    if (!propertyToEdit || !leaseStartDate || !monthlyRent) {
-      alert('Please fill in all required fields');
+    if (!propertyToEdit || !leaseStartDate || !leaseEndDate || !monthlyRent) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Lease Start Date, Lease End Date, and Monthly Rent are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate that lease end date is after start date
+    const startDate = new Date(leaseStartDate);
+    const endDate = new Date(leaseEndDate);
+    if (endDate <= startDate) {
+      toast({
+        title: 'Invalid date range',
+        description: 'Lease end date must be after lease start date',
+        variant: 'destructive',
+      });
       return;
     }
 
     editPropertyMutation.mutate({
       propertyId: propertyToEdit.property.id,
       leaseStartDate,
-      leaseEndDate: leaseEndDate || undefined,
+      leaseEndDate,
       monthlyRent: parseFloat(monthlyRent),
       depositPaid: depositPaid ? parseFloat(depositPaid) : undefined,
       moveInDate: moveInDate || undefined,
@@ -331,7 +420,11 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
   const handleTerminateLeaseSubmit = () => {
     if (!propertyToTerminate || !moveOutDate) {
-      alert('Please enter a move-out date');
+      toast({
+        title: 'Missing required field',
+        description: 'Please enter a move-out date',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -1093,12 +1186,13 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="leaseEndDate">Lease End Date</Label>
+                <Label htmlFor="leaseEndDate">Lease End Date *</Label>
                 <Input
                   id="leaseEndDate"
                   type="date"
                   value={leaseEndDate}
                   onChange={(e) => setLeaseEndDate(e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -1191,12 +1285,13 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="editLeaseEndDate">Lease End Date</Label>
+                <Label htmlFor="editLeaseEndDate">Lease End Date *</Label>
                 <Input
                   id="editLeaseEndDate"
                   type="date"
                   value={leaseEndDate}
                   onChange={(e) => setLeaseEndDate(e.target.value)}
+                  required
                 />
               </div>
             </div>

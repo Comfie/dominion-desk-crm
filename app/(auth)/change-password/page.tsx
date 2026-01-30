@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { getPasswordStrength } from '@/lib/password';
 import { Logo } from '@/components/ui/logo';
 
 export default function ChangePasswordPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -85,14 +85,17 @@ export default function ChangePasswordPage() {
 
       toast({
         title: 'Success',
-        description: 'Your password has been changed successfully. Redirecting to dashboard...',
+        description: 'Your password has been changed successfully. Redirecting...',
       });
 
+      // Update the session to refresh the JWT token with requirePasswordChange: false
+      await updateSession({ requirePasswordChange: false });
+
       // Redirect based on user role
-      setTimeout(() => {
-        const redirectUrl = session?.user?.role === 'TENANT' ? '/portal/dashboard' : '/dashboard';
-        router.push(redirectUrl);
-      }, 1500);
+      const redirectUrl = session?.user?.role === 'TENANT' ? '/portal/dashboard' : '/dashboard';
+
+      // Use window.location for a full page navigation to ensure middleware sees fresh session
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error('Error changing password:', error);
       toast({
@@ -100,7 +103,6 @@ export default function ChangePasswordPage() {
         description: error instanceof Error ? error.message : 'Failed to change password',
         variant: 'destructive',
       });
-    } finally {
       setLoading(false);
     }
   };

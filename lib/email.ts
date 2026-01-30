@@ -25,11 +25,18 @@ export async function sendEmail(
   options: EmailOptions
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    if (!process.env.RESEND_API_KEY) {
+      return {
+        success: false,
+        error: 'Email provider not configured (missing RESEND_API_KEY).',
+      };
+    }
+
     const fromAddress = options.from || DEFAULT_FROM_EMAIL;
 
     // Prepare Resend email options
     const emailPayload: any = {
-      from: 'DominionDesk <noreply@dominiondesk.com>',
+      from: fromAddress,
       to: Array.isArray(options.to) ? options.to : [options.to],
       subject: options.subject,
     };

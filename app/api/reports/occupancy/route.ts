@@ -203,15 +203,16 @@ export async function GET(request: NextRequest) {
     const monthlyTrend: { month: string; occupancyRate: number }[] = [];
 
     for (let i = 11; i >= 0; i--) {
-      const monthStart = new Date();
-      monthStart.setMonth(monthStart.getMonth() - i);
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
+      // Get current year and month
+      const now = new Date();
+      const targetYear = now.getFullYear();
+      const targetMonth = now.getMonth() - i;
 
-      const monthEnd = new Date(monthStart);
-      monthEnd.setMonth(monthEnd.getMonth() + 1);
-      monthEnd.setDate(0);
-      monthEnd.setHours(23, 59, 59, 999);
+      // Create month start - always use day 1 to avoid date rollover issues
+      const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
+
+      // Create month end - get last day of month
+      const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
 
       const monthDays = monthEnd.getDate();
       const monthAvailableDays = totalProperties * monthDays;
@@ -262,11 +263,15 @@ export async function GET(request: NextRequest) {
       }
 
       const monthRate = monthAvailableDays > 0 ? (monthOccupiedDays / monthAvailableDays) * 100 : 0;
+      const monthKey = monthStart.toISOString().slice(0, 7);
 
-      monthlyTrend.push({
-        month: monthStart.toISOString().slice(0, 7),
-        occupancyRate: Math.round(monthRate * 10) / 10,
-      });
+      // Avoid duplicates - only add if this month doesn't already exist
+      if (!monthlyTrend.some((item) => item.month === monthKey)) {
+        monthlyTrend.push({
+          month: monthKey,
+          occupancyRate: Math.round(monthRate * 10) / 10,
+        });
+      }
     }
 
     return NextResponse.json({
