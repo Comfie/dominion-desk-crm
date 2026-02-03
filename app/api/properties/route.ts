@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { propertyService, createPropertySchema } from '@/lib/features/properties';
 import { ValidationError, ForbiddenError } from '@/lib/shared/errors/app-error';
+import { canAddProperty } from '@/lib/services/subscription.service';
 
 // Query params schema for list endpoint
 const listQuerySchema = z.object({
@@ -81,6 +82,12 @@ export async function POST(request: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check subscription limits
+    const { allowed, reason } = await canAddProperty(session.user.id);
+    if (!allowed) {
+      return NextResponse.json({ error: reason }, { status: 403 });
     }
 
     const body = await request.json();

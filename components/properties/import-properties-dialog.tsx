@@ -201,7 +201,12 @@ function parseCSV(csvText: string): unknown[] {
   return properties;
 }
 
-export function ImportPropertiesDialog() {
+interface ImportPropertiesDialogProps {
+  disabled?: boolean;
+  disabledMessage?: string;
+}
+
+export function ImportPropertiesDialog({ disabled, disabledMessage }: ImportPropertiesDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [skipErrors, setSkipErrors] = useState(true);
@@ -266,6 +271,15 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (disabled) {
+    return (
+      <Button variant="outline" disabled title={disabledMessage}>
+        <Upload className="mr-2 h-4 w-4" />
+        Import Properties
+      </Button>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -116,6 +116,12 @@ interface DashboardData {
   };
 }
 
+async function fetchSubscriptionStatus() {
+  const response = await fetch('/api/subscription/status');
+  if (!response.ok) throw new Error('Failed to fetch subscription status');
+  return response.json();
+}
+
 export default function DashboardPage() {
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
@@ -126,6 +132,13 @@ export default function DashboardPage() {
     },
     refetchInterval: 60000,
   });
+
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ['subscription-status'],
+    queryFn: fetchSubscriptionStatus,
+  });
+
+  const canAddProperties = subscriptionStatus?.canAddProperties ?? true;
 
   if (isLoading) {
     return (
@@ -156,12 +169,23 @@ export default function DashboardPage() {
         title="Dashboard"
         description="Welcome back! Here's an overview of your properties."
       >
-        <Link href="/properties/new">
-          <Button size="lg">
+        {canAddProperties ? (
+          <Link href="/properties/new">
+            <Button size="lg">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Property
+            </Button>
+          </Link>
+        ) : (
+          <Button
+            size="lg"
+            disabled
+            title={subscriptionStatus?.restrictionMessage || 'Property limit reached'}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Property
           </Button>
-        </Link>
+        )}
       </PageHeader>
 
       {/* Stats Grid */}

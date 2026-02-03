@@ -229,6 +229,7 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
     select: {
       subscriptionStatus: true,
       trialEndsAt: true,
+      propertyLimit: true,
     },
   });
 
@@ -249,14 +250,37 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
   const { level, message } = calculateRestrictionLevel(trialEndsAt, user.subscriptionStatus);
   const currentBilling = await calculateSubscriptionBilling(userId);
 
+  // Check if user can add properties based on restriction level
+  let canAddProperties = level === RestrictionLevel.NONE || level === RestrictionLevel.WARNING;
+  let restrictionMessage = message;
+
+  // Check property count limits for non-active subscribers
+  if (canAddProperties && user.subscriptionStatus !== 'ACTIVE') {
+    const propertyCount = await prisma.property.count({
+      where: { userId },
+    });
+
+    // Trial users are limited to 2 properties
+    if (isOnTrial && propertyCount >= 2) {
+      canAddProperties = false;
+      restrictionMessage =
+        'You can add up to 2 properties during your free trial. Subscribe to add more properties.';
+    }
+    // Non-subscribed users are limited by their propertyLimit
+    else if (propertyCount >= user.propertyLimit) {
+      canAddProperties = false;
+      restrictionMessage = `You have reached your property limit (${user.propertyLimit}). Please subscribe to add more properties.`;
+    }
+  }
+
   return {
     isOnTrial,
     trialEndsAt,
     trialDaysRemaining,
     subscriptionStatus: user.subscriptionStatus,
     restrictionLevel: level,
-    restrictionMessage: message,
-    canAddProperties: level === RestrictionLevel.NONE || level === RestrictionLevel.WARNING,
+    restrictionMessage,
+    canAddProperties,
     canCreateBookings: level === RestrictionLevel.NONE || level === RestrictionLevel.WARNING,
     canEditData: level !== RestrictionLevel.READONLY && level !== RestrictionLevel.SUSPENDED,
     currentBilling,

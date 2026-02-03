@@ -60,6 +60,12 @@ async function deleteProperty(id: string) {
   return response.json();
 }
 
+async function fetchSubscriptionStatus() {
+  const response = await fetch('/api/subscription/status');
+  if (!response.ok) throw new Error('Failed to fetch subscription status');
+  return response.json();
+}
+
 export default function PropertiesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -76,6 +82,11 @@ export default function PropertiesPage() {
     queryKey: ['properties', search, statusFilter, typeFilter, occupiedOnly, page],
     queryFn: () =>
       fetchProperties(search, statusFilter.join(','), typeFilter.join(','), page, occupiedOnly),
+  });
+
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ['subscription-status'],
+    queryFn: fetchSubscriptionStatus,
   });
 
   const deleteMutation = useMutation({
@@ -134,17 +145,40 @@ export default function PropertiesPage() {
 
   const hasActiveFilters = statusFilter.length > 0 || typeFilter.length > 0 || occupiedOnly;
 
+  const canAddProperties = subscriptionStatus?.canAddProperties ?? true;
+  const propertyLimitMessage = subscriptionStatus?.restrictionMessage;
+
   return (
     <div className="space-y-6">
       <PageHeader title="Properties" description="Manage your rental properties">
-        <div className="flex items-center gap-2">
-          <ImportPropertiesDialog />
-          <Button asChild>
-            <Link href="/properties/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Property
-            </Link>
-          </Button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <ImportPropertiesDialog
+              disabled={!canAddProperties}
+              disabledMessage={propertyLimitMessage || undefined}
+            />
+            {canAddProperties ? (
+              <Button asChild>
+                <Link href="/properties/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Property
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled title={propertyLimitMessage || undefined}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Property
+              </Button>
+            )}
+          </div>
+          {!canAddProperties && propertyLimitMessage && (
+            <p className="text-muted-foreground text-sm">
+              {propertyLimitMessage}{' '}
+              <Link href="/settings/subscription" className="text-primary underline">
+                View subscription
+              </Link>
+            </p>
+          )}
         </div>
       </PageHeader>
 
@@ -277,12 +311,19 @@ export default function PropertiesPage() {
           title="No properties yet"
           description="Add your first property to start managing your rentals"
         >
-          <Button asChild>
-            <Link href="/properties/new">
+          {canAddProperties ? (
+            <Button asChild>
+              <Link href="/properties/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Property
+              </Link>
+            </Button>
+          ) : (
+            <Button disabled title={propertyLimitMessage || undefined}>
               <Plus className="mr-2 h-4 w-4" />
               Add Property
-            </Link>
-          </Button>
+            </Button>
+          )}
         </EmptyState>
       ) : viewMode === 'grid' ? (
         <>

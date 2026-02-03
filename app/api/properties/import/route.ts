@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth-helpers';
 import { handleApiError } from '@/lib/shared/errors/error-handler';
 import { logAudit } from '@/lib/shared/audit';
 import { propertyService, bulkImportPropertiesSchema } from '@/lib/features/properties';
+import { canAddProperty } from '@/lib/services/subscription.service';
 
 /**
  * POST /api/properties/import
@@ -11,6 +12,13 @@ import { propertyService, bulkImportPropertiesSchema } from '@/lib/features/prop
 export async function POST(request: Request) {
   try {
     const session = await requireAuth();
+
+    // Check subscription limits
+    const { allowed, reason } = await canAddProperty(session.user.id);
+    if (!allowed) {
+      return NextResponse.json({ error: reason }, { status: 403 });
+    }
+
     const body = await request.json();
 
     // Validate request body

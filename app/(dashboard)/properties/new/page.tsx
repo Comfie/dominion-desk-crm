@@ -92,13 +92,23 @@ export default function NewPropertyPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: PropertyFormData) => {
+      const payload: any = { ...data };
+
+      // Only include primaryImageUrl if it's not null
+      if (imageUrl) {
+        payload.primaryImageUrl = imageUrl;
+      }
+
+      // Remove NaN values from optional number fields (empty inputs)
+      if (isNaN(payload.size)) delete payload.size;
+      if (isNaN(payload.monthlyRent)) delete payload.monthlyRent;
+      if (isNaN(payload.dailyRate)) delete payload.dailyRate;
+      if (isNaN(payload.securityDeposit)) delete payload.securityDeposit;
+
       const response = await fetch('/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          primaryImageUrl: imageUrl,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const error = await response.json();
