@@ -35,6 +35,16 @@ import {
 } from '@/components/ui/dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
+interface PaymentData {
+  id: string;
+  amount: number;
+  paymentDate?: string;
+  dueDate?: string | null;
+  status: string;
+  paymentReference: string;
+  paymentType: string;
+}
+
 interface TenantPortalData {
   tenant: {
     id: string;
@@ -60,12 +70,9 @@ interface TenantPortalData {
     priority: string;
     createdAt: string;
   }>;
-  recentPayments: Array<{
-    id: string;
-    amount: number;
-    paymentDate: string;
-    status: string;
-  }>;
+  recentPayments: Array<PaymentData>;
+  duePayments: Array<PaymentData>;
+  overduePayments: Array<PaymentData>;
 }
 
 export default function TenantDashboardPage() {
@@ -145,7 +152,7 @@ export default function TenantDashboardPage() {
     );
   }
 
-  const { tenant, maintenanceRequests, recentPayments } = data;
+  const { tenant, maintenanceRequests, recentPayments, duePayments, overduePayments } = data;
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
@@ -176,6 +183,111 @@ export default function TenantDashboardPage() {
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
         <h1 className="mb-6 text-2xl font-bold">Welcome, {tenant.firstName}!</h1>
+
+        {/* Overdue Payment Alert */}
+        {overduePayments && overduePayments.length > 0 && (
+          <Card className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-6 w-6 flex-shrink-0 text-red-600" />
+                <div className="flex-1">
+                  <h3 className="mb-2 text-lg font-semibold text-red-800 dark:text-red-200">
+                    ⚠️ Overdue Payment{overduePayments.length > 1 ? 's' : ''}
+                  </h3>
+                  <p className="mb-4 text-sm text-red-700 dark:text-red-300">
+                    You have {overduePayments.length} overdue payment
+                    {overduePayments.length > 1 ? 's' : ''}. Please make payment immediately to
+                    avoid additional charges.
+                  </p>
+                  <div className="space-y-3">
+                    {overduePayments.map((payment) => {
+                      const daysOverdue = payment.dueDate
+                        ? Math.floor(
+                            (new Date().getTime() - new Date(payment.dueDate).getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          )
+                        : 0;
+                      return (
+                        <div
+                          key={payment.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-white p-3 dark:border-red-800 dark:bg-red-950/50"
+                        >
+                          <div>
+                            <p className="font-semibold text-red-900 dark:text-red-100">
+                              {formatCurrency(Number(payment.amount))}
+                            </p>
+                            <p className="text-xs text-red-700 dark:text-red-300">
+                              Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'} (
+                              {daysOverdue} day{daysOverdue !== 1 ? 's' : ''} overdue)
+                            </p>
+                            <p className="text-xs text-red-600 dark:text-red-400">
+                              Ref: {payment.paymentReference}
+                            </p>
+                          </div>
+                          <Link href={`/portal/payments/${payment.id}/pay`}>
+                            <Button size="sm" className="bg-red-600 text-white hover:bg-red-700">
+                              <DollarSign className="mr-1 h-4 w-4" />
+                              Pay Now
+                            </Button>
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Due Payment Alert */}
+        {duePayments && duePayments.length > 0 && overduePayments.length === 0 && (
+          <Card className="mb-6 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <Clock className="h-6 w-6 flex-shrink-0 text-yellow-600" />
+                <div className="flex-1">
+                  <h3 className="mb-2 text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                    Payment{duePayments.length > 1 ? 's' : ''} Due Soon
+                  </h3>
+                  <p className="mb-4 text-sm text-yellow-700 dark:text-yellow-300">
+                    You have {duePayments.length} payment{duePayments.length > 1 ? 's' : ''} due
+                    within the next 7 days.
+                  </p>
+                  <div className="space-y-3">
+                    {duePayments.map((payment) => (
+                      <div
+                        key={payment.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-yellow-200 bg-white p-3 dark:border-yellow-800 dark:bg-yellow-950/50"
+                      >
+                        <div>
+                          <p className="font-semibold text-yellow-900 dark:text-yellow-100">
+                            {formatCurrency(Number(payment.amount))}
+                          </p>
+                          <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                            Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'}
+                          </p>
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                            Ref: {payment.paymentReference}
+                          </p>
+                        </div>
+                        <Link href={`/portal/payments/${payment.id}/pay`}>
+                          <Button
+                            size="sm"
+                            className="bg-yellow-600 text-white hover:bg-yellow-700"
+                          >
+                            <DollarSign className="mr-1 h-4 w-4" />
+                            Pay Now
+                          </Button>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Property Info */}
         {tenant.property && (

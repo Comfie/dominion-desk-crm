@@ -1,44 +1,40 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { prisma } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
-import { logAudit } from '@/lib/shared/audit';
-
-const bankingSchema = z.object({
-  bankName: z.string().min(1),
-  bankAccountName: z.string().min(1),
-  bankAccountNumber: z.string().min(1),
-  bankBranchCode: z.string().optional(),
-  bankSwiftCode: z.string().optional(),
-  paymentInstructions: z.string().optional(),
-});
+import {
+  getBankingDetails,
+  saveBankingDetails,
+  deleteBankingDetails,
+} from '@/lib/services/banking-encryption.service';
 
 /**
  * GET /api/settings/banking
- * Get current user's banking details
+ * Get encrypted banking details for the logged-in user
  */
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth();
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.organizationId },
-      select: {
-        bankName: true,
-        bankAccountName: true,
-        bankAccountNumber: true,
-        bankBranchCode: true,
-        bankSwiftCode: true,
-        paymentInstructions: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    // Only allow landlords/customers and admins
+    if (session.user.role !== 'CUSTOMER' && session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Only landlords can access banking details' },
+        { status: 403 }
+      );
     }
 
-    return NextResponse.json(user);
+    const bankingDetails = await getBankingDetails(session.user.id);
+
+    if (!bankingDetails) {
+      return NextResponse.json({
+        hasBankingDetails: false,
+        bankingDetails: null,
+      });
+    }
+
+    return NextResponse.json({
+      hasBankingDetails: true,
+      bankingDetails,
+    });
   } catch (error) {
     console.error('Error fetching banking details:', error);
     return NextResponse.json({ error: 'Failed to fetch banking details' }, { status: 500 });
@@ -46,78 +42,85 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * PUT /api/settings/banking
- * Update user's banking details
+ * POST /api/settings/banking
+ * Save or update encrypted banking details
  */
-export async function PUT(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth();
-    const body = await request.json();
 
-    // Validate request body
-    const validatedData = bankingSchema.parse(body);
-
-    // Get current banking details for audit log
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.organizationId },
-      select: {
-        bankName: true,
-        bankAccountName: true,
-        bankAccountNumber: true,
-        bankBranchCode: true,
-        bankSwiftCode: true,
-        paymentInstructions: true,
-      },
-    });
-
-    // Update banking details
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.organizationId },
-      data: {
-        bankName: validatedData.bankName,
-        bankAccountName: validatedData.bankAccountName,
-        bankAccountNumber: validatedData.bankAccountNumber,
-        bankBranchCode: validatedData.bankBranchCode || null,
-        bankSwiftCode: validatedData.bankSwiftCode || null,
-        paymentInstructions: validatedData.paymentInstructions || null,
-      },
-      select: {
-        bankName: true,
-        bankAccountName: true,
-        bankAccountNumber: true,
-        bankBranchCode: true,
-        bankSwiftCode: true,
-        paymentInstructions: true,
-      },
-    });
-
-    // Log audit trail
-    await logAudit(
-      session,
-      'updated',
-      'user',
-      session.user.organizationId,
-      {
-        before: currentUser,
-        after: updatedUser,
-        field: 'banking_details',
-      },
-      request
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: updatedUser,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    // Only allow landlords/customers and admins
+    if (session.user.role !== 'CUSTOMER' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
-        { error: 'Invalid banking details', details: error.issues },
+        { error: 'Only landlords can update banking details' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const {
+      bankName,
+      bankAccountName,
+      bankAccountNumber,
+      bankBranchCode,
+      bankSwiftCode,
+      paymentInstructions,
+    } = body;
+
+    // Validate required fields
+    if (!bankName || !bankAccountName || !bankAccountNumber || !bankBranchCode) {
+      return NextResponse.json(
+        {
+          error: 'Bank name, account name, account number, and branch code are required',
+        },
         { status: 400 }
       );
     }
 
-    console.error('Error updating banking details:', error);
-    return NextResponse.json({ error: 'Failed to update banking details' }, { status: 500 });
+    // Save encrypted banking details
+    await saveBankingDetails(session.user.id, {
+      bankName,
+      bankAccountName,
+      bankAccountNumber,
+      bankBranchCode,
+      bankSwiftCode: bankSwiftCode || undefined,
+      paymentInstructions: paymentInstructions || undefined,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Banking details saved securely',
+    });
+  } catch (error) {
+    console.error('Error saving banking details:', error);
+    return NextResponse.json({ error: 'Failed to save banking details' }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/settings/banking
+ * Delete banking details
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await requireAuth();
+
+    // Only allow landlords/customers and admins
+    if (session.user.role !== 'CUSTOMER' && session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Only landlords can delete banking details' },
+        { status: 403 }
+      );
+    }
+
+    await deleteBankingDetails(session.user.id);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Banking details deleted',
+    });
+  } catch (error) {
+    console.error('Error deleting banking details:', error);
+    return NextResponse.json({ error: 'Failed to delete banking details' }, { status: 500 });
   }
 }

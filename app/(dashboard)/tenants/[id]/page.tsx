@@ -795,15 +795,26 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                                   {formatCurrency(Number(payment.amount))}
                                 </p>
                                 <Badge
+                                  variant={
+                                    payment.status === 'PAID'
+                                      ? 'default'
+                                      : payment.status === 'OVERDUE'
+                                        ? 'destructive'
+                                        : 'secondary'
+                                  }
                                   className={
                                     payment.status === 'PAID'
-                                      ? 'bg-green-100 text-green-800'
+                                      ? 'bg-green-600 text-white'
                                       : payment.status === 'OVERDUE'
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-yellow-100 text-yellow-800'
+                                        ? 'bg-red-600 text-white'
+                                        : payment.status === 'PENDING_VERIFICATION'
+                                          ? 'bg-blue-600 text-white'
+                                          : 'bg-yellow-600 text-white'
                                   }
                                 >
-                                  {payment.status}
+                                  {payment.status === 'PENDING_VERIFICATION'
+                                    ? 'AWAITING VERIFICATION'
+                                    : payment.status}
                                 </Badge>
                               </div>
                               <div className="text-muted-foreground flex items-center gap-4 text-xs">
@@ -814,7 +825,9 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                                 )}
                               </div>
                             </div>
-                            <Badge variant="outline">{payment.paymentMethod}</Badge>
+                            {payment.paymentMethod && (
+                              <Badge variant="outline">{payment.paymentMethod}</Badge>
+                            )}
                           </div>
                         </div>
                       ))}

@@ -18,6 +18,9 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const search = searchParams.get('search');
     const sortBy = searchParams.get('sortBy') || 'subscriptionEndsAt';
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const paymentStatus = searchParams.get('paymentStatus'); // CURRENT, OVERDUE, DUE_SOON, TRIAL_EXPIRED
 
     // Build where clause
     const where: any = {
@@ -33,61 +36,142 @@ export async function GET(request: Request) {
         { firstName: { contains: search, mode: 'insensitive' as const } },
         { lastName: { contains: search, mode: 'insensitive' as const } },
         { email: { contains: search, mode: 'insensitive' as const } },
+        { companyName: { contains: search, mode: 'insensitive' as const } },
       ];
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        subscriptionTier: true,
-        subscriptionStatus: true,
-        trialEndsAt: true,
-        subscriptionEndsAt: true,
-        propertyLimit: true,
-        baseSubscriptionFee: true,
-        freePropertyCount: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            properties: true,
-            propertyTenants: {
-              where: { isActive: true },
+    // Fetch users with pagination
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          companyName: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+          trialEndsAt: true,
+          subscriptionEndsAt: true,
+          propertyLimit: true,
+          baseSubscriptionFee: true,
+          freePropertyCount: true,
+          createdAt: true,
+          updatedAt: true,
+          payfastSubscription: {
+            select: {
+              id: true,
+              status: true,
+              amount: true,
+              merchantReference: true,
+              nextBillingDate: true,
+              lastBillingDate: true,
+              startDate: true,
+              cancelledAt: true,
+              createdAt: true,
+            },
+          },
+          billingInvoices: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              periodStart: true,
+              periodEnd: true,
+              baseFee: true,
+              propertyFees: true,
+              totalAmount: true,
+              status: true,
+              paidAt: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 10, // Last 10 invoices
+          },
+          _count: {
+            select: {
+              properties: true,
+              propertyTenants: {
+                where: { isActive: true },
+              },
+              billingInvoices: true,
             },
           },
         },
-      },
-      orderBy:
-        sortBy === 'subscriptionEndsAt' ? { subscriptionEndsAt: 'asc' } : { updatedAt: 'desc' },
-    });
+        orderBy:
+          sortBy === 'subscriptionEndsAt' ? { subscriptionEndsAt: 'asc' } : { updatedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-    // Calculate MRR for each user based on new tiered model
+    // Calculate MRR and payment status for each user
     const subscriptions = await Promise.all(
       users.map(async (user) => {
         let mrr = 0;
         let estimatedBilling: any = null;
+        const now = new Date();
+        let calculatedPaymentStatus = 'CURRENT';
+        let daysOverdue = 0;
+        let daysUntilDue = null;
 
-        if (user.subscriptionStatus === 'ACTIVE') {
+        // Calculate subscription billing
+        if (user.subscriptionStatus === 'ACTIVE' || user.subscriptionStatus === 'TRIAL') {
           try {
-            // Calculate using the new subscription service
             const billing = await calculateSubscriptionBilling(user.id);
             mrr = billing.totalMonthlyFee;
             estimatedBilling = billing;
           } catch {
-            // If calculation fails, use base fee
             mrr = Number(user.baseSubscriptionFee);
           }
         }
+
+        // Calculate payment status
+        if (user.subscriptionEndsAt && user.subscriptionEndsAt < now) {
+          daysOverdue = Math.floor(
+            (now.getTime() - user.subscriptionEndsAt.getTime()) / (1000 * 60 * 60 * 24)
+          );
+
+          if (user.subscriptionStatus === 'PAST_DUE') {
+            calculatedPaymentStatus = 'OVERDUE';
+          } else if (user.subscriptionStatus === 'TRIAL') {
+            calculatedPaymentStatus = 'TRIAL_EXPIRED';
+          }
+        }
+
+        // Check for upcoming payment
+        if (
+          user.payfastSubscription?.nextBillingDate &&
+          user.payfastSubscription.nextBillingDate > now
+        ) {
+          daysUntilDue = Math.floor(
+            (user.payfastSubscription.nextBillingDate.getTime() - now.getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+
+          if (daysUntilDue <= 7 && user.subscriptionStatus === 'ACTIVE') {
+            calculatedPaymentStatus = 'DUE_SOON';
+          }
+        }
+
+        // Calculate total revenue from this landlord
+        const totalRevenue = user.billingInvoices
+          .filter((inv) => inv.status === 'PAID')
+          .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+
+        // Get last payment
+        const lastPayment = user.billingInvoices.find((inv) => inv.status === 'PAID');
+
+        // Count failed payments
+        const failedPayments = user.billingInvoices.filter((inv) => inv.status === 'FAILED').length;
 
         return {
           id: user.id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          companyName: user.companyName,
           subscriptionTier: user.subscriptionTier,
           subscriptionStatus: user.subscriptionStatus,
           trialEndsAt: user.trialEndsAt,
@@ -95,14 +179,59 @@ export async function GET(request: Request) {
           propertyCount: user._count.properties,
           activePropertyCount: user._count.propertyTenants,
           freePropertyCount: user.freePropertyCount,
+          invoiceCount: user._count.billingInvoices,
           mrr,
           estimatedBilling,
-          nextBillingDate: user.subscriptionEndsAt,
+          nextBillingDate: user.payfastSubscription?.nextBillingDate || user.subscriptionEndsAt,
+          lastBillingDate: user.payfastSubscription?.lastBillingDate,
+          payfastSubscription: user.payfastSubscription,
+          recentInvoices: user.billingInvoices,
+          paymentStatus: calculatedPaymentStatus,
+          daysOverdue,
+          daysUntilDue,
+          totalRevenue,
+          lastPayment,
+          failedPayments,
+          createdAt: user.createdAt,
         };
       })
     );
 
-    return NextResponse.json({ subscriptions });
+    // Filter by payment status if specified
+    let filteredSubscriptions = subscriptions;
+    if (paymentStatus) {
+      filteredSubscriptions = subscriptions.filter((sub) => sub.paymentStatus === paymentStatus);
+    }
+
+    // Calculate summary statistics
+    const summary = {
+      totalLandlords: total,
+      activeSubscriptions: await prisma.user.count({
+        where: { role: 'CUSTOMER', subscriptionStatus: 'ACTIVE' },
+      }),
+      trialUsers: await prisma.user.count({
+        where: { role: 'CUSTOMER', subscriptionStatus: 'TRIAL' },
+      }),
+      overduePayments: subscriptions.filter((sub) => sub.paymentStatus === 'OVERDUE').length,
+      trialExpired: subscriptions.filter((sub) => sub.paymentStatus === 'TRIAL_EXPIRED').length,
+      dueSoon: subscriptions.filter((sub) => sub.paymentStatus === 'DUE_SOON').length,
+      cancelledSubscriptions: await prisma.user.count({
+        where: { role: 'CUSTOMER', subscriptionStatus: 'CANCELLED' },
+      }),
+      totalMRR: subscriptions.reduce((sum, sub) => sum + sub.mrr, 0),
+      totalRevenue: subscriptions.reduce((sum, sub) => sum + sub.totalRevenue, 0),
+    };
+
+    return NextResponse.json({
+      subscriptions: filteredSubscriptions,
+      summary,
+      pagination: {
+        page,
+        limit,
+        total: paymentStatus ? filteredSubscriptions.length : total,
+        totalPages: Math.ceil((paymentStatus ? filteredSubscriptions.length : total) / limit),
+      },
+    });
   } catch (error) {
     if (error instanceof NextResponse) {
       return error;
@@ -124,7 +253,7 @@ export async function PUT(request: Request) {
     });
 
     if (!existingUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Landlord not found' }, { status: 404 });
     }
 
     const updateData: any = {};

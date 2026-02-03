@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-// import { useQuery, useMutation, useQueryClient } from '@tantml:function_calls>react-query';
-// ✅ Correct Import (Assuming you have installed the package)
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Building2, Save, AlertCircle, CheckCircle2, Shield, Lock } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -23,7 +21,7 @@ const bankingSchema = z.object({
   bankName: z.string().min(1, 'Bank name is required'),
   bankAccountName: z.string().min(1, 'Account name is required'),
   bankAccountNumber: z.string().min(1, 'Account number is required'),
-  bankBranchCode: z.string().optional(),
+  bankBranchCode: z.string().min(1, 'Branch code is required'),
   bankSwiftCode: z.string().optional(),
   paymentInstructions: z.string().optional(),
 });
@@ -50,7 +48,9 @@ export default function BankingSettingsPage() {
     queryFn: async () => {
       const response = await fetch('/api/settings/banking');
       if (!response.ok) throw new Error('Failed to fetch banking details');
-      return response.json() as Promise<BankingData>;
+      const result = await response.json();
+      // Handle new API response structure
+      return result.bankingDetails as BankingData | null;
     },
   });
 
@@ -79,18 +79,21 @@ export default function BankingSettingsPage() {
   const updateBanking = useMutation({
     mutationFn: async (data: BankingFormData) => {
       const response = await fetch('/api/settings/banking', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to update banking details');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update banking details');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['banking-settings'] });
       toast({
         title: 'Banking details updated',
-        description: 'Your banking information has been saved successfully.',
+        description: 'Your banking information has been encrypted and saved securely.',
       });
       setIsSaving(false);
     },
@@ -117,6 +120,24 @@ export default function BankingSettingsPage() {
         title="Banking Details"
         description="Configure your banking information for payment invoices"
       />
+
+      {/* Security Notice */}
+      <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+        <Shield className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-green-800 dark:text-green-200">
+          <div className="flex items-start gap-2">
+            <Lock className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <div>
+              <strong className="mb-1 block">Your banking details are securely stored</strong>
+              <span className="text-sm">
+                All banking information is encrypted using military-grade AES-256-GCM encryption
+                before being stored. Your details are never stored in plain text and can only be
+                accessed by you.
+              </span>
+            </div>
+          </div>
+        </AlertDescription>
+      </Alert>
 
       {hasAllRequiredDetails ? (
         <Alert>
@@ -213,14 +234,21 @@ export default function BankingSettingsPage() {
 
                 {/* Branch Code */}
                 <div className="space-y-2">
-                  <Label htmlFor="bankBranchCode">Branch Code</Label>
+                  <Label htmlFor="bankBranchCode">
+                    Branch Code <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="bankBranchCode"
                     placeholder="e.g., 250655"
                     {...form.register('bankBranchCode')}
                   />
+                  {form.formState.errors.bankBranchCode && (
+                    <p className="text-destructive text-sm">
+                      {form.formState.errors.bankBranchCode.message}
+                    </p>
+                  )}
                   <p className="text-muted-foreground text-sm">
-                    Optional - Required for local transfers in some countries
+                    Required for South African bank transfers
                   </p>
                 </div>
 

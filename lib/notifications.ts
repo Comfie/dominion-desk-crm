@@ -190,3 +190,37 @@ export async function notifyStaleMaintenance(
     linkUrl: `/maintenance/${maintenanceId}`,
   });
 }
+
+export async function notifyPaymentProofUploaded(
+  landlordUserId: string,
+  tenantName: string,
+  paymentReference: string,
+  amount: string,
+  paymentId: string
+) {
+  return createNotification({
+    userId: landlordUserId,
+    title: 'Payment proof uploaded',
+    message: `${tenantName} uploaded proof of payment for ${amount} (Ref: ${paymentReference})`,
+    type: 'PAYMENT',
+    linkUrl: `/financials/income?payment=${paymentId}`,
+  });
+}
+
+export async function notifyPaymentVerified(
+  tenantUserId: string,
+  paymentReference: string,
+  amount: string,
+  approved: boolean,
+  paymentId: string
+) {
+  return createNotification({
+    userId: tenantUserId,
+    title: approved ? 'Payment verified' : 'Payment proof rejected',
+    message: approved
+      ? `Your payment of ${amount} (Ref: ${paymentReference}) has been verified and marked as paid`
+      : `Your payment proof for ${amount} (Ref: ${paymentReference}) was rejected. Please upload a valid proof of payment.`,
+    type: 'PAYMENT',
+    linkUrl: `/portal/payments`,
+  });
+}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, DollarSign, Clock, CheckCircle, TrendingUp } from 'lucide-react';
+import { Plus, DollarSign, Clock, CheckCircle, TrendingUp, FileCheck } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -120,6 +120,7 @@ export default function PaymentsPage() {
         >
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
+          <option value="PENDING_VERIFICATION">Awaiting Verification</option>
           <option value="PAID">Paid</option>
           <option value="OVERDUE">Overdue</option>
           <option value="PARTIALLY_PAID">Partially Paid</option>

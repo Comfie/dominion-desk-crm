@@ -34,6 +34,12 @@ const DEFAULT_SETTINGS = {
     value: '30',
     description: 'Days after trial expiry before suspension',
   },
+
+  // Payment settings
+  'payment.online_transaction_fee_percentage': {
+    value: '3',
+    description: 'Transaction fee percentage for online card payments (%)',
+  },
 };
 
 export type SubscriptionSettingKey = keyof typeof DEFAULT_SETTINGS;
@@ -145,7 +151,7 @@ export async function updateSetting(key: string, value: string, adminId: string)
 export async function getAllSubscriptionSettingsForAdmin() {
   const settings = await prisma.systemSettings.findMany({
     where: {
-      key: { startsWith: 'subscription.' },
+      OR: [{ key: { startsWith: 'subscription.' } }, { key: { startsWith: 'payment.' } }],
     },
   });
 
@@ -161,10 +167,40 @@ export async function getAllSubscriptionSettingsForAdmin() {
       isDefault: !dbSetting,
       updatedAt: dbSetting?.updatedAt || null,
       updatedBy: dbSetting?.updatedBy || null,
+      category: key.startsWith('subscription.') ? 'subscription' : 'payment',
     };
   });
 
   return allSettings;
+}
+
+/**
+ * Get payment settings
+ */
+export async function getPaymentSettings(): Promise<{
+  onlineTransactionFeePercentage: number;
+}> {
+  const feePercentage = await getSettingNumber(
+    'payment.online_transaction_fee_percentage',
+    3 // Default 3%
+  );
+
+  return {
+    onlineTransactionFeePercentage: feePercentage,
+  };
+}
+
+/**
+ * Calculate transaction fee for an amount
+ */
+export function calculateTransactionFee(
+  amount: number,
+  feePercentage: number
+): { fee: number; totalWithFee: number } {
+  const fee = Math.round((amount * feePercentage) / 100);
+  const totalWithFee = amount + fee;
+
+  return { fee, totalWithFee };
 }
 
 /**
@@ -182,7 +218,7 @@ export async function initializeDefaultSettings(): Promise<void> {
           key,
           value: setting.value,
           description: setting.description,
-          category: 'subscription',
+          category: key.startsWith('subscription.') ? 'subscription' : 'payment',
         },
       });
     }

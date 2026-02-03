@@ -1,7 +1,16 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { CreditCard, Building2, AlertTriangle, Check, Users } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  CreditCard,
+  Building2,
+  AlertTriangle,
+  Check,
+  Users,
+  FileText,
+  Loader2,
+} from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -18,6 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SubscribeModal } from '@/components/subscription/subscribe-modal';
+import { useToast } from '@/hooks/use-toast';
 
 interface PropertyBillingItem {
   propertyId: string;
@@ -52,7 +63,30 @@ interface SubscriptionStatusData {
   currentBilling: SubscriptionCalculation;
 }
 
+interface BillingInvoice {
+  id: string;
+  invoiceNumber: string;
+  periodStart: string;
+  periodEnd: string;
+  totalAmount: number;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
+  paidAt: string | null;
+  createdAt: string;
+}
+
+interface BillingHistoryResponse {
+  invoices: BillingInvoice[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 export default function SubscriptionPage() {
+  const queryClient = useQueryClient();
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const { toast } = useToast();
+
   const { data, isLoading } = useQuery<SubscriptionStatusData>({
     queryKey: ['subscription-status'],
     queryFn: async () => {
@@ -61,6 +95,58 @@ export default function SubscriptionPage() {
       return response.json();
     },
   });
+
+  const { data: billingHistory, isLoading: isLoadingHistory } = useQuery<BillingHistoryResponse>({
+    queryKey: ['billing-history', 1],
+    queryFn: async () => {
+      const response = await fetch('/api/billing/history?page=1&limit=5');
+      if (!response.ok) throw new Error('Failed to fetch billing history');
+      return response.json();
+    },
+    enabled: data?.subscriptionStatus === 'ACTIVE' || data?.subscriptionStatus === 'CANCELLED',
+  });
+
+  const cancelSubscription = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to cancel subscription');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Subscription cancelled',
+        description: 'Your subscription will remain active until the end of the billing period.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleCancelSubscription = async () => {
+    if (
+      window.confirm(
+        'Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period.'
+      )
+    ) {
+      setIsCancelling(true);
+      try {
+        await cancelSubscription.mutateAsync();
+      } finally {
+        setIsCancelling(false);
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -127,7 +213,27 @@ export default function SubscriptionPage() {
                 </span>
               )}
             </div>
-            <Button>Subscribe Now</Button>
+            <div className="flex gap-2">
+              {status !== 'ACTIVE' && (
+                <Button onClick={() => setShowSubscribeModal(true)}>Subscribe Now</Button>
+              )}
+              {status === 'ACTIVE' && (
+                <Button
+                  variant="outline"
+                  onClick={handleCancelSubscription}
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    'Cancel Subscription'
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Pricing Explanation */}
@@ -259,16 +365,82 @@ export default function SubscriptionPage() {
       {/* Billing History */}
       <Card>
         <CardHeader>
-          <CardTitle>Billing History</CardTitle>
-          <CardDescription>Your past invoices and payments</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Billing History
+              </CardTitle>
+              <CardDescription>Your past invoices and payments</CardDescription>
+            </div>
+            {billingHistory && billingHistory.invoices.length > 0 && (
+              <Button variant="outline" size="sm" asChild>
+                <a href="/settings/billing">View All</a>
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-muted-foreground py-8 text-center">
-            <p>No billing history available</p>
-            <p className="text-sm">Your invoices will appear here once you subscribe</p>
-          </div>
+          {isLoadingHistory ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : billingHistory && billingHistory.invoices.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {billingHistory.invoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                    <TableCell>
+                      {formatDate(invoice.periodStart)} - {formatDate(invoice.periodEnd)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          invoice.status === 'PAID'
+                            ? 'default'
+                            : invoice.status === 'PENDING'
+                              ? 'secondary'
+                              : 'destructive'
+                        }
+                      >
+                        {invoice.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(invoice.totalAmount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-muted-foreground py-8 text-center">
+              <FileText className="mx-auto mb-2 h-12 w-12 opacity-30" />
+              <p>No billing history available</p>
+              <p className="text-sm">Your invoices will appear here once you subscribe</p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Subscribe Modal */}
+      {billing && (
+        <SubscribeModal
+          open={showSubscribeModal}
+          onOpenChange={setShowSubscribeModal}
+          currentBilling={billing}
+        />
+      )}
     </div>
   );
 }

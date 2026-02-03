@@ -78,10 +78,54 @@ export async function GET() {
         id: true,
         amount: true,
         paymentDate: true,
+        dueDate: true,
         status: true,
+        paymentReference: true,
+        paymentType: true,
       },
       orderBy: { paymentDate: 'desc' },
       take: 10,
+    });
+
+    // Get due and overdue payments
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const duePayments = await prisma.payment.findMany({
+      where: {
+        tenantId: tenant.id,
+        status: {
+          in: ['PENDING', 'OVERDUE', 'PENDING_VERIFICATION'],
+        },
+        dueDate: {
+          lte: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), // Due within next 7 days
+        },
+      },
+      select: {
+        id: true,
+        amount: true,
+        dueDate: true,
+        status: true,
+        paymentReference: true,
+        paymentType: true,
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+
+    const overduePayments = await prisma.payment.findMany({
+      where: {
+        tenantId: tenant.id,
+        status: 'OVERDUE',
+      },
+      select: {
+        id: true,
+        amount: true,
+        dueDate: true,
+        status: true,
+        paymentReference: true,
+        paymentType: true,
+      },
+      orderBy: { dueDate: 'asc' },
     });
 
     return NextResponse.json({
@@ -106,6 +150,8 @@ export async function GET() {
       },
       maintenanceRequests,
       recentPayments,
+      duePayments,
+      overduePayments,
     });
   } catch (error) {
     console.error('Tenant portal dashboard error:', error);

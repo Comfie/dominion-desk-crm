@@ -50,8 +50,19 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Map payments to include proof fields
+    const paymentsWithProof = payments.map((payment) => ({
+      ...payment,
+      proofOfPaymentUrl: payment.proofOfPaymentUrl,
+      proofOfPaymentName: payment.proofOfPaymentName,
+      proofUploadedAt: payment.proofUploadedAt,
+      proofNotes: payment.proofNotes,
+      verifiedAt: payment.verifiedAt,
+      verificationNotes: payment.verificationNotes,
+    }));
+
     return NextResponse.json({
-      payments,
+      payments: paymentsWithProof,
       tenant: {
         id: tenant.id,
         name: `${tenant.firstName} ${tenant.lastName}`,

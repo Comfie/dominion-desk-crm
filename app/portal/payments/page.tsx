@@ -1,15 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar,
   Download,
   AlertCircle,
-  Building2,
   LogOut,
   DollarSign,
   ArrowLeft,
+  Upload,
+  FileCheck,
+  CheckCircle2,
+  Clock,
+  Eye,
+  CreditCard,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Logo } from '@/components/ui/logo';
+import { PaymentDetailModal } from '@/components/portal/payment-detail-modal';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface Payment {
@@ -29,6 +36,12 @@ interface Payment {
   status: string;
   description: string | null;
   paymentReference: string;
+  proofOfPaymentUrl?: string | null;
+  proofOfPaymentName?: string | null;
+  proofUploadedAt?: string | null;
+  proofNotes?: string | null;
+  verifiedAt?: string | null;
+  verificationNotes?: string | null;
   property: {
     id: string;
     name: string;
@@ -53,6 +66,10 @@ interface TenantPaymentsData {
 }
 
 export default function TenantPaymentsPage() {
+  const queryClient = useQueryClient();
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
   const { data, isLoading } = useQuery<TenantPaymentsData>({
     queryKey: ['tenant-payments'],
     queryFn: async () => {
@@ -62,30 +79,65 @@ export default function TenantPaymentsPage() {
     },
   });
 
-  const getStatusBadge = (status: string) => {
-    const config = {
-      PAID: { variant: 'default' as const, className: 'bg-green-600' },
-      PENDING: { variant: 'secondary' as const, className: 'bg-yellow-600' },
-      OVERDUE: { variant: 'destructive' as const, className: 'bg-red-600' },
-      PARTIALLY_PAID: { variant: 'secondary' as const, className: 'bg-orange-600' },
-      FAILED: { variant: 'destructive' as const, className: 'bg-red-700' },
+  const getStatusBadge = (status: string, hasProof?: boolean) => {
+    const config: Record<
+      string,
+      {
+        variant: 'default' | 'secondary' | 'destructive';
+        className: string;
+        icon?: React.ReactNode;
+      }
+    > = {
+      PAID: {
+        variant: 'default',
+        className: 'bg-green-600',
+        icon: <CheckCircle2 className="mr-1 h-3 w-3" />,
+      },
+      PENDING: {
+        variant: 'secondary',
+        className: 'bg-yellow-600',
+        icon: <Clock className="mr-1 h-3 w-3" />,
+      },
+      PENDING_VERIFICATION: {
+        variant: 'secondary',
+        className: 'bg-blue-600',
+        icon: <FileCheck className="mr-1 h-3 w-3" />,
+      },
+      OVERDUE: { variant: 'destructive', className: 'bg-red-600' },
+      PARTIALLY_PAID: { variant: 'secondary', className: 'bg-orange-600' },
+      FAILED: { variant: 'destructive', className: 'bg-red-700' },
     };
 
-    const statusConfig = config[status as keyof typeof config] || config.PENDING;
+    const statusConfig = config[status] || config.PENDING;
+    const displayStatus =
+      status === 'PENDING_VERIFICATION' ? 'Awaiting Verification' : status.replace('_', ' ');
 
     return (
-      <Badge variant={statusConfig.variant} className={statusConfig.className}>
-        {status.replace('_', ' ')}
+      <Badge
+        variant={statusConfig.variant}
+        className={`${statusConfig.className} flex items-center`}
+      >
+        {statusConfig.icon}
+        {displayStatus}
       </Badge>
     );
   };
 
-  const overduePayments = data?.payments?.filter((p: Payment) => p.status === 'OVERDUE') || [];
+  const handleViewPayment = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowDetailModal(true);
+  };
 
+  const handleProofUploaded = () => {
+    queryClient.invalidateQueries({ queryKey: ['tenant-payments'] });
+  };
+
+  const overduePayments = data?.payments?.filter((p: Payment) => p.status === 'OVERDUE') || [];
   const pendingPayments = data?.payments?.filter((p: Payment) => p.status === 'PENDING') || [];
+  const pendingVerificationPayments =
+    data?.payments?.filter((p: Payment) => p.status === 'PENDING_VERIFICATION') || [];
 
   const totalOverdue = overduePayments.reduce((sum, p) => sum + Number(p.amount), 0);
-
   const totalPending = pendingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
@@ -124,7 +176,9 @@ export default function TenantPaymentsPage() {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold">My Payments</h1>
-          <p className="text-muted-foreground">View your rent payments and download invoices</p>
+          <p className="text-muted-foreground">
+            View your rent payments, upload proof of payment, and download invoices
+          </p>
         </div>
 
         {/* Alert for overdue payments */}
@@ -140,8 +194,20 @@ export default function TenantPaymentsPage() {
           </Alert>
         )}
 
+        {/* Alert for pending verification */}
+        {pendingVerificationPayments.length > 0 && (
+          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
+            <FileCheck className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
+              You have {pendingVerificationPayments.length} payment
+              {pendingVerificationPayments.length > 1 ? 's' : ''} awaiting verification by your
+              landlord.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Summary Cards */}
-        <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <div className="mb-6 grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Overdue</CardDescription>
@@ -172,6 +238,20 @@ export default function TenantPaymentsPage() {
 
           <Card>
             <CardHeader className="pb-3">
+              <CardDescription>Awaiting Verification</CardDescription>
+              <CardTitle className="text-2xl text-blue-600">
+                {pendingVerificationPayments.length}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                Proof{pendingVerificationPayments.length !== 1 ? 's' : ''} submitted
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
               <CardDescription>Total Payments</CardDescription>
               <CardTitle className="text-2xl">{data?.payments?.length || 0}</CardTitle>
             </CardHeader>
@@ -188,7 +268,9 @@ export default function TenantPaymentsPage() {
               <DollarSign className="h-5 w-5" />
               Payment History
             </CardTitle>
-            <CardDescription>View all your payments and download invoices</CardDescription>
+            <CardDescription>
+              Click on a payment to view details or upload proof of payment
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -211,14 +293,23 @@ export default function TenantPaymentsPage() {
                 data?.payments?.map((payment: Payment) => (
                   <div
                     key={payment.id}
-                    className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
+                    className="hover:bg-muted/50 cursor-pointer rounded-lg border p-4 transition-colors"
+                    onClick={() => handleViewPayment(payment)}
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       {/* Payment Info */}
                       <div className="flex-1">
-                        <div className="mb-2 flex items-start gap-2">
+                        <div className="mb-2 flex flex-wrap items-start gap-2">
                           <h3 className="font-semibold">{payment.description || 'Rent Payment'}</h3>
-                          {getStatusBadge(payment.status)}
+                          {getStatusBadge(payment.status, !!payment.proofOfPaymentUrl)}
+                          {payment.proofOfPaymentUrl &&
+                            payment.status !== 'PENDING_VERIFICATION' &&
+                            payment.status !== 'PAID' && (
+                              <Badge variant="outline" className="text-xs">
+                                <Upload className="mr-1 h-3 w-3" />
+                                Proof Uploaded
+                              </Badge>
+                            )}
                         </div>
 
                         <div className="text-muted-foreground space-y-1 text-sm">
@@ -236,9 +327,9 @@ export default function TenantPaymentsPage() {
                                 <span>Due: {formatDate(payment.dueDate)}</span>
                               </div>
                             )}
-                            {payment.paymentDate && (
+                            {payment.paymentDate && payment.status === 'PAID' && (
                               <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
+                                <CheckCircle2 className="h-3 w-3 text-green-600" />
                                 <span>Paid: {formatDate(payment.paymentDate)}</span>
                               </div>
                             )}
@@ -258,16 +349,45 @@ export default function TenantPaymentsPage() {
                           </div>
                         </div>
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            window.open(`/api/tenant/payments/${payment.id}/invoice`, '_blank')
-                          }
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          View Invoice
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          {(payment.status === 'PENDING' || payment.status === 'OVERDUE') && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `/portal/payments/${payment.id}/pay`;
+                                }}
+                              >
+                                <CreditCard className="mr-2 h-4 w-4" />
+                                Pay Now
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewPayment(payment);
+                                }}
+                              >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Proof
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewPayment(payment);
+                            }}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            Details
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -285,7 +405,16 @@ export default function TenantPaymentsPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <p>
-                <strong>Need help with a payment?</strong> Contact your landlord at{' '}
+                <strong>How to pay:</strong> Click "View Invoice" on any payment to see full banking
+                details and payment instructions.
+              </p>
+              <p>
+                <strong>After making a payment:</strong> Click "Upload Proof" to submit your proof
+                of payment (bank transfer confirmation, deposit slip, etc.). Your landlord will
+                verify it and mark the payment as complete.
+              </p>
+              <p>
+                <strong>Need help?</strong> Contact your landlord at{' '}
                 <a
                   href={`mailto:${data.payments[0]?.user.email}`}
                   className="text-primary hover:underline"
@@ -305,10 +434,6 @@ export default function TenantPaymentsPage() {
                   </>
                 )}
               </p>
-              <p className="text-muted-foreground">
-                Click "View Invoice" on any payment to see full banking details and payment
-                instructions.
-              </p>
             </CardContent>
           </Card>
         )}
@@ -322,6 +447,14 @@ export default function TenantPaymentsPage() {
           </p>
         </div>
       </footer>
+
+      {/* Payment Detail Modal */}
+      <PaymentDetailModal
+        payment={selectedPayment}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        onProofUploaded={handleProofUploaded}
+      />
     </div>
   );
 }

@@ -26,6 +26,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts';
 
+interface PaymentWithTenant {
+  id: string;
+  amount: number;
+  dueDate?: string | null;
+  paymentDate?: string;
+  status: string;
+  paymentReference: string;
+  paymentType?: string;
+  tenant: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  property: {
+    id: string;
+    name: string;
+  } | null;
+}
+
 interface DashboardData {
   stats: {
     totalProperties: number;
@@ -42,6 +62,7 @@ interface DashboardData {
     propertiesWithTenants: number;
     tenantsMovedIn: number;
     tenantsScheduledMoveIn: number;
+    paymentsWithIssuesCount: number;
   };
   charts: {
     revenue: Array<{ name: string; total: number }>;
@@ -71,6 +92,8 @@ interface DashboardData {
     daysStale: number;
     property: { id: string; name: string };
   }>;
+  paymentsWithIssues: PaymentWithTenant[];
+  recentPaidPayments: PaymentWithTenant[];
   longTerm: {
     propertyTotal: number;
     properties: Array<{
@@ -423,6 +446,165 @@ export default function DashboardPage() {
                 <Button variant="outline" className="w-full">
                   <Wrench className="mr-2 h-4 w-4" />
                   View All Maintenance
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payments With Issues (Due/Overdue) */}
+      {data?.paymentsWithIssues && data.paymentsWithIssues.length > 0 && (
+        <Card
+          variant="elevated"
+          className="hover-lift border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/30"
+        >
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-600/20">
+                <DollarSign className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-yellow-800 dark:text-yellow-200">
+                  Payments Requiring Attention
+                </CardTitle>
+                <CardDescription>
+                  {data.paymentsWithIssues.length} payment
+                  {data.paymentsWithIssues.length > 1 ? 's' : ''} due or overdue
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {data.paymentsWithIssues.slice(0, 5).map((payment) => {
+                const isOverdue = payment.status === 'OVERDUE';
+                const daysOverdue = payment.dueDate
+                  ? Math.floor(
+                      (new Date().getTime() - new Date(payment.dueDate).getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    )
+                  : 0;
+                return (
+                  <Link key={payment.id} href={`/tenants/${payment.tenant?.id}`}>
+                    <div
+                      className={`group flex items-center justify-between rounded-lg border p-4 transition-all ${
+                        isOverdue
+                          ? 'border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50'
+                          : 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100 dark:border-yellow-800 dark:bg-yellow-950/50'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-semibold">
+                          {payment.tenant
+                            ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
+                            : 'Unknown'}
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          {payment.property?.name || 'No property'}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          Ref: {payment.paymentReference}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{formatCurrency(Number(payment.amount))}</p>
+                        <Badge variant={isOverdue ? 'destructive' : 'secondary'} className="mb-1">
+                          {isOverdue
+                            ? `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`
+                            : payment.status}
+                        </Badge>
+                        <p className="text-muted-foreground text-xs">
+                          Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            {data.paymentsWithIssues.length > 5 && (
+              <p className="text-muted-foreground mt-3 text-xs">
+                Showing 5 of {data.paymentsWithIssues.length} payments with issues
+              </p>
+            )}
+            <div className="mt-6">
+              <Link href="/financials/income">
+                <Button variant="outline" className="w-full">
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  View All Payments
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Paid Payments */}
+      {data?.recentPaidPayments && data.recentPaidPayments.length > 0 && (
+        <Card
+          variant="elevated"
+          className="hover-lift border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/30"
+        >
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600/20">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-green-800 dark:text-green-200">
+                  Recent Paid Payments
+                </CardTitle>
+                <CardDescription>
+                  {data.recentPaidPayments.length} payment
+                  {data.recentPaidPayments.length > 1 ? 's' : ''} received recently
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {data.recentPaidPayments.slice(0, 5).map((payment) => (
+                <Link key={payment.id} href={`/tenants/${payment.tenant?.id}`}>
+                  <div className="group flex items-center justify-between rounded-lg border border-green-200 bg-white p-4 transition-all hover:bg-green-100 dark:border-green-800 dark:bg-green-950/50 dark:hover:bg-green-950/70">
+                    <div>
+                      <p className="font-semibold">
+                        {payment.tenant
+                          ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
+                          : 'Unknown'}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        {payment.property?.name || 'No property'}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        Ref: {payment.paymentReference}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">
+                        {formatCurrency(Number(payment.amount))}
+                      </p>
+                      <Badge variant="default" className="mb-1 bg-green-600">
+                        PAID
+                      </Badge>
+                      <p className="text-muted-foreground text-xs">
+                        {payment.paymentDate ? formatDate(payment.paymentDate) : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {data.recentPaidPayments.length > 5 && (
+              <p className="text-muted-foreground mt-3 text-xs">
+                Showing 5 of {data.recentPaidPayments.length} recent payments
+              </p>
+            )}
+            <div className="mt-6">
+              <Link href="/financials/income">
+                <Button variant="outline" className="w-full">
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  View All Payments
                 </Button>
               </Link>
             </div>

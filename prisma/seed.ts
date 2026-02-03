@@ -4,6 +4,8 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { createDefaultFoldersForTenant } from '../lib/document-folders';
+import { saveBankingDetails } from '../lib/services/banking-encryption.service';
+import { initializeDefaultSettings } from '../lib/services/system-settings.service';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -213,6 +215,7 @@ async function main() {
       password: landlordPassword,
       firstName: 'Demo',
       lastName: 'User',
+      phone: '+27821234567',
       role: 'CUSTOMER',
       accountType: 'INDIVIDUAL',
       subscriptionTier: SubscriptionTier.PROFESSIONAL,
@@ -222,8 +225,20 @@ async function main() {
     },
   });
 
+  // Save encrypted banking details for landlord
+  console.log('🔐 Saving encrypted banking details for landlord...');
+  await saveBankingDetails(landlordUser.id, {
+    bankName: 'First National Bank',
+    bankAccountName: 'Demo User Properties',
+    bankAccountNumber: '62012345678',
+    bankBranchCode: '250655',
+    paymentInstructions:
+      'Please use your payment reference as the bank reference when making EFT payments.',
+  });
+
   // Tenant (The Login Account)
   // This creates the ability to log in, but doesn't contain the "Tenant Profile" data yet
+  // IMPORTANT: The email must match the Tenant Profile email for the portal to work
   await prisma.user.upsert({
     where: { email: 'john.smith@example.com' },
     update: {},
@@ -247,10 +262,12 @@ async function main() {
   const landlordId = landlordUser.id;
 
   // Delete items owned by the landlord
+  await prisma.payment.deleteMany({ where: { userId: landlordId } });
   await prisma.booking.deleteMany({ where: { userId: landlordId } });
   await prisma.inquiry.deleteMany({ where: { userId: landlordId } });
   await prisma.maintenanceRequest.deleteMany({ where: { userId: landlordId } });
   await prisma.task.deleteMany({ where: { userId: landlordId } });
+  await prisma.propertyTenant.deleteMany({ where: { userId: landlordId } });
   await prisma.tenant.deleteMany({ where: { userId: landlordId } }); // Deletes the Tenant Profiles
   await prisma.property.deleteMany({ where: { userId: landlordId } });
 
@@ -347,8 +364,103 @@ async function main() {
   console.log('📁 Creating default document folders for tenant...');
   await createDefaultFoldersForTenant(prisma, landlordId, tenantProfile.id, property1.id);
 
+  console.log('🔗 Creating Property-Tenant Relationship...');
+
+  // Create PropertyTenant relationship (links tenant to property with lease details)
+  await prisma.propertyTenant.create({
+    data: {
+      userId: landlordId,
+      propertyId: property1.id,
+      tenantId: tenantProfile.id,
+      leaseStartDate: new Date('2024-01-01'),
+      leaseEndDate: new Date('2025-12-31'),
+      monthlyRent: 12000,
+      depositPaid: 24000,
+      isActive: true,
+      moveInDate: new Date('2024-01-01'),
+    },
+  });
+
+  console.log('💰 Creating Payments for testing proof upload...');
+
+  // Create multiple payments with different statuses for testing
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  // Payment 1: PAID (completed payment from last month)
+  await prisma.payment.create({
+    data: {
+      userId: landlordId,
+      tenantId: tenantProfile.id,
+      propertyId: property1.id,
+      paymentReference: `PAY-${Date.now()}-0001`,
+      paymentType: 'RENT',
+      amount: 12000,
+      currency: 'ZAR',
+      paymentMethod: 'EFT',
+      paymentDate: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 5),
+      dueDate: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1),
+      status: 'PAID',
+      description: `Rent for ${lastMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+    },
+  });
+
+  // Payment 2: OVERDUE (past due date, needs proof upload)
+  await prisma.payment.create({
+    data: {
+      userId: landlordId,
+      tenantId: tenantProfile.id,
+      propertyId: property1.id,
+      paymentReference: `PAY-${Date.now()}-0002`,
+      paymentType: 'RENT',
+      amount: 12000,
+      currency: 'ZAR',
+      dueDate: new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1),
+      status: 'OVERDUE',
+      description: `Rent for ${thisMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+    },
+  });
+
+  // Payment 3: PENDING (upcoming payment, can upload proof early)
+  await prisma.payment.create({
+    data: {
+      userId: landlordId,
+      tenantId: tenantProfile.id,
+      propertyId: property1.id,
+      paymentReference: `PAY-${Date.now()}-0003`,
+      paymentType: 'RENT',
+      amount: 12000,
+      currency: 'ZAR',
+      dueDate: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1),
+      status: 'PENDING',
+      description: `Rent for ${nextMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+    },
+  });
+
+  // Payment 4: PENDING (utilities)
+  await prisma.payment.create({
+    data: {
+      userId: landlordId,
+      tenantId: tenantProfile.id,
+      propertyId: property1.id,
+      paymentReference: `PAY-${Date.now()}-0004`,
+      paymentType: 'UTILITIES',
+      amount: 850,
+      currency: 'ZAR',
+      dueDate: new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 15),
+      status: 'PENDING',
+      description: 'Electricity & Water - January 2025',
+    },
+  });
+
   // Seed task templates
   await seedTaskTemplates();
+
+  // Initialize system settings (including payment transaction fee)
+  console.log('⚙️  Initializing system settings...');
+  await initializeDefaultSettings();
 
   console.log('📅 Creating Bookings & Maintenance...');
 

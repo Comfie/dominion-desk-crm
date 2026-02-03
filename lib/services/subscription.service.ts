@@ -318,3 +318,182 @@ export async function canAddProperty(userId: string): Promise<{
 
   return { allowed: true };
 }
+
+/**
+ * Activate subscription after successful PayFast payment
+ * Updates user status, creates subscription history, and sets next billing date
+ */
+export async function activateSubscription(
+  userId: string,
+  payfastData: {
+    token?: string;
+    subscriptionId?: string;
+    merchantReference: string;
+    amount: number;
+  }
+): Promise<void> {
+  const now = new Date();
+  const nextBillingDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+  // Update user subscription status
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      subscriptionStatus: 'ACTIVE',
+      subscriptionEndsAt: nextBillingDate,
+    },
+  });
+
+  // Update PayFast subscription record
+  await prisma.payFastSubscription.update({
+    where: { merchantReference: payfastData.merchantReference },
+    data: {
+      status: 'ACTIVE',
+      payfastToken: payfastData.token,
+      payfastSubscriptionId: payfastData.subscriptionId,
+      startDate: now,
+      nextBillingDate,
+      lastBillingDate: now,
+    },
+  });
+
+  // Create subscription history entry
+  await prisma.subscriptionHistory.create({
+    data: {
+      userId,
+      action: 'SUBSCRIPTION_ACTIVATED',
+      previousStatus: 'TRIAL',
+      newStatus: 'ACTIVE',
+      previousTier: 'FREE',
+      newTier: 'FREE',
+      notes: `Subscription activated via PayFast. Reference: ${payfastData.merchantReference}`,
+    },
+  });
+}
+
+/**
+ * Handle failed payment for subscription
+ * Updates subscription status and sends notifications
+ */
+export async function handleFailedPayment(userId: string, reason?: string): Promise<void> {
+  // Update user subscription status to PAST_DUE
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      subscriptionStatus: 'PAST_DUE',
+    },
+  });
+
+  // Update PayFast subscription status
+  const payfastSub = await prisma.payFastSubscription.findUnique({
+    where: { userId },
+  });
+
+  if (payfastSub) {
+    await prisma.payFastSubscription.update({
+      where: { userId },
+      data: {
+        status: 'SUSPENDED',
+      },
+    });
+  }
+
+  // Create subscription history entry
+  await prisma.subscriptionHistory.create({
+    data: {
+      userId,
+      action: 'PAYMENT_FAILED',
+      previousStatus: 'ACTIVE',
+      newStatus: 'PAST_DUE',
+      notes: reason || 'Payment failed',
+    },
+  });
+
+  // TODO: Send email notification to user about failed payment
+}
+
+/**
+ * Cancel subscription
+ * User can cancel anytime but retains access until end of billing period
+ */
+export async function cancelSubscription(
+  userId: string,
+  reason?: string,
+  cancelledBy?: string
+): Promise<void> {
+  // Update user subscription status
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      subscriptionStatus: 'CANCELLED',
+    },
+  });
+
+  // Update PayFast subscription status
+  const payfastSub = await prisma.payFastSubscription.findUnique({
+    where: { userId },
+  });
+
+  if (payfastSub) {
+    await prisma.payFastSubscription.update({
+      where: { userId },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+      },
+    });
+  }
+
+  // Create subscription history entry
+  await prisma.subscriptionHistory.create({
+    data: {
+      userId,
+      action: 'SUBSCRIPTION_CANCELLED',
+      previousStatus: 'ACTIVE',
+      newStatus: 'CANCELLED',
+      changedBy: cancelledBy,
+      notes: reason || 'Subscription cancelled by user',
+    },
+  });
+
+  // TODO: Send cancellation confirmation email
+}
+
+/**
+ * Check and sync subscription status with PayFast
+ * Called by cron job to keep status in sync
+ */
+export async function syncSubscriptionStatus(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      payfastSubscription: true,
+    },
+  });
+
+  if (!user || !user.payfastSubscription) {
+    return;
+  }
+
+  const now = new Date();
+  const nextBillingDate = user.payfastSubscription.nextBillingDate;
+
+  // If past billing date and status is still ACTIVE, check for payment
+  if (nextBillingDate && nextBillingDate < now && user.subscriptionStatus === 'ACTIVE') {
+    // Check if payment was received for this billing period
+    const recentPayment = await prisma.payfastTransaction.findFirst({
+      where: {
+        userId,
+        paymentStatus: 'COMPLETE',
+        createdAt: {
+          gte: new Date(nextBillingDate.getTime() - 24 * 60 * 60 * 1000), // Within 24h of billing date
+        },
+      },
+    });
+
+    if (!recentPayment) {
+      // No payment received, mark as PAST_DUE
+      await handleFailedPayment(userId, 'Payment not received for billing period');
+    }
+  }
+}

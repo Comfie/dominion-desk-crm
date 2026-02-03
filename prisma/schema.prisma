@@ -58,13 +58,9 @@ model User {
   language        String    @default("en")
   rentalDueDay    Int       @default(1) // Day of month when rent is due (1-31)
 
-  // Banking Details (for invoices and payment instructions)
-  bankName            String?
-  bankAccountName     String?
-  bankAccountNumber   String?
-  bankBranchCode      String?
-  bankSwiftCode       String?
-  paymentInstructions String? @db.Text
+  // Banking Details - REMOVED (moved to encrypted storage)
+  // Security: Banking details are now stored encrypted separately
+  // See: lib/services/banking-encryption.service.ts
 
   // Metadata
   lastLogin       DateTime?
@@ -98,6 +94,10 @@ model User {
   integrations    Integration[]
   subscriptionHistory SubscriptionHistory[]
   inspections     Inspection[]
+  encryptedBankingDetails EncryptedBankingDetails?
+  payfastSubscription   PayFastSubscription?
+  billingInvoices       BillingInvoice[]
+  payfastTransactions   PayFastTransaction[]
 }
 
 // ============== PASSWORD RESET ==============
@@ -403,6 +403,7 @@ enum BookingSource {
 
 enum PaymentStatus {
   PENDING
+  PENDING_VERIFICATION  // Proof uploaded, awaiting landlord approval
   PARTIALLY_PAID
   PAID
   OVERDUE
@@ -763,6 +764,16 @@ model Payment {
 
   // Bank Details (for EFT)
   bankReference   String?
+
+  // Proof of Payment fields
+  proofOfPaymentUrl    String?   // UploadThing URL
+  proofOfPaymentName   String?   // Original filename
+  proofUploadedAt      DateTime? // When proof was uploaded
+  proofUploadedBy      String?   // Tenant ID who uploaded
+  proofNotes           String?   @db.Text // Optional tenant notes
+  verifiedAt           DateTime? // When landlord verified
+  verifiedBy           String?   // Landlord ID who verified
+  verificationNotes    String?   @db.Text // Landlord notes on verification
 
   // Metadata
   createdAt       DateTime  @default(now())
@@ -1613,6 +1624,23 @@ model SystemSettings {
   @@index([category])
 }
 
+// ============== ENCRYPTED BANKING DETAILS ==============
+
+model EncryptedBankingDetails {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Encrypted fields (stored as base64 encrypted strings)
+  encryptedData   String    @db.Text  // JSON object with all banking details
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+}
+
 // ============== PROPERTY VALUATION ==============
 
 model PropertyValuation {
@@ -1736,4 +1764,125 @@ enum ConditionRating {
   FAIR
   POOR
   CRITICAL
+}
+
+// ============== PAYFAST SUBSCRIPTION BILLING ==============
+
+model PayFastSubscription {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // PayFast identifiers
+  payfastToken          String?   // Token for ad-hoc charges
+  payfastSubscriptionId String?   @unique  // PayFast's subscription reference
+  merchantReference     String    @unique  // Our internal reference
+
+  // Subscription details
+  amount                Decimal   @db.Decimal(10, 2)
+  frequency             Int       @default(3)  // 3 = monthly
+  cycles                Int       @default(0)  // 0 = infinite
+
+  // Status
+  status                PayFastSubscriptionStatus @default(PENDING)
+
+  // Dates
+  startDate             DateTime?
+  nextBillingDate       DateTime?
+  lastBillingDate       DateTime?
+  cancelledAt           DateTime?
+
+  // Metadata
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([merchantReference])
+}
+
+enum PayFastSubscriptionStatus {
+  PENDING       // Awaiting initial payment
+  ACTIVE        // Subscription is active
+  PAUSED        // Temporarily paused
+  CANCELLED     // User cancelled
+  SUSPENDED     // Payment failures
+  EXPIRED       // Subscription ended
+}
+
+model BillingInvoice {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Invoice details
+  invoiceNumber     String    @unique
+  periodStart       DateTime
+  periodEnd         DateTime
+
+  // Amounts
+  baseFee           Decimal   @db.Decimal(10, 2)
+  propertyFees      Decimal   @db.Decimal(10, 2)
+  totalAmount       Decimal   @db.Decimal(10, 2)
+
+  // Breakdown (JSON of property fees)
+  breakdown         Json?
+
+  // Status
+  status            InvoiceStatus @default(PENDING)
+  paidAt            DateTime?
+
+  // PayFast reference
+  payfastPaymentId  String?
+
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([invoiceNumber])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+model PayFastTransaction {
+  id                String    @id @default(cuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // PayFast data
+  payfastPaymentId  String    @unique
+  merchantReference String
+  paymentStatus     String    // COMPLETE, FAILED, CANCELLED
+
+  // Amounts
+  amountGross       Decimal   @db.Decimal(10, 2)
+  amountFee         Decimal   @db.Decimal(10, 2)
+  amountNet         Decimal   @db.Decimal(10, 2)
+
+  // ITN data (raw)
+  itnData           Json
+
+  // Verification
+  signatureVerified Boolean   @default(false)
+  ipVerified        Boolean   @default(false)
+  amountVerified    Boolean   @default(false)
+
+  // Processing
+  processedAt       DateTime?
+  errorMessage      String?
+
+  // Metadata
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+  @@index([merchantReference])
+  @@index([payfastPaymentId])
 }

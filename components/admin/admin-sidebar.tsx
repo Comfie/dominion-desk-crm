@@ -9,7 +9,7 @@ import { Users, BarChart3, CreditCard, Settings, X, Shield } from 'lucide-react'
 
 const navItems = [
   {
-    title: 'Users',
+    title: 'System Users',
     href: '/admin/users',
     icon: Users,
   },

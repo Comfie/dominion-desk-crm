@@ -89,6 +89,41 @@ export const ourFileRouter = {
         fileSize: file.size,
       };
     }),
+
+  // Payment proof uploader - for tenants to upload EFT/deposit proofs
+  paymentProofUploader: f({
+    pdf: { maxFileSize: '8MB', maxFileCount: 1 },
+    image: { maxFileSize: '8MB', maxFileCount: 1 },
+  })
+    .middleware(async () => {
+      // Authentication check
+      const session = await getServerSession(authOptions);
+
+      if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+      }
+
+      // Allow tenants to upload payment proofs
+      return {
+        userId: session.user.id,
+        userEmail: session.user.email,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      // This code runs on the server after upload completes
+      console.log('Payment proof upload complete for userId:', metadata.userId);
+      console.log('File URL:', file.url);
+      console.log('File name:', file.name);
+      console.log('File size:', file.size);
+
+      // Return data to the client
+      return {
+        uploadedBy: metadata.userId,
+        fileUrl: file.url,
+        fileName: file.name,
+        fileSize: file.size,
+      };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

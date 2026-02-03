@@ -138,6 +138,7 @@ export default function AdminSubscriptionSettingsPage() {
       'subscription.grace_period_warning_days': 'Warning Period (Days)',
       'subscription.grace_period_limited_days': 'Limited Access Period (Days)',
       'subscription.grace_period_readonly_days': 'Read-Only Period (Days)',
+      'payment.online_transaction_fee_percentage': 'Online Payment Transaction Fee (%)',
     };
     return labels[key] || key;
   };
@@ -152,6 +153,7 @@ export default function AdminSubscriptionSettingsPage() {
 
   const getSettingCategory = (key: string): string => {
     if (key.includes('trial')) return 'trial';
+    if (key.startsWith('payment.')) return 'payment';
     if (key.includes('fee') || key.includes('percentage') || key.includes('free_property'))
       return 'pricing';
     if (key.includes('grace')) return 'access';
@@ -171,6 +173,7 @@ export default function AdminSubscriptionSettingsPage() {
   const trialSettings = settings.filter((s) => getSettingCategory(s.key) === 'trial');
   const pricingSettings = settings.filter((s) => getSettingCategory(s.key) === 'pricing');
   const accessSettings = settings.filter((s) => getSettingCategory(s.key) === 'access');
+  const paymentSettings = settings.filter((s) => getSettingCategory(s.key) === 'payment');
 
   return (
     <div className="space-y-6">
@@ -359,6 +362,59 @@ export default function AdminSubscriptionSettingsPage() {
           })}
         </CardContent>
       </Card>
+
+      {/* Payment Settings */}
+      {paymentSettings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Payment Settings
+            </CardTitle>
+            <CardDescription>Configure online payment transaction fees</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Note:</strong> This fee is added to online card payments to cover payment
+                processing costs. Tenants are informed of this fee before completing their payment.
+                EFT/bank transfer payments do not incur this fee.
+              </p>
+            </div>
+            {paymentSettings.map((setting) => {
+              const Icon = getSettingIcon(setting.key);
+              return (
+                <div key={setting.key} className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={setting.key} className="flex items-center gap-2">
+                      <Icon className="text-muted-foreground h-4 w-4" />
+                      {getSettingLabel(setting.key)}
+                    </Label>
+                    {setting.isDefault && (
+                      <Badge variant="secondary" className="text-xs">
+                        Default
+                      </Badge>
+                    )}
+                  </div>
+                  <Input
+                    id={setting.key}
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={editValues[setting.key] || ''}
+                    onChange={(e) =>
+                      setEditValues({ ...editValues, [setting.key]: e.target.value })
+                    }
+                    className="max-w-[200px]"
+                  />
+                  <p className="text-muted-foreground text-xs">{setting.description}</p>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Save Button (sticky at bottom) */}
       {hasChanges && (

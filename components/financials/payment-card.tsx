@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DollarSign, CreditCard, Calendar, Building2, Mail } from 'lucide-react';
+import { DollarSign, CreditCard, Calendar, Building2, Mail, FileCheck } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,6 +22,9 @@ interface PaymentCardProps {
     status: string;
     dueDate?: string | null;
     reminderSent?: boolean;
+    proofOfPaymentUrl?: string | null;
+    proofOfPaymentName?: string | null;
+    proofUploadedAt?: string | null;
     booking?: {
       id: string;
       guestName: string;
@@ -53,6 +56,7 @@ interface PaymentCardProps {
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  PENDING_VERIFICATION: 'bg-blue-100 text-blue-800 border-blue-200',
   PARTIALLY_PAID: 'bg-blue-100 text-blue-800 border-blue-200',
   PAID: 'bg-green-100 text-green-800 border-green-200',
   OVERDUE: 'bg-red-100 text-red-800 border-red-200',
@@ -146,11 +150,29 @@ export function PaymentCard({ payment }: PaymentCardProps) {
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-semibold">{payer}</h3>
                 <Badge variant="outline" className="text-xs">
                   {paymentTypeLabels[payment.paymentType] || payment.paymentType}
                 </Badge>
+                {payment.status === 'PENDING_VERIFICATION' && payment.proofOfPaymentUrl && (
+                  <Badge
+                    variant="secondary"
+                    className="border-blue-200 bg-blue-100 text-xs text-blue-800"
+                  >
+                    <FileCheck className="mr-1 h-3 w-3" />
+                    Proof Uploaded
+                  </Badge>
+                )}
+                {payment.status === 'PAID' && payment.proofOfPaymentUrl && (
+                  <Badge
+                    variant="secondary"
+                    className="border-green-200 bg-green-100 text-xs text-green-800"
+                  >
+                    <FileCheck className="mr-1 h-3 w-3" />
+                    Proof Available
+                  </Badge>
+                )}
                 {payment.reminderSent && (
                   <Badge variant="secondary" className="text-xs">
                     Reminder Sent

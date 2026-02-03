@@ -34,6 +34,8 @@ export async function GET() {
       propertyStats,
       rawRevenueHistory,
       activeLeases,
+      paymentsWithIssues,
+      recentPaidPayments,
     ] = await Promise.all([
       // Total properties
       prisma.property.count({ where: { userId } }),
@@ -173,6 +175,69 @@ export async function GET() {
             select: {
               firstName: true,
               lastName: true,
+            },
+          },
+        },
+      }),
+
+      // Tenants with due/overdue payments
+      prisma.payment.findMany({
+        where: {
+          userId,
+          status: { in: ['PENDING', 'OVERDUE', 'PENDING_VERIFICATION'] },
+          paymentType: 'RENT',
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 10,
+        select: {
+          id: true,
+          amount: true,
+          dueDate: true,
+          status: true,
+          paymentReference: true,
+          tenant: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          property: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+
+      // Recent paid payments
+      prisma.payment.findMany({
+        where: {
+          userId,
+          status: 'PAID',
+        },
+        orderBy: { paymentDate: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          amount: true,
+          paymentDate: true,
+          status: true,
+          paymentReference: true,
+          paymentType: true,
+          tenant: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          property: {
+            select: {
+              id: true,
+              name: true,
             },
           },
         },
@@ -360,10 +425,13 @@ export async function GET() {
         propertiesWithTenants,
         tenantsMovedIn,
         tenantsScheduledMoveIn,
+        paymentsWithIssuesCount: paymentsWithIssues.length,
       },
       recentBookings,
       upcomingTasks,
       staleMaintenance,
+      paymentsWithIssues,
+      recentPaidPayments,
       longTerm: {
         properties: propertySummaries,
         propertyTotal: propertiesWithTenants,

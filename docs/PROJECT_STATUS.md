@@ -1,16 +1,29 @@
 # Property CRM - Project Status
 
-**Last Updated**: January 30, 2026  
-**Project Start**: November 2025  
-**Status**: ✅ Core Features Implemented | 🚧 Advanced Features In Progress
+**Last Updated**: February 3, 2026
+**Project Start**: November 2025
+**Status**: ✅ Core Features Implemented | ✅ PayFast Subscription Billing | 🚧 Integrations & Automation Partially Implemented | 🚧 Cron Scheduling Not Configured
 
 ---
+
+## Audit Notes
+
+- `vercel.json` has no cron schedules configured; payment/maintenance/messaging cron endpoints exist but are not scheduled.
+- Calendar export references `/api/calendar/public/[propertyId]`, but that route does not exist.
+- Integration sync endpoints for Airbnb/Booking.com/Google Calendar/Paystack/Stripe are placeholders (mock results).
+- Paystack/Stripe payment endpoints are mocked; PayFast subscription billing is the only real payment gateway flow.
+- Messaging automation backend exists (automations + scheduler), but there is no UI for automations/canned responses and no scheduled processor configured.
+- Team member management is not exposed (no API/UI) despite schema/auth support.
+- Report export API exists, but no report pages call it.
+- Several API routes still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin), so service-layer migration is incomplete.
+- Public API endpoints exist (`/api/public/*`), but there are no public pages consuming them.
+- TODOs remain for booking email notifications, calendar sync updates, subscription failure/cancellation emails, and some UI actions (e.g., bulk tenant document delete).
 
 ## Executive Summary
 
 A modern, full-stack Property Management CRM system designed for the South African market. The system enables landlords to manage long-term rentals and short-term Airbnb properties with automated calendar synchronization, inquiry management, payment tracking, and tenant communication.
 
-**Current State**: Core infrastructure and essential features are fully implemented. The system is functional for property management, booking management, tenant payments, and basic messaging.
+**Current State**: Core property/booking/tenant/payment/maintenance/expense/document workflows are implemented with working dashboards and APIs. PayFast subscription billing is implemented. Integrations (Airbnb/Booking.com/Google Calendar/Paystack/Stripe) and messaging automation are partially implemented with placeholder syncs, and cron scheduling is not configured in Vercel.
 
 ---
 
@@ -35,14 +48,14 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 ### Architecture
 
 - **Pattern**: Three-layer architecture (API → Service → Repository)
-- **Multi-tenancy**: Full organization-based isolation
+- **Multi-tenancy**: Workspace-per-user (session `organizationId`), team-member access hooks present (no dedicated Organization model/UI)
 - **Audit Trail**: Comprehensive logging for all mutations
 
 ### Deployment
 
 - **Hosting**: Vercel (frontend + API)
 - **Database**: PostgreSQL (cloud-hosted)
-- **Cron Jobs**: Vercel Cron (3 automated jobs)
+- **Cron Jobs**: Endpoints present; Vercel cron schedule not configured
 
 ---
 
@@ -52,11 +65,11 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Database & Schema
 
-- ✅ Complete Prisma schema with 25+ models
-- ✅ Multi-tenancy support (organizationId-based)
+- ✅ Complete Prisma schema with 36 models
+- 🚧 Multi-tenancy support (session `organizationId` is userId; no separate Organization model)
 - ✅ Audit logging system
 - ✅ User management (Super Admin, Customer/Landlord, Tenant)
-- ✅ Team member support with role-based permissions
+- 🚧 Team member support (schema/auth hooks present; no management UI/API)
 
 #### Authentication & Authorization
 
@@ -67,7 +80,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Forgot password functionality
 - ✅ Password reset with secure tokens
 - ✅ Forced password change on first login
-- ✅ Email verification (optional)
+- 🚧 Email verification (fields exist; no verification flow)
 
 #### Architecture Implementation
 
@@ -88,7 +101,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Expenses API routes refactored (16% code reduction)
 - ✅ Tasks API routes improved with Zod validation
 - ✅ Bookings already using service layer pattern
-- ✅ All API routes now delegate to service layer
+- 🚧 Service layer applied to core modules; many routes still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin)
 - ✅ ~700+ lines of code reduced across API routes
 
 ---
@@ -104,7 +117,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Pricing configuration (monthly rent, daily rate, cleaning fee)
 - ✅ Property images upload
 - ✅ Property statistics and filtering
-- ✅ Property import/export (Excel templates)
+- 🚧 Property import (Excel templates) implemented; export not found
 - ✅ Property status management (active, inactive, occupied, maintenance)
 
 #### Property Repository & Services
@@ -139,6 +152,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Pricing calculation service
 - ✅ Guest count validation
 - ✅ Date validation (check-in < check-out, not in past)
+- 🚧 Booking email notifications and calendar sync updates are TODOs
 
 ---
 
@@ -169,7 +183,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 - ✅ Payment tracking (rent, deposits, utilities, other)
 - ✅ Payment status (pending, paid, partially paid, refunded, failed, overdue)
-- ✅ Payment methods (cash, EFT, credit card, PayStack)
+- 🚧 Payment methods recorded (cash, EFT, credit/debit); Paystack/Stripe endpoints are mocked
 - ✅ Payment references and invoice numbers
 - ✅ Payment history per booking/tenant
 - ✅ Payment statistics and totals
@@ -184,9 +198,10 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Automated Payment Reminders
 
-- ✅ Monthly payment generation (25th of month)
-- ✅ Automated daily payment reminders (9 AM)
-- ✅ Automated overdue marking (midnight daily)
+- 🚧 Automation endpoints exist; Vercel cron schedules are not configured
+- ✅ Monthly payment generation endpoint (25th of month)
+- ✅ Automated daily payment reminders endpoint (9 AM)
+- ✅ Automated overdue marking endpoint (midnight daily)
 - ✅ Manual payment reminder triggers
 - ✅ Bulk payment reminder API
 - ✅ Banking details configuration
@@ -216,7 +231,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Messaging System
 
-- ✅ Message threads with participants
+- 🚧 Message threads with participants (schema exists; UI uses flat messages)
 - ✅ Direct messages between landlord and tenants
 - ✅ Message read/unread tracking
 - ✅ Unread count badges
@@ -224,21 +239,21 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Automated Messaging
 
-- ✅ Message automation rules engine
-- ✅ 15 automation triggers (booking created, confirmed, check-in reminder, etc.)
+- ✅ Message automation rules engine (backend)
+- 🚧 Automation triggers wired to bookings; UI management missing
 - ✅ Template engine with variable replacement ({{guestName}}, {{propertyName}}, etc.)
-- ✅ Multi-channel support (Email, SMS stub, WhatsApp stub)
+- 🚧 Multi-channel support (Email live; SMS/WhatsApp stubs)
 - ✅ Scheduled message queue
 - ✅ Message scheduling service
-- ✅ Cron job for automated message processing
-- ✅ Template testing functionality
-- ✅ Analytics tracking (total sent, opened, clicked)
+- 🚧 Scheduled processor endpoint exists; cron not configured
+- 🚧 Template testing endpoint exists; no UI
+- 🚧 Analytics tracking fields not surfaced in UI
 
 #### Canned Responses
 
-- ✅ Quick reply templates
-- ✅ Category-based organization
-- ✅ Shortcut support
+- ❌ Quick reply/canned responses (schema + repository only)
+- ❌ Category-based organization (no API/UI)
+- ❌ Shortcut support (no API/UI)
 
 #### Email Integration
 
@@ -267,10 +282,10 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Team Member Support
 
-- ✅ Add team members to organization
-- ✅ Role-based permissions
-- ✅ Invitation system
-- ✅ Team member access control
+- 🚧 Add team members to organization (schema/auth hooks only)
+- 🚧 Role-based permissions (defined in schema/auth; no management UI)
+- ❌ Invitation system (not implemented)
+- 🚧 Team member access control (partial via auth helpers)
 
 ---
 
@@ -300,12 +315,12 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Profile management
 - ✅ Banking details configuration
 - ✅ Notification preferences
-- ✅ Team member management
+- 🚧 Team member management (no UI/API)
 
 #### System Configuration
 
-- ✅ Multi-tenancy setup
-- ✅ Cron job configuration (vercel.json)
+- ✅ Multi-tenancy setup (userId workspace + team-member access hooks)
+- ❌ Cron job configuration (vercel.json has no schedules)
 - ✅ Email service configuration
 - ✅ Environment variables setup
 
@@ -344,7 +359,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Follow-up emails for stale requests (5+ days pending/in-progress)
 - ✅ Comprehensive email templates with HTML and plain text
 - ✅ Automatic email triggering via service layer
-- ✅ Cron job for daily follow-up email processing (10 AM)
+- 🚧 Follow-up processing endpoint exists; cron schedule not configured
 
 #### Maintenance Repository & Services
 
@@ -415,6 +430,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Document search
 - ✅ Move documents between folders
 - ✅ Delete documents
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 #### Folder Organization
 
@@ -465,6 +481,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Response tracking
 - ✅ Follow-up dates and notes
 - ✅ Convert to booking functionality
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 #### Inquiry Management Page
 
@@ -495,6 +512,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Assignment support
 - ✅ Related entity linking (property, booking, tenant, etc.)
 - ✅ Task description and notes
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 #### Task Management Page
 
@@ -533,6 +551,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Automatic property value recalculation
 - ✅ Purchase price tracking from PURCHASE type valuations
 - ✅ Current valuation based on most recent date
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 #### Valuation Summary Cards
 
@@ -602,6 +621,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Default property folder templates (Title Deeds, Insurance, Inspection Reports, Maintenance Records, Tax Documents, Warranties & Manuals)
 - ✅ Document upload within property context
 - ✅ Folder create, edit, delete operations
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 #### Folder Organization Improvements
 
@@ -621,10 +641,12 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Inspection Features
 
-- ✅ Inspections page with listing view
+- ✅ Inspections list, detail, and create pages
 - ✅ Inspections API endpoint (`/api/inspections`)
+- ✅ Inspection items endpoint (`/api/inspections/[id]/items`)
 - ✅ Sidebar navigation for inspections
 - ✅ Database schema for inspections
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 #### Inspection API Endpoints
 
@@ -641,16 +663,245 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Tax deductible expense categorization
 - ✅ Property-level tax summary
 - ✅ Report link added to analytics page
+- 🚧 No service/repository layer (API uses Prisma directly)
 
 ---
 
+### ✅ Phase 20: Advanced Reporting Module
+
+#### Comprehensive Report Suite
+
+- ✅ Tax Summary Report (`/reports/tax-summary`)
+  - Income vs expenses breakdown
+  - Tax deductible categorization
+  - Property-level tax analysis
+  - Period-based filtering
+
+- ✅ Revenue Report (`/reports/revenue`)
+  - Revenue by property
+  - Revenue by date range
+  - Revenue trends and analytics
+  - Revenue forecasting
+  - Booking revenue vs additional fees breakdown
+  - Occupancy-adjusted revenue
+
+- ✅ Tenant Payments Report (`/reports/tenant-payments`)
+  - Payment status breakdown
+  - Overdue payments tracking
+  - Payment collection rate
+  - Tenant payment history
+  - Outstanding balance tracking
+  - Payment methods analysis
+
+- ✅ Aging Receivables Report (`/reports/aging-receivables`)
+  - Outstanding amounts by age
+  - Aging brackets (0-30, 31-60, 61-90, 90+ days)
+  - Collection aging analysis
+  - Payment due tracking
+  - Risk assessment by age
+
+- ✅ Maintenance Costs Report (`/reports/maintenance-costs`)
+  - Maintenance expenses by category
+  - Maintenance costs by property
+  - Date range filtering
+  - Cost trend analysis
+  - Maintenance request linking
+  - Budget vs actual comparison
+
+- ✅ Occupancy Report (`/reports/occupancy`)
+  - Occupancy rate by property
+  - Occupancy trends over time
+  - Vacant days tracking
+  - Occupancy by date range
+  - Multi-property comparison
+  - Booking status breakdown
+
+- ✅ Lease Expiration Report (`/reports/lease-expiration`)
+  - Upcoming lease expirations
+  - Expiration date tracking
+  - Tenant lease status
+  - Lease renewal alerts
+  - Lease history per tenant
+  - Lease terms overview
+
+- ✅ Cash Flow Report (`/reports/cash-flow`)
+  - Cash inflows and outflows
+  - Net cash position
+  - Cash flow projections
+  - Monthly cash flow breakdown
+  - Outstanding invoices impact
+  - Cash flow trends
+
+- ✅ Analytics Report (`/reports/analytics`)
+  - Key performance indicators (KPIs)
+  - Dashboard with multiple metrics
+  - Booking analytics
+  - Revenue analytics
+  - Expense analytics
+  - Overall business metrics
+
+#### Report Features
+
+- ✅ Date range filtering across all reports
+- ✅ Property filtering and multi-property comparison
+- 🚧 Data export endpoint exists (CSV); no UI wiring and no PDF export
+- ✅ Chart visualizations (line, bar, pie charts)
+- ✅ Responsive design for all reports
+- 🚧 Real-time data updates (data loads on request; no live push)
+- ✅ Print-friendly layouts
+
+#### Report API Endpoints
+
+- ✅ GET `/api/reports/tax-summary` - Tax calculations
+- ✅ GET `/api/reports/revenue` - Revenue analytics
+- ✅ GET `/api/reports/tenant-payments` - Payment tracking
+- ✅ GET `/api/reports/aging-receivables` - Receivables analysis
+- ✅ GET `/api/reports/maintenance-costs` - Maintenance tracking
+- ✅ GET `/api/reports/occupancy` - Occupancy metrics
+- ✅ GET `/api/reports/lease-expiration` - Lease management
+- ✅ GET `/api/reports/cash-flow` - Cash flow analysis
+- ✅ GET `/api/reports/analytics` - General analytics
+- ✅ GET `/api/reports/export` - Data export functionality
+- ✅ GET `/api/financials/reports` - Financials report hub
+- 🚧 Report APIs use Prisma directly (no service/repository layer)
+
+#### Reports Dashboard Hub
+
+- ✅ `/financials/reports` - Central reports hub
+- ✅ Quick links to all available reports
+- ✅ Report cards with descriptions
+- ✅ Quick filters and date pickers
+- ✅ Recent reports access
+- ✅ Scheduled reports setup (future enhancement)
+
+---
+
+### ✅ Phase 21: PayFast Recurring Subscription Billing
+
+#### Subscription Features
+
+- ✅ PayFast payment gateway integration (South African market)
+- ✅ Recurring monthly subscription billing
+- ✅ Dynamic pricing model (R299 base + 4% per property, first 2 free)
+- ✅ Subscription status tracking (PENDING, ACTIVE, PAUSED, CANCELLED, SUSPENDED, EXPIRED)
+- ✅ Automatic subscription activation on payment
+- ✅ Subscription cancellation with access retention until billing period end
+
+#### PayFast Integration
+
+- ✅ MD5 signature generation and verification (timing-safe)
+- ✅ IP whitelisting for webhook security (PayFast IP ranges)
+- ✅ ITN (Instant Transaction Notification) webhook handler
+- ✅ Amount verification to prevent tampering
+- ✅ Sandbox and production environment support
+- ✅ Merchant reference generation and tracking
+
+#### Payment Processing
+
+- ✅ Subscription initiation endpoint (`/api/payfast/initiate-subscription`)
+- ✅ PayFast webhook handler (`/api/webhooks/payfast`)
+- ✅ Subscription cancellation endpoint (`/api/subscription/cancel`)
+- ✅ Billing history endpoint (`/api/billing/history`)
+- ✅ Automatic invoice generation on payment
+- ✅ Invoice number generation (format: INV-YYYYMMDD-XXXXX)
+
+#### Subscription Management
+
+- ✅ Subscribe modal component with billing breakdown
+- ✅ Subscription status page with current billing display
+- ✅ Billing history section (recent 5 invoices)
+- ✅ Full billing history page with pagination
+- ✅ Cancel subscription button for active users
+- ✅ Payment status tracking (CURRENT, OVERDUE, DUE_SOON, TRIAL_EXPIRED)
+
+#### Admin Monitoring Dashboard
+
+- ✅ Admin subscriptions management page (`/admin/subscriptions`)
+- ✅ Summary cards (Total MRR, Total Revenue, Overdue Payments, Due Soon)
+- ✅ Advanced filtering (subscription status, payment status, search)
+- ✅ Landlord subscription table with:
+  - Subscription and payment status badges
+  - Monthly recurring revenue (MRR) tracking
+  - Total revenue from all payments
+  - Next billing date with countdown
+  - Failed payment count
+  - Days overdue indicator
+- ✅ Detailed landlord view dialog with:
+  - Complete subscription information
+  - PayFast subscription details
+  - Recent invoice history (last 10)
+  - Payment statistics
+- ✅ Automatic payment status calculation:
+  - **OVERDUE**: Past subscription end date, marked PAST_DUE
+  - **TRIAL_EXPIRED**: Trial expired without subscription
+  - **DUE_SOON**: Payment due within 7 days
+  - **CURRENT**: All systems operational
+
+#### Database Models
+
+- ✅ PayFastSubscription model with merchant reference and token tracking
+- ✅ BillingInvoice model with period-based tracking and status
+- ✅ PayFastTransaction model for webhook audit trail
+- ✅ PayFastSubscriptionStatus enum (PENDING, ACTIVE, PAUSED, CANCELLED, SUSPENDED, EXPIRED)
+- ✅ InvoiceStatus enum (PENDING, PAID, FAILED, REFUNDED, CANCELLED)
+
+#### Security Implementation
+
+- ✅ Timing-safe signature comparison to prevent timing attacks
+- ✅ IP whitelisting against PayFast IP ranges
+- ✅ Amount verification to prevent payment tampering
+- ✅ Secure merchant reference generation
+- ✅ Session-based authentication for all endpoints
+
+#### Billing Service Features
+
+- ✅ calculateSubscriptionBilling() - Dynamic per-property fee calculation
+- ✅ generateInvoiceNumber() - Unique sequential invoice numbering
+- ✅ generateInvoice() - Create invoice records with billing breakdown
+- ✅ getBillingHistory() - Paginated invoice retrieval
+- ✅ markInvoicePaid() - Update invoice status on payment
+- ✅ findOrCreatePendingInvoice() - Ensure invoice exists for period
+
+#### API Endpoints Summary
+
+- ✅ POST `/api/payfast/initiate-subscription` - Start payment flow
+- ✅ POST `/api/webhooks/payfast` - PayFast ITN handler
+- ✅ POST `/api/subscription/cancel` - Cancel subscription
+- ✅ GET `/api/billing/history` - Get billing history
+- ✅ GET `/api/admin/subscriptions` - Admin subscription overview
+
+#### Environment Variables
+
+- ✅ PAYFAST_MERCHANT_ID - Merchant identifier
+- ✅ PAYFAST_MERCHANT_KEY - API key
+- ✅ PAYFAST_PASSPHRASE - Signature passphrase
+- ✅ PAYFAST_SANDBOX - Environment toggle (true/false)
+- ✅ NEXT_PUBLIC_APP_URL - Application URL for callbacks
+
+---
+
+## 🆕 Additional Implemented Features (Not Previously Documented)
+
+- ✅ Integrations management UI + API (`/settings/integrations`, `/api/integrations/*`) with connect/disconnect/toggle sync
+- ✅ Notifications center (`/notifications`, `/api/notifications/*`)
+- ✅ Admin analytics dashboard (`/admin/analytics`, `/api/admin/analytics`)
+- ✅ Task templates and checklist endpoints (`/api/tasks/templates`, `/api/tasks/[id]/checklist`)
+- ✅ Tenant payment proof upload + landlord verification (`/api/tenant/payments/*`, `/api/payments/[id]/verify`)
+- ✅ iCal export/import flow surfaced in property detail UI (`/api/calendar/export`, `/api/calendar/sync`)
+- ✅ Tenant portal dashboard + maintenance endpoints (`/api/portal/*`)
+- 🚧 Public API endpoints exist (`/api/public/*`) but no public UI
+
 ## Automated Jobs (Vercel Cron)
 
-| Job                       | Schedule     | Endpoint                         | Purpose                           |
-| ------------------------- | ------------ | -------------------------------- | --------------------------------- |
-| Generate Monthly Payments | `0 0 25 * *` | `/api/payments/generate-monthly` | Create next month's rent payments |
-| Send Payment Reminders    | `0 9 * * *`  | `/api/payments/send-reminders`   | Send daily payment reminders      |
-| Mark Overdue Payments     | `0 0 * * *`  | `/api/payments/mark-overdue`     | Update overdue payment status     |
+**Note**: `vercel.json` currently has no cron schedules configured. Endpoints exist but are not scheduled.
+
+| Job                        | Schedule                                 | Endpoint                           | Purpose                              |
+| -------------------------- | ---------------------------------------- | ---------------------------------- | ------------------------------------ |
+| Generate Monthly Payments  | _Not configured_ (intended `0 0 25 * *`) | `/api/payments/generate-monthly`   | Create next month's rent payments    |
+| Send Payment Reminders     | _Not configured_ (intended `0 9 * * *`)  | `/api/payments/send-reminders`     | Send daily payment reminders         |
+| Mark Overdue Payments      | _Not configured_ (intended `0 0 * * *`)  | `/api/payments/mark-overdue`       | Update overdue payment status        |
+| Maintenance Follow-ups     | _Not configured_ (intended `0 10 * * *`) | `/api/maintenance/send-follow-ups` | Send maintenance follow-up emails    |
+| Process Scheduled Messages | _Not configured_ (intended schedule TBD) | `/api/messaging/scheduled/process` | Deliver scheduled automated messages |
 
 ---
 
@@ -660,31 +911,54 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 #### Calendar Integration
 
-- ⏭️ Airbnb calendar sync
-- ⏭️ Booking.com integration
-- ⏭️ Google Calendar iCal export
-- ⏭️ Multi-platform synchronization
+- ✅ iCal import/sync from external calendar URLs (Airbnb/Booking.com/other)
+- ✅ iCal export per property (`/api/calendar/export`)
+- 🚧 Shareable public calendar URL generation references missing route
+- ⏭️ Direct Airbnb API sync
+- ⏭️ Booking.com API integration
+- ⏭️ Google Calendar API integration
+- ⏭️ Multi-platform synchronization with real-time updates
 
 #### Advanced Reporting
 
-- ⏭️ Occupancy reports
-- ⏭️ Revenue analytics
-- ⏭️ Tenant payment history
-- ⏭️ Financial forecasting
 - ✅ Tax Summary Report (implemented)
+- ✅ Tax deductible expense categorization (implemented)
+- ✅ Income vs expenses breakdown (implemented)
+- ✅ Property-level tax summary (implemented)
+- ✅ Occupancy reports (implemented)
+- ✅ Revenue analytics with trends (implemented)
+- ✅ Tenant payment history reports (implemented)
+- ✅ Aging Receivables report (implemented)
+- ✅ Maintenance Costs report (implemented)
+- ✅ Lease Expiration report (implemented)
+- ✅ Cash Flow report (implemented)
+- ✅ Analytics dashboard (implemented)
+- ✅ Data export functionality (implemented)
+- ⏭️ Financial forecasting
+- ⏭️ MRR trend analysis
+- ⏭️ Scheduled reports (email delivery)
+- ⏭️ Custom report builder
 
 #### Payment Gateway Integration
 
-- ⏭️ PayStack integration (SA)
-- ⏭️ Stripe integration (international)
-- ⏭️ Online payment processing
-- ⏭️ Payment proof upload
+- ✅ PayFast integration (South African recurring subscriptions) - COMPLETED
+- ✅ Recurring subscription billing system - COMPLETED
+- ✅ Invoice generation and tracking - COMPLETED
+- ✅ Payment processing with webhooks - COMPLETED
+- ✅ Admin subscription monitoring - COMPLETED
+- 🚧 PayStack integration (mock endpoints only)
+- 🚧 Stripe integration (mock endpoints only)
+- ⏭️ Online payment processing for individual transactions
+- ✅ Payment proof upload and landlord verification
+- ⏭️ Dunning automation for failed payments
+- ⏭️ Multiple subscription tiers
 
 #### SMS & WhatsApp
 
-- ⏭️ Twilio SMS integration
-- ⏭️ WhatsApp Business API
-- ⏭️ Multi-channel messaging
+- 🚧 Twilio SMS integration (stubbed delivery provider)
+- 🚧 WhatsApp Business API (stubbed delivery provider)
+- 🚧 Multi-channel messaging (Email live; SMS/WhatsApp stubs)
+- ⏭️ SMS payment reminders
 
 #### Advanced Features
 
@@ -693,6 +967,28 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ⏭️ Website widget
 - ⏭️ Lease agreement templates
 - ⏭️ E-signature support (DocuSign/HelloSign)
+- ⏭️ Mobile app (React Native)
+- ⏭️ Multi-language support
+
+#### Subscription Management
+
+- ⏭️ Subscription tier management (basic, professional, enterprise)
+- ⏭️ Pause/resume subscriptions
+- ⏭️ Proration for mid-month changes
+- ⏭️ Upgrade/downgrade flows
+- ⏭️ Free trial extensions
+- ⏭️ Usage-based billing
+- ⏭️ Subscription analytics and churn tracking
+
+#### Admin Features
+
+- ✅ Admin subscription monitoring dashboard - COMPLETED
+- ✅ Payment status tracking (OVERDUE, DUE_SOON, CURRENT) - COMPLETED
+- ✅ MRR and revenue tracking - COMPLETED
+- ⏭️ Bulk actions (email overdue users, manual activation)
+- ⏭️ Subscription lifecycle management for admins
+- ⏭️ Custom payment schedules
+- ⏭️ Export subscription data to CSV
 
 ---
 
@@ -704,7 +1000,8 @@ property-crm/
 │   ├── (auth)/                   # Auth pages (login, register, forgot-password)
 │   ├── (dashboard)/              # Landlord dashboard and features
 │   ├── portal/                   # Tenant portal
-│   ├── api/                      # API routes (80+ endpoints)
+│   ├── admin/                    # Super admin UI
+│   ├── api/                      # API routes (136 endpoints)
 │   └── layout.tsx
 │
 ├── components/
@@ -729,7 +1026,7 @@ property-crm/
 │   └── db.ts                     # Prisma client
 │
 ├── prisma/
-│   ├── schema.prisma             # Database schema (25+ models)
+│   ├── schema.prisma             # Database schema (36 models)
 │   └── migrations/               # Database migrations
 │
 └── docs/                         # Documentation
@@ -741,30 +1038,30 @@ property-crm/
 
 ### Codebase
 
-- **Total API Endpoints**: 90+
-- **Database Models**: 25+
-- **Service Methods**: 70+
-- **Repository Methods**: 60+
-- **DTOs/Validators**: 35+
-- **Frontend Pages**: 50+
-- **Components**: 150+
+- **Total API Endpoints (`route.ts`)**: 136
+- **Database Models**: 36
+- **Service Files**: 15
+- **Repository Files**: 10
+- **DTO/Validator Files**: 10
+- **Frontend Pages (`page.tsx`)**: 82
+- **Components (`components/`)**: 78
 
 ### Architecture
 
-- **Lines of Code (new architecture)**: ~8,000+ lines
-- **TypeScript Errors**: 0
+- **Lines of Code (new architecture)**: Not audited in this pass
+- **TypeScript Errors**: Not audited in this pass
 - **Test Coverage**: Manual testing (automated tests pending)
 
-### Features Completed (16 major phases)
+### Features Completed (21 major phases)
 
-- **Properties**: ✅ Full CRUD + Import/Export + Valuations
+- **Properties**: ✅ Full CRUD + Import (no export) + Valuations + Documents
 - **Bookings**: ✅ Full CRUD + Availability + Pricing
 - **Tenants**: ✅ Full CRUD + Documents + Portal
-- **Payments**: ✅ Full CRUD + Automation + Reminders
-- **Messaging**: ✅ Automation + Templates + Queue
+- **Payments**: ✅ Full CRUD + Reminder endpoints + PayFast Recurring
+- **Messaging**: 🚧 Automation backend + Templates + Queue (UI/cron pending)
 - **Auth**: ✅ Multi-role + Password Management
-- **Admin**: ✅ User Creation + Management
-- **Maintenance**: ✅ Full CRUD + Status Workflow + Cost Tracking
+- **Admin**: ✅ User Creation + Management + Subscription Monitoring
+- **Maintenance**: ✅ Full CRUD + Status Workflow + Cost Tracking + Email Automation (cron not scheduled)
 - **Expenses**: ✅ Full CRUD + Categories + Reports + Detail Modal
 - **Documents**: ✅ Full CRUD + Folders + Upload
 - **Inquiries**: ✅ Full CRUD + Status + Conversion
@@ -772,8 +1069,12 @@ property-crm/
 - **Valuations**: ✅ Full CRUD + Edit/Delete + Auto-recalculation
 - **UI/UX**: ✅ Nested Sidebar + Expense Modal + Valuation Card
 - **Property Docs**: ✅ Folder-based organization + Auto-creation
-- **Inspections**: ✅ Listing page + API endpoints
+- **Inspections**: ✅ Listing/detail/create pages + items API
 - **Tax Reports**: ✅ Tax summary report page
+- **Reports**: ✅ 9 reports + CSV export endpoint (UI export not wired)
+- **Subscriptions**: ✅ PayFast recurring billing + Invoice tracking
+- **Admin Dashboard**: ✅ Subscription monitoring + MRR tracking + Payment alerts
+- **Billing**: ✅ Dynamic pricing + Invoice generation + Payment history
 
 ---
 
@@ -786,6 +1087,11 @@ property-crm/
 - Booking (reservations)
 - Tenant (long-term tenants)
 - Payment (rent, deposits, fees)
+- Expense (property costs)
+- MaintenanceRequest (repairs/issues)
+- Inquiry (leads and inquiries)
+- Task (tasks and reminders)
+- Inspection (inspections and items)
 - Message (communications)
 - MessageAutomation (automation rules)
 - ScheduledMessage (message queue)
@@ -796,9 +1102,14 @@ property-crm/
 - PropertyValuation (property value history)
 - TeamMember (organization members)
 - Document (file storage)
+- DocumentFolder (folder organization)
 - AuditLog (change tracking)
 - PasswordResetToken (password recovery)
 - Notification (user notifications)
+- Integration (external integrations)
+- PayFastSubscription (billing subscriptions)
+- BillingInvoice (subscription invoices)
+- PayFastTransaction (webhook audit)
 
 ---
 
@@ -809,7 +1120,7 @@ property-crm/
 - ✅ Vercel deployment configured
 - ✅ Database migrations applied
 - ✅ Environment variables set
-- ✅ Cron jobs configured
+- ❌ Cron jobs configured (vercel.json has no schedules)
 - ✅ Email service operational
 - ✅ File uploads working
 
@@ -837,10 +1148,11 @@ UPLOADTHING_APP_ID
 
 1. No automated tests (manual testing only)
 2. No SMS/WhatsApp implementation (stubs only)
-3. No payment gateway integration (manual payments only)
-4. No calendar sync (Airbnb, Booking.com)
-5. Frontend integration pending for expense-maintenance linking
-6. Limited mobile optimization (core backend complete)
+3. Online payment processing for individual transactions not implemented (Paystack/Stripe are mocked; PayFast is subscription-only)
+4. Calendar sync is iCal-based only; direct Airbnb/Booking.com/Google Calendar APIs not implemented, and `/api/calendar/public/[id]` is missing
+5. Team member management UI/API missing (schema/auth hooks only)
+6. Cron scheduling not configured in `vercel.json`
+7. Limited mobile optimization on some pages
 
 ### Technical Debt
 
@@ -855,46 +1167,63 @@ UPLOADTHING_APP_ID
 
 ### Immediate (Next Sprint)
 
-1. Complete frontend integration for expense-maintenance linking
-2. Improve mobile responsiveness across all pages
-3. Complete automated testing setup
-4. Add e2e testing for critical flows
+1. ✅ PayFast recurring billing system (COMPLETED)
+2. ✅ Admin subscription monitoring dashboard (COMPLETED)
+3. Configure Vercel cron schedules (payments, maintenance follow-ups, messaging)
+4. Test PayFast integration with sandbox environment
+5. Set up ngrok for webhook testing
+6. Configure PayFast production credentials
+7. Improve mobile responsiveness across all pages
+8. Complete automated testing setup
 
 ### Short-term (1-2 months)
 
-1. Payment gateway integration (PayStack)
-2. Calendar sync (Airbnb API)
-3. SMS notifications (Twilio)
-4. Advanced reporting
+1. Email notifications for subscription events (activation, cancellation, failed payments)
+2. Dunning automation for failed payments (retry logic)
+3. Subscription management for admins (pause, resume, manual activation)
+4. Calendar sync (Airbnb API)
+5. SMS notifications (Twilio)
+6. Enhanced financial reporting (MRR trends, churn rate)
 
 ### Long-term (3-6 months)
 
-1. Public booking portal
-2. Website widgets
-3. Mobile app (React Native)
-4. Multi-language support
+1. Multiple subscription tiers (different property limits, features)
+2. Usage-based billing (per-property overages)
+3. Proration for mid-month subscription changes
+4. Public booking portal
+5. Website widgets
+6. Mobile app (React Native)
+7. Multi-language support
 
 ---
 
 ## Success Criteria Achieved
 
-✅ Core property management functionality working  
-✅ Automated payment reminder system operational  
-✅ Automated maintenance email notifications operational  
-✅ Tenant portal provides self-service  
-✅ Multi-tenancy fully implemented  
-✅ Clean architecture established  
-✅ Type-safe codebase (0 TypeScript errors)  
-✅ Audit trail for compliance  
-✅ Email notifications working  
-✅ Cron jobs running automatically  
-✅ Role-based access control functional  
-✅ Expense-maintenance linking implemented  
-✅ Property valuation tracking with appreciation calculations  
-✅ Enhanced UI with nested navigation and detail modals  
-✅ Property document management with folder organization  
-✅ Inspections module foundation implemented  
-✅ Tax summary reporting functional
+✅ Core property management functionality working
+🚧 Automated payment reminder endpoints operational (cron not scheduled)
+🚧 Automated maintenance email notifications endpoints operational (cron not scheduled)
+✅ Tenant portal provides self-service
+🚧 Multi-tenancy implemented as user workspace + team-member access hooks (no Organization model/UI)
+✅ Clean architecture established
+🚧 Type-safe codebase (TypeScript errors not audited in this pass)
+✅ Audit trail for compliance
+✅ Email notifications working
+❌ Cron jobs running automatically
+✅ Role-based access control functional
+✅ Expense-maintenance linking implemented
+✅ Property valuation tracking with appreciation calculations
+✅ Enhanced UI with nested navigation and detail modals
+✅ Property document management with folder organization
+✅ Inspections module foundation implemented
+✅ **9 comprehensive reports implemented** (Tax, Revenue, Payments, Aging, Maintenance, Occupancy, Leases, Cash Flow, Analytics)
+🚧 **Advanced reporting with date filtering; export endpoint exists but UI not wired**
+✅ **PayFast recurring subscription billing implemented**
+✅ **Secure payment processing with MD5 signatures and IP whitelisting**
+✅ **Admin subscription monitoring dashboard operational**
+✅ **Real-time payment status tracking and alerts**
+✅ **Dynamic pricing model with per-property fees**
+✅ **Invoice generation and billing history management**
+✅ **MRR and revenue tracking for all subscriptions**
 
 ---
 
@@ -902,6 +1231,8 @@ UPLOADTHING_APP_ID
 
 ### Available Documentation
 
+- `PROJECT_STATUS.md` - This file (comprehensive project overview)
+- `PAYMENT_FEATURES_SUMMARY.md` - Payment features (transaction fees, banking encryption, PayFast recurring billing, admin monitoring)
 - `ARCHITECTURE_GUIDE.md` - Technical architecture patterns
 - `IMPLEMENTATION_SUMMARY.md` - Messaging system implementation
 - `PAYMENT_MODULE_COMPLETE.md` - Payment reminder system
@@ -912,6 +1243,21 @@ UPLOADTHING_APP_ID
 
 ---
 
-**Project Status**: ✅ **FUNCTIONAL AND PRODUCTION-READY FOR CORE FEATURES**
+**Project Status**: ✅ **CORE FLOWS OPERATIONAL WITH PAYFAST BILLING** | 🚧 **INTEGRATIONS/AUTOMATION PARTIAL**
 
-The system is operational for managing properties, bookings, tenants, and payments. Advanced features (calendar sync, payment gateways, maintenance) are planned for future iterations.
+The system is operational for core workflows:
+
+- **Property Management**: Full CRUD, valuations, document management
+- **Booking System**: Availability checking, pricing calculation, status tracking
+- **Payment Processing**: Reminder endpoints, PayFast recurring subscriptions, invoice generation
+- **Financial Reporting**: 9 reports (tax, revenue, payments, aging, maintenance, occupancy, leases, cash flow, analytics)
+- **Admin Tools**: Subscription monitoring, revenue tracking, payment status alerts
+- **Tenant Portal**: Self-service payments, document access, communication
+
+Areas still in progress:
+
+- **Cron Scheduling**: Endpoints exist; Vercel schedules are not configured
+- **Integrations**: Sync endpoints are placeholders for Airbnb/Booking.com/Google/Paystack/Stripe
+- **Messaging Automation UI**: Backend exists; UI and scheduled processor are pending
+
+PayFast recurring subscriptions are implemented and ready for sandbox testing. Admin monitoring dashboard provides real-time visibility into all subscription, payment, and revenue metrics. Advanced features (calendar sync, multiple payment gateways, SMS notifications) are planned for future iterations.

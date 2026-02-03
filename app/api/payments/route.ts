@@ -11,7 +11,17 @@ import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/err
 const listQuerySchema = z.object({
   bookingId: z.string().optional(),
   tenantId: z.string().optional(),
-  status: z.enum(['PENDING', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'REFUNDED', 'FAILED']).optional(),
+  status: z
+    .enum([
+      'PENDING',
+      'PENDING_VERIFICATION',
+      'PARTIALLY_PAID',
+      'PAID',
+      'OVERDUE',
+      'REFUNDED',
+      'FAILED',
+    ])
+    .optional(),
   paymentType: z
     .enum([
       'RENT',
@@ -116,6 +126,14 @@ export async function GET(request: Request) {
           notes: true,
           reminderSent: true,
           propertyId: true,
+          // Proof of payment fields
+          proofOfPaymentUrl: true,
+          proofOfPaymentName: true,
+          proofUploadedAt: true,
+          proofNotes: true,
+          verifiedAt: true,
+          verifiedBy: true,
+          verificationNotes: true,
           property: { select: { id: true, name: true, address: true } },
           booking: {
             select: {
