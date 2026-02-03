@@ -114,7 +114,7 @@ export async function GET(request: Request) {
         const now = new Date();
         let calculatedPaymentStatus = 'CURRENT';
         let daysOverdue = 0;
-        let daysUntilDue = null;
+        let daysUntilDue: number | null = null;
 
         // Calculate subscription billing
         if (user.subscriptionStatus === 'ACTIVE' || user.subscriptionStatus === 'TRIAL') {
