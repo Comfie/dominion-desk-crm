@@ -103,6 +103,9 @@ export function AutomationForm({
   const useAiEnhancement = watch('useAiEnhancement');
   const selectedPropertyIds = watch('propertyIds') || [];
 
+  // Get register props and merge refs
+  const { ref: bodyRegisterRef, ...bodyRegisterRest } = register('bodyTemplate');
+
   useEffect(() => {
     if (initialData) {
       reset({
@@ -289,8 +292,11 @@ export function AutomationForm({
             <Label htmlFor="bodyTemplate">Message Body *</Label>
             <Textarea
               id="bodyTemplate"
-              {...register('bodyTemplate')}
-              ref={bodyTextareaRef}
+              {...bodyRegisterRest}
+              ref={(e) => {
+                bodyRegisterRef(e);
+                bodyTextareaRef.current = e;
+              }}
               placeholder="Write your message template here. Use variables like {{guestName}} to personalize."
               rows={8}
               className="font-mono text-sm"
