@@ -498,7 +498,7 @@ export default function TenantDashboardPage() {
                       <div>
                         <p className="font-medium">{formatCurrency(Number(payment.amount))}</p>
                         <p className="text-muted-foreground text-xs">
-                          {formatDate(payment.paymentDate)}
+                          {payment.paymentDate ? formatDate(payment.paymentDate) : 'N/A'}
                         </p>
                       </div>
                       <Badge variant={payment.status === 'PAID' ? 'default' : 'secondary'}>

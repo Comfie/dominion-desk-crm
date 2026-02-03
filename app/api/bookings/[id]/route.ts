@@ -92,7 +92,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       request
     );
 
-    // Trigger automation if status changed to CONFIRMED
+    // Trigger automations based on status changes
     if (oldBooking.status !== 'CONFIRMED' && booking.status === 'CONFIRMED') {
       try {
         await messageSchedulerService.scheduleForBooking(
@@ -101,8 +101,37 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
           AutomationTrigger.BOOKING_CONFIRMED
         );
       } catch (automationError) {
-        // Don't fail the update if automation scheduling fails
         console.error('Failed to schedule BOOKING_CONFIRMED automation:', automationError);
+      }
+    }
+
+    if (oldBooking.status !== 'CHECKED_IN' && booking.status === 'CHECKED_IN') {
+      try {
+        await messageSchedulerService.scheduleForBooking(
+          booking.id,
+          session.user.organizationId,
+          AutomationTrigger.CHECK_IN_INSTRUCTIONS
+        );
+      } catch (automationError) {
+        console.error('Failed to schedule CHECK_IN_INSTRUCTIONS automation:', automationError);
+      }
+    }
+
+    if (oldBooking.status !== 'COMPLETED' && booking.status === 'COMPLETED') {
+      try {
+        await messageSchedulerService.scheduleForBooking(
+          booking.id,
+          session.user.organizationId,
+          AutomationTrigger.BOOKING_COMPLETED
+        );
+        // Also schedule review request
+        await messageSchedulerService.scheduleForBooking(
+          booking.id,
+          session.user.organizationId,
+          AutomationTrigger.REVIEW_REQUEST
+        );
+      } catch (automationError) {
+        console.error('Failed to schedule completion automations:', automationError);
       }
     }
 

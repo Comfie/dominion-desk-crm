@@ -27,7 +27,7 @@ import { logger } from '@/lib/shared/logger';
 export async function POST(req: NextRequest) {
   try {
     // Get client IP
-    const headersList = headers();
+    const headersList = await headers();
     const forwardedFor = headersList.get('x-forwarded-for');
     const realIp = headersList.get('x-real-ip');
     const clientIp = forwardedFor?.split(',')[0] || realIp || 'unknown';

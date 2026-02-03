@@ -108,6 +108,20 @@ export async function POST(request: Request) {
     // Log audit trail
     await logAudit(session, 'created', 'booking', booking.id, undefined, request);
 
+    // Trigger BOOKING_CREATED automation
+    try {
+      const { messageSchedulerService } =
+        await import('@/lib/features/messaging/services/message-scheduler.service');
+      const { AutomationTrigger } = await import('@prisma/client');
+      await messageSchedulerService.scheduleForBooking(
+        booking.id,
+        session.user.organizationId,
+        AutomationTrigger.BOOKING_CREATED
+      );
+    } catch (automationError) {
+      console.error('Failed to schedule BOOKING_CREATED automation:', automationError);
+    }
+
     // Transform for frontend compatibility
     const transformedBooking = {
       ...booking,

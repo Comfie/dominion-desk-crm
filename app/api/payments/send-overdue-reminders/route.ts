@@ -36,35 +36,34 @@ export async function POST(request: NextRequest) {
           lt: today,
         },
         tenant: {
-          email: { not: null },
           status: 'ACTIVE',
         },
       },
       include: {
+        booking: {
+          select: {
+            id: true,
+            bookingReference: true,
+            guestName: true,
+            property: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
         tenant: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+          include: {
+            properties: {
+              include: {
+                property: true,
+              },
+            },
           },
         },
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-          },
-        },
-        property: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-          },
-        },
+        property: true,
+        user: true,
       },
     });
 

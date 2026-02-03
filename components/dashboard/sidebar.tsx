@@ -89,8 +89,12 @@ const navigation: NavItem[] = [
   },
   {
     name: 'Communications',
-    href: '/messages',
     icon: Mail,
+    children: [
+      { name: 'Messages', href: '/messages' },
+      { name: 'Automations', href: '/messages/automations' },
+      { name: 'Scheduled', href: '/messages/scheduled' },
+    ],
   },
   {
     name: 'Tasks',

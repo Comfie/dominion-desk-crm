@@ -12,6 +12,14 @@ export class InvoiceService {
     const property = payment.property || payment.tenant?.properties?.[0]?.property;
     const tenant = payment.tenant;
     const organization = payment.user;
+    const bankingDetails = organization as unknown as {
+      bankName?: string;
+      bankAccountName?: string;
+      bankAccountNumber?: string;
+      bankBranchCode?: string;
+      bankSwiftCode?: string;
+      paymentInstructions?: string;
+    } | null;
 
     // Format currency
     const formatCurrency = (amount: number | string) => {
@@ -290,56 +298,56 @@ export class InvoiceService {
 
     <!-- Banking Details -->
     ${
-      organization?.bankName
+      bankingDetails?.bankName
         ? `
     <div class="banking-details">
       <h3><� Banking Details for Payment</h3>
       ${
-        organization.bankName
+        bankingDetails.bankName
           ? `
       <div class="banking-row">
         <span class="banking-label">Bank Name:</span>
-        <span class="banking-value">${organization.bankName}</span>
+        <span class="banking-value">${bankingDetails.bankName}</span>
       </div>
       `
           : ''
       }
       ${
-        organization.bankAccountName
+        bankingDetails.bankAccountName
           ? `
       <div class="banking-row">
         <span class="banking-label">Account Name:</span>
-        <span class="banking-value">${organization.bankAccountName}</span>
+        <span class="banking-value">${bankingDetails.bankAccountName}</span>
       </div>
       `
           : ''
       }
       ${
-        organization.bankAccountNumber
+        bankingDetails.bankAccountNumber
           ? `
       <div class="banking-row">
         <span class="banking-label">Account Number:</span>
-        <span class="banking-value">${organization.bankAccountNumber}</span>
+        <span class="banking-value">${bankingDetails.bankAccountNumber}</span>
       </div>
       `
           : ''
       }
       ${
-        organization.bankBranchCode
+        bankingDetails.bankBranchCode
           ? `
       <div class="banking-row">
         <span class="banking-label">Branch Code:</span>
-        <span class="banking-value">${organization.bankBranchCode}</span>
+        <span class="banking-value">${bankingDetails.bankBranchCode}</span>
       </div>
       `
           : ''
       }
       ${
-        organization.bankSwiftCode
+        bankingDetails.bankSwiftCode
           ? `
       <div class="banking-row">
         <span class="banking-label">SWIFT Code:</span>
-        <span class="banking-value">${organization.bankSwiftCode}</span>
+        <span class="banking-value">${bankingDetails.bankSwiftCode}</span>
       </div>
       `
           : ''
@@ -355,11 +363,11 @@ export class InvoiceService {
 
     <!-- Payment Instructions -->
     ${
-      organization?.paymentInstructions
+      bankingDetails?.paymentInstructions
         ? `
     <div class="payment-instructions">
       <h4>� Payment Instructions</h4>
-      <p>${organization.paymentInstructions}</p>
+      <p>${bankingDetails.paymentInstructions}</p>
     </div>
     `
         : `
@@ -393,6 +401,14 @@ export class InvoiceService {
     const property = payment.property || payment.tenant?.properties?.[0]?.property;
     const tenant = payment.tenant;
     const organization = payment.user;
+    const bankingDetails = organization as unknown as {
+      bankName?: string;
+      bankAccountName?: string;
+      bankAccountNumber?: string;
+      bankBranchCode?: string;
+      bankSwiftCode?: string;
+      paymentInstructions?: string;
+    } | null;
 
     const formatCurrency = (amount: number | string) => {
       const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -452,18 +468,18 @@ ${payment.description || 'Monthly Rent'}
                                                                
 BANKING DETAILS FOR PAYMENT:
                                                                
-${organization?.bankName ? `Bank Name: ${organization.bankName}` : ''}
-${organization?.bankAccountName ? `Account Name: ${organization.bankAccountName}` : ''}
-${organization?.bankAccountNumber ? `Account Number: ${organization.bankAccountNumber}` : ''}
-${organization?.bankBranchCode ? `Branch Code: ${organization.bankBranchCode}` : ''}
-${organization?.bankSwiftCode ? `SWIFT Code: ${organization.bankSwiftCode}` : ''}
+${bankingDetails?.bankName ? `Bank Name: ${bankingDetails.bankName}` : ''}
+${bankingDetails?.bankAccountName ? `Account Name: ${bankingDetails.bankAccountName}` : ''}
+${bankingDetails?.bankAccountNumber ? `Account Number: ${bankingDetails.bankAccountNumber}` : ''}
+${bankingDetails?.bankBranchCode ? `Branch Code: ${bankingDetails.bankBranchCode}` : ''}
+${bankingDetails?.bankSwiftCode ? `SWIFT Code: ${bankingDetails.bankSwiftCode}` : ''}
 Payment Reference: ${payment.paymentReference}
 
                                                                
 PAYMENT INSTRUCTIONS:
                                                                
 ${
-  organization?.paymentInstructions ||
+  bankingDetails?.paymentInstructions ||
   `" Please use the payment reference ${payment.paymentReference} when making your payment
 " Payment is due by ${formatDate(payment.dueDate)}
 " Please send proof of payment to ${organization?.email || 'the property manager'}`

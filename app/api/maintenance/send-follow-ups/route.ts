@@ -7,7 +7,7 @@ import { logger } from '@/lib/shared/logger';
  * Cron job endpoint to send follow-up emails for stale maintenance requests
  * Runs daily at 10 AM (configured in vercel.json)
  */
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
     // Verify cron secret to prevent unauthorized access
     const headersList = await headers();

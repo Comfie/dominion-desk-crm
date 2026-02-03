@@ -362,11 +362,11 @@ export async function activateSubscription(
     data: {
       userId,
       action: 'SUBSCRIPTION_ACTIVATED',
-      previousStatus: 'TRIAL',
-      newStatus: 'ACTIVE',
-      previousTier: 'FREE',
-      newTier: 'FREE',
-      notes: `Subscription activated via PayFast. Reference: ${payfastData.merchantReference}`,
+      fromStatus: 'TRIAL',
+      toStatus: 'ACTIVE',
+      fromTier: 'FREE',
+      toTier: 'FREE',
+      reason: `Subscription activated via PayFast. Reference: ${payfastData.merchantReference}`,
     },
   });
 }
@@ -403,9 +403,9 @@ export async function handleFailedPayment(userId: string, reason?: string): Prom
     data: {
       userId,
       action: 'PAYMENT_FAILED',
-      previousStatus: 'ACTIVE',
-      newStatus: 'PAST_DUE',
-      notes: reason || 'Payment failed',
+      fromStatus: 'ACTIVE',
+      toStatus: 'PAST_DUE',
+      reason: reason || 'Payment failed',
     },
   });
 
@@ -449,10 +449,10 @@ export async function cancelSubscription(
     data: {
       userId,
       action: 'SUBSCRIPTION_CANCELLED',
-      previousStatus: 'ACTIVE',
-      newStatus: 'CANCELLED',
+      fromStatus: 'ACTIVE',
+      toStatus: 'CANCELLED',
       changedBy: cancelledBy,
-      notes: reason || 'Subscription cancelled by user',
+      reason: reason || 'Subscription cancelled by user',
     },
   });
 
@@ -481,7 +481,7 @@ export async function syncSubscriptionStatus(userId: string): Promise<void> {
   // If past billing date and status is still ACTIVE, check for payment
   if (nextBillingDate && nextBillingDate < now && user.subscriptionStatus === 'ACTIVE') {
     // Check if payment was received for this billing period
-    const recentPayment = await prisma.payfastTransaction.findFirst({
+    const recentPayment = await prisma.payFastTransaction.findFirst({
       where: {
         userId,
         paymentStatus: 'COMPLETE',

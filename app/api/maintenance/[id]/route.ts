@@ -81,6 +81,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       resolutionNotes: validatedData.resolutionNotes,
     });
 
+    // Trigger automations based on status changes
+    try {
+      const { messageSchedulerService } =
+        await import('@/lib/features/messaging/services/message-scheduler.service');
+      const { AutomationTrigger } = await import('@prisma/client');
+
+      if (validatedData.status === 'SCHEDULED') {
+        // Note: This uses maintenance context - requires scheduler service extension
+        console.log('MAINTENANCE_SCHEDULED automation would trigger here for request:', id);
+      } else if (validatedData.status === 'COMPLETED') {
+        console.log('MAINTENANCE_COMPLETED automation would trigger here for request:', id);
+      }
+    } catch (automationError) {
+      console.error('Failed to schedule maintenance automation:', automationError);
+    }
+
     return NextResponse.json(maintenanceRequest);
   } catch (error) {
     if (error instanceof ValidationError) {

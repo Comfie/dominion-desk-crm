@@ -278,6 +278,20 @@ export async function POST(request: Request) {
       console.error('Failed to create notification:', e);
     }
 
+    // Trigger PAYMENT_RECEIVED automation if payment is PAID
+    if (payment.status === 'PAID' && payment.tenantId) {
+      try {
+        const { messageSchedulerService } =
+          await import('@/lib/features/messaging/services/message-scheduler.service');
+        const { AutomationTrigger } = await import('@prisma/client');
+        // Note: This uses tenant context, not booking
+        // TODO: Extend scheduler service to support tenant-based messages
+        console.log('PAYMENT_RECEIVED automation would trigger here for tenant:', payment.tenantId);
+      } catch (automationError) {
+        console.error('Failed to schedule PAYMENT_RECEIVED automation:', automationError);
+      }
+    }
+
     return NextResponse.json(payment, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

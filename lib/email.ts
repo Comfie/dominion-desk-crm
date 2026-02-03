@@ -659,6 +659,51 @@ DominionDesk Team
     `.trim(),
   }),
 
+  teamInvitation: (recipientName: string, invitationUrl: string) => `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #333; margin-bottom: 10px;">Team Invitation</h1>
+      </div>
+
+      <div style="background: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0;">
+        <p style="margin: 0; color: #333; font-size: 16px;">
+          <strong>Hi ${recipientName},</strong>
+        </p>
+      </div>
+
+      <p style="color: #555; line-height: 1.6;">
+        You've been invited to join a property management team. By accepting this invitation,
+        you'll gain access to manage properties, bookings, tenants, and more based on the
+        permissions assigned to you.
+      </p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${invitationUrl}"
+           style="background: #007bff; color: white; padding: 14px 32px; text-decoration: none;
+                  border-radius: 6px; display: inline-block; font-weight: 600; font-size: 16px;">
+          Accept Invitation
+        </a>
+      </div>
+
+      <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #856404; font-size: 14px;">
+          <strong>⚠️ Note:</strong> This invitation will expire in 7 days.
+          If you didn't expect this invitation, you can safely ignore this email.
+        </p>
+      </div>
+
+      <p style="color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        If the button above doesn't work, copy and paste this link into your browser:<br>
+        <a href="${invitationUrl}" style="color: #007bff; word-break: break-all;">${invitationUrl}</a>
+      </p>
+
+      <p style="color: #666; margin-top: 30px;">
+        Best regards,<br>
+        <strong>Property Management Team</strong>
+      </p>
+    </div>
+  `,
+
   generic: (data: { recipientName: string; subject: string; body: string }) => ({
     subject: data.subject,
     html: `
