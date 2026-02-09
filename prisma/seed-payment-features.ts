@@ -12,6 +12,7 @@
 import 'dotenv/config';
 import {
   PrismaClient,
+  PaymentMethod,
   PaymentStatus,
   PaymentType,
   PropertyType,
@@ -369,7 +370,7 @@ async function main() {
   // Create payment history (last 6 months)
   console.log('💰 Creating payment history...');
 
-  const payments = [];
+  const payments: any[] = [];
 
   // Helper function to create payments for a tenant
   const createPayments = (
@@ -402,7 +403,7 @@ async function main() {
 
       let paymentDate: Date | null = null;
       let status: PaymentStatus = PaymentStatus.PENDING;
-      let paymentMethod = null;
+      let paymentMethod: PaymentMethod | null = null;
 
       // Determine payment behavior
       if (i > 0) {
@@ -412,21 +413,21 @@ async function main() {
             // Always pays 1-2 days early
             paymentDate = new Date(year, adjustedMonth, 0, 29 - Math.floor(Math.random() * 2));
             status = PaymentStatus.PAID;
-            paymentMethod = 'EFT';
+            paymentMethod = PaymentMethod.EFT;
             break;
           case 'good':
             // Pays on time or 1-3 days late
             const daysLate = Math.floor(Math.random() * 4);
             paymentDate = new Date(year, adjustedMonth, 1 + daysLate);
             status = PaymentStatus.PAID;
-            paymentMethod = 'EFT';
+            paymentMethod = PaymentMethod.EFT;
             break;
           case 'late':
             // Pays 5-15 days late
             const lateBy = 5 + Math.floor(Math.random() * 10);
             paymentDate = new Date(year, adjustedMonth, 1 + lateBy);
             status = PaymentStatus.PAID;
-            paymentMethod = 'CASH';
+            paymentMethod = PaymentMethod.CASH;
             break;
           case 'very-late':
             // Sometimes doesn't pay at all, or very late
@@ -434,7 +435,7 @@ async function main() {
               const veryLate = 15 + Math.floor(Math.random() * 15);
               paymentDate = new Date(year, adjustedMonth, 1 + veryLate);
               status = PaymentStatus.PAID;
-              paymentMethod = 'CASH';
+              paymentMethod = PaymentMethod.CASH;
             } else {
               status = PaymentStatus.OVERDUE;
             }
@@ -492,7 +493,7 @@ async function main() {
       currency: 'ZAR',
       dueDate: new Date(currentYear, currentMonth, 1),
       paymentDate: new Date(currentYear, currentMonth - 1, 30),
-      paymentMethod: 'EFT',
+      paymentMethod: PaymentMethod.EFT,
       status: PaymentStatus.PAID,
       invoiceNumber: `INV-${currentYear}${String(currentMonth + 1).padStart(2, '0')}-${tenant1.id.substring(0, 8)}`,
       description: `Monthly rent for ${new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' })} ${currentYear}`,
@@ -508,7 +509,7 @@ async function main() {
       currency: 'ZAR',
       dueDate: new Date(currentYear, currentMonth, 1),
       paymentDate: new Date(currentYear, currentMonth, 2),
-      paymentMethod: 'EFT',
+      paymentMethod: PaymentMethod.EFT,
       status: PaymentStatus.PAID,
       invoiceNumber: `INV-${currentYear}${String(currentMonth + 1).padStart(2, '0')}-${tenant2.id.substring(0, 8)}-RoomA`,
       description: `Monthly rent for ${new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' })} ${currentYear} - 45 Student House (Room A)`,

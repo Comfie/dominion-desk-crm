@@ -212,7 +212,7 @@ export default function NewInvoicePage() {
     { value: PaymentType.UTILITIES, label: 'Utilities' },
     { value: PaymentType.LATE_FEE, label: 'Late Fee' },
     { value: PaymentType.DEPOSIT, label: 'Deposit' },
-    { value: PaymentType.MAINTENANCE, label: 'Maintenance' },
+    { value: PaymentType.DAMAGE, label: 'Maintenance/Damage' },
     { value: PaymentType.OTHER, label: 'Other' },
   ];
 

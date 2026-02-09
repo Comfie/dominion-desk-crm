@@ -12,7 +12,7 @@ import { handleApiError } from '@/lib/shared/errors';
  * Query params:
  * - year: number (optional, filters to specific year)
  */
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     const userId = session.user.id;
-    const tenantId = params.id;
+    const { id: tenantId } = await params;
     const searchParams = req.nextUrl.searchParams;
 
     // Parse year filter if provided

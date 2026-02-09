@@ -224,6 +224,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       monthlyRent: number;
       depositPaid?: number;
       moveInDate?: string;
+      unitLabel?: string;
     }) => {
       const response = await fetch(`/api/tenants/${id}/properties`, {
         method: 'POST',

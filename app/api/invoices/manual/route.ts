@@ -122,9 +122,24 @@ export async function POST(req: NextRequest) {
         notes,
       },
       include: {
-        tenant: true,
+        tenant: {
+          include: {
+            properties: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
         property: true,
         user: true,
+        booking: {
+          include: {
+            property: {
+              select: { id: true, name: true },
+            },
+          },
+        },
       },
     });
 

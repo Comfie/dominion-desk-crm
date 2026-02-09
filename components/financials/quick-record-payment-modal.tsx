@@ -53,7 +53,12 @@ export function QuickRecordPaymentModal({
 }: QuickRecordPaymentModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    amount: string;
+    paymentMethod: PaymentMethod;
+    paymentDate: string;
+    reference: string;
+  }>({
     amount: payment?.amount?.toString() || '',
     paymentMethod: PaymentMethod.EFT,
     paymentDate: new Date().toISOString().split('T')[0],
