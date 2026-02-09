@@ -35,6 +35,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { exportToCsv, formatDateForCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
 interface LeaseExpirationData {
   leases: Array<{
@@ -227,7 +228,38 @@ export default function LeaseExpirationReportPage() {
             </div>
             <div />
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data?.leases?.length) return;
+                  exportToCsv({
+                    filename: 'lease-expiration-report.csv',
+                    headers: [
+                      'Property',
+                      'Address',
+                      'Tenant',
+                      'Email',
+                      'Lease Start',
+                      'Lease End',
+                      'Monthly Rent',
+                      'Days Until Expiry',
+                      'Window',
+                    ],
+                    rows: data.leases.map((l) => [
+                      l.property.name,
+                      `${l.property.address}, ${l.property.city}`,
+                      `${l.tenant.firstName} ${l.tenant.lastName}`,
+                      l.tenant.email,
+                      formatDateForCsv(l.leaseStartDate),
+                      l.leaseEndDate ? formatDateForCsv(l.leaseEndDate) : 'No end date',
+                      formatCurrencyForCsv(l.monthlyRent),
+                      l.daysUntilExpiry ?? '',
+                      l.expiryWindow,
+                    ]),
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

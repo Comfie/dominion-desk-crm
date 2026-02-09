@@ -34,6 +34,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
+import { exportToCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
 interface AgingReceivablesData {
   payments: Array<{
@@ -225,7 +226,36 @@ export default function AgingReceivablesReportPage() {
             <div />
             <div />
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data?.tenantBreakdown) return;
+                  exportToCsv({
+                    filename: 'aging-receivables-report.csv',
+                    headers: [
+                      'Tenant',
+                      'Property',
+                      'Current',
+                      '1-30 Days',
+                      '31-60 Days',
+                      '61-90 Days',
+                      '90+ Days',
+                      'Total',
+                    ],
+                    rows: data.tenantBreakdown.map((t) => [
+                      `${t.tenant.firstName} ${t.tenant.lastName}`,
+                      t.property?.name || '',
+                      formatCurrencyForCsv(t.current),
+                      formatCurrencyForCsv(t['1-30']),
+                      formatCurrencyForCsv(t['31-60']),
+                      formatCurrencyForCsv(t['61-90']),
+                      formatCurrencyForCsv(t['90+']),
+                      formatCurrencyForCsv(t.total),
+                    ]),
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

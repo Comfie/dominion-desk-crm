@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ExpenseCategory } from '@prisma/client';
+import { ExpenseCategory, ExpenseStatus } from '@prisma/client';
 
 /**
  * Create Expense DTO
@@ -33,6 +33,7 @@ export const updateExpenseSchema = z.object({
   invoiceNumber: z.string().max(100).optional(),
   receiptUrl: z.string().url().optional(),
   notes: z.string().max(2000).optional(),
+  status: z.nativeEnum(ExpenseStatus).optional(),
 });
 
 export type UpdateExpenseDTO = z.infer<typeof updateExpenseSchema>;

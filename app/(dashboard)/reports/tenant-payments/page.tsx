@@ -37,6 +37,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { exportToCsv, formatCurrencyForCsv, formatDateForCsv } from '@/lib/utils/export-csv';
 
 interface TenantPaymentData {
   payments: Array<{
@@ -238,7 +239,36 @@ export default function TenantPaymentsReportPage() {
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data?.tenantStats) return;
+                  exportToCsv({
+                    filename: 'tenant-payments-report.csv',
+                    headers: [
+                      'Tenant',
+                      'Email',
+                      'Total Paid',
+                      'Pending',
+                      'Overdue',
+                      'On Time',
+                      'Late',
+                      'Punctuality %',
+                    ],
+                    rows: data.tenantStats.map((t) => [
+                      `${t.tenant.firstName} ${t.tenant.lastName}`,
+                      t.tenant.email,
+                      formatCurrencyForCsv(t.paidAmount),
+                      formatCurrencyForCsv(t.pendingAmount),
+                      formatCurrencyForCsv(t.overdueAmount),
+                      t.onTimeCount,
+                      t.lateCount,
+                      t.punctualityRate.toFixed(1),
+                    ]),
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

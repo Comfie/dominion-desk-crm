@@ -78,6 +78,7 @@ const navigation: NavItem[] = [
     name: 'Financials',
     icon: DollarSign,
     children: [
+      { name: 'Rent Collection', href: '/financials/rent-collection' },
       { name: 'Income & Payments', href: '/financials/income' },
       { name: 'Expenses', href: '/financials/expenses' },
     ],

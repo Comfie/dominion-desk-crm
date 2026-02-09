@@ -67,6 +67,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       vendor: validatedData.vendor,
       receiptUrl: validatedData.receiptUrl,
       notes: validatedData.notes,
+      status: validatedData.status,
     });
 
     return NextResponse.json(expense);

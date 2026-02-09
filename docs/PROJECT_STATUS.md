@@ -1,8 +1,8 @@
 # Property CRM - Project Status
 
-**Last Updated**: February 3, 2026
+**Last Updated**: February 8, 2026
 **Project Start**: November 2025
-**Status**: ✅ Core Features Implemented | ✅ PayFast Subscription Billing | ✅ Cron Scheduling Configured | ✅ Team Member Management | ✅ Messaging Automation UI Complete
+**Status**: ✅ Core Features Implemented | ✅ PayFast Subscription Billing | ✅ Cron Scheduling Configured | ✅ Team Member Management | ✅ Messaging Automation UI Complete | ✅ Multi-Tenant Properties Support
 
 ---
 
@@ -12,10 +12,11 @@
 - ✅ Team member management fully implemented with invitation system, role-based permissions, and complete UI.
 - ✅ Messaging automation UI fully implemented with automation management, scheduled messages queue, and variable suggestions.
 - ✅ Automation triggers wired for bookings (CREATED, CONFIRMED, CHECK_IN, COMPLETED, REVIEW_REQUEST), payments (RECEIVED), and maintenance (SCHEDULED, COMPLETED).
+- ✅ Multi-tenant per property support implemented with optional unit labels, per-lease payment generation, and updated UI.
+- ✅ CSV export wired on all 9 report pages + rent collection + tenant payment ledger via shared client-side utility (`lib/utils/export-csv.ts`).
 - Calendar export references `/api/calendar/public/[propertyId]`, but that route does not exist.
 - Integration sync endpoints for Airbnb/Booking.com/Google Calendar/Paystack/Stripe are placeholders (mock results).
 - Paystack/Stripe payment endpoints are mocked; PayFast subscription billing is the only real payment gateway flow.
-- Report export API exists, but no report pages call it.
 - Several API routes still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin), so service-layer migration is incomplete.
 - Public API endpoints exist (`/api/public/*`), but there are no public pages consuming them.
 - TODOs remain for booking email notifications, calendar sync updates, subscription failure/cancellation emails, and some UI actions (e.g., bulk tenant document delete).
@@ -175,6 +176,35 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Payment due day (1-28 of month)
 - ✅ Reminder days before due date
 - ✅ Auto-send reminder toggle
+
+#### Multi-Tenant per Property Support (February 8, 2026)
+
+- ✅ **Property-Level Toggle**: `allowsMultipleTenants` boolean field on Property model (default: false)
+- ✅ **Unit Labels**: Optional `unitLabel` field on PropertyTenant model (e.g., "Room A", "Unit 3", "Ground Floor")
+- ✅ **Database schema** updated with unique constraint on `[propertyId, tenantId, unitLabel]`
+- ✅ **Smart Validation**: Properties that don't allow multiple tenants can only have one active tenant
+- ✅ **Smart Filtering**: Available properties API shows:
+  - All properties that allow multiple tenants (allowsMultipleTenants = true)
+  - Only properties without tenants if allowsMultipleTenants = false
+- ✅ **Per-lease payment generation** - each active lease generates its own monthly payment
+- ✅ **Payment amounts** use lease-level `PropertyTenant.monthlyRent` instead of tenant-level rent
+- ✅ **Invoice generation** includes unit label in property details and description
+- ✅ **UI: Property Forms** - Checkbox in create/edit forms to enable multi-tenant support
+- ✅ **UI: Tenant assignment dialog** includes unit label input field
+- ✅ **UI: Property detail page** shows all active tenants with unit labels
+- ✅ **UI: Pricing card** displays total monthly rent when multiple tenants exist
+- ✅ **UI: Tenant detail page** displays unit labels for each property assignment
+- ✅ **UI: Property listing badges** - Distinct badges for occupied vs reserved tenants:
+  - "Occupied" badge (red) - for tenants who have moved in (moveInDate ≤ today)
+  - "Reserved" badge (orange) - for tenants assigned but not yet moved in (moveInDate > today)
+  - Shows count when multiple tenants in same status (e.g., "Occupied · 2")
+- ✅ **Backwards compatible** - existing properties default to single-tenant mode (allowsMultipleTenants = false)
+- ✅ **Flexible Use Cases**:
+  - Traditional single-tenant rentals (default)
+  - Dividing a house/building into multiple rooms or units
+  - Each tenant has separate lease, rent amount, and invoices
+  - Proper accounting per unit/tenant for financial tracking
+  - Clear visual indicators for current vs future occupancy
 
 ---
 
@@ -759,7 +789,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 - ✅ Date range filtering across all reports
 - ✅ Property filtering and multi-property comparison
-- 🚧 Data export endpoint exists (CSV); no UI wiring and no PDF export
+- ✅ CSV export wired on all report pages via shared client-side utility (no PDF export yet)
 - ✅ Chart visualizations (line, bar, pie charts)
 - ✅ Responsive design for all reports
 - 🚧 Real-time data updates (data loads on request; no live push)
@@ -892,6 +922,139 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ PAYFAST_PASSPHRASE - Signature passphrase
 - ✅ PAYFAST_SANDBOX - Environment toggle (true/false)
 - ✅ NEXT_PUBLIC_APP_URL - Application URL for callbacks
+
+---
+
+### ✅ Phase 22: Payment Tracking & Invoicing Overhaul (February 8, 2026)
+
+#### Rent Collection Hub
+
+- ✅ **Central Payment Monitoring** (`/financials/rent-collection`)
+  - Monthly rent collection grid with property-by-property, tenant-by-tenant view
+  - Real-time payment status tracking (PAID, PENDING, OVERDUE, PENDING_VERIFICATION)
+  - Collection summary cards (Total Expected, Total Collected, Collection Rate %, Outstanding Amount)
+  - 6-month collection rate trend chart with visual analytics
+  - Month/year filtering with property and status filters
+  - Days overdue calculation for late payments
+
+- ✅ **Quick Actions from Grid**
+  - Record Payment: Pre-filled modal for quick payment entry
+  - Send Reminder: One-click reminder emails to pending/overdue tenants
+  - Verify Proof: Direct access to proof verification for uploaded payments
+  - View Invoice: Quick invoice access for paid payments
+
+- ✅ **Backend Infrastructure**
+  - `getRentCollectionGrid()` repository method with optimized joins
+  - `getCollectionRateTrend()` for 6-month trend analysis
+  - `getRentCollectionData()` service orchestrating grid + summary + trends
+  - `/api/rent-collection` endpoint with comprehensive filtering
+
+#### Manual Invoice Creation
+
+- ✅ **Custom Invoice Builder** (`/financials/invoices/new`)
+  - Create ad-hoc invoices for any charge type (utilities, late fees, repairs, etc.)
+  - Dynamic line item management (add/remove multiple charges)
+  - Tenant selection with auto-populated property data from active leases
+  - Support for multiple payment types (RENT, UTILITIES, LATE_FEE, DEPOSIT, MAINTENANCE, OTHER)
+  - Email invoice option with HTML template generation
+  - `/api/invoices/manual` endpoint for invoice creation
+
+- ✅ **Invoice Features**
+  - Automatic payment record generation with PENDING status
+  - Unique invoice number generation (INV-MANUAL-TIMESTAMP-TENANT)
+  - Line-by-line charge breakdown in description
+  - Optional email delivery to tenant
+
+#### Tenant Payment Ledger (Landlord View)
+
+- ✅ **Complete Payment History** (`/tenants/[id]/payments`)
+  - Chronological payment ledger with all historical records
+  - Payment behavior statistics:
+    - Total paid (all-time)
+    - On-time payment rate (%)
+    - Average days to pay
+    - Current outstanding balance
+  - Payment detail table: Date, Description, Property, Amount, Status, Days Late, Method
+  - Year-based filtering for historical analysis
+  - Invoice/receipt download links
+
+- ✅ **Payment Analytics**
+  - Visual indicators for payment performance (Excellent/Good/Needs Improvement)
+  - Days late tracking with color-coded warnings
+  - On-time payment trending
+  - Risk assessment based on payment behavior
+
+#### Property Card Enhancements
+
+- ✅ **Payment Health Badges**
+  - Green "All Paid" badge when all tenants current
+  - Yellow "X Pending" badge for pending payments
+  - Red "X Overdue" badge for overdue payments
+  - Real-time payment status synchronized with property cards
+
+- ✅ **Property API Enhancement**
+  - Extended `/api/properties` with `?includePaymentSummary=true` parameter
+  - Current month payment summary per property
+  - Lightweight join for dashboard performance
+
+#### Tenant Portal Enhancements
+
+- ✅ **Enhanced Payment History API** (`/api/portal/payment-history`)
+  - Paginated payment history with running balance calculation
+  - Payment summary statistics (total paid this year, on-time rate, next due)
+  - Outstanding balance tracking
+  - Year filtering and pagination support
+  - Downloadable invoice/receipt URLs included
+
+- ✅ **Payment Ledger View**
+  - Complete chronological payment history
+  - Running balance display at each transaction
+  - Payment method tracking
+  - Proof of payment upload status
+
+#### Navigation & UX
+
+- ✅ **Sidebar Navigation**
+  - "Rent Collection" added as first item under Financials submenu
+  - Direct access to payment tracking command center
+  - Integrated with existing financial workflows
+
+- ✅ **Tenant Detail Page**
+  - "Payment History" quick action card in sidebar
+  - Direct link to complete payment ledger
+  - Payment behavior at-a-glance
+
+#### Components & UI
+
+- ✅ `CollectionSummaryCards` - 4-stat dashboard with visual indicators
+- ✅ `CollectionTrendChart` - 6-month line chart with recharts
+- ✅ `RentCollectionGrid` - Expandable property/tenant table with quick actions
+- ✅ `QuickRecordPaymentModal` - Streamlined payment entry dialog
+- ✅ Manual invoice creation page with dynamic line items
+- ✅ Tenant payment ledger page with comprehensive analytics
+- ✅ CSV export utility (`lib/utils/export-csv.ts`) - Shared client-side CSV generation
+- ✅ CSV export wired on all 9 report pages + rent collection + tenant payment ledger
+
+#### Database & Repository Layer
+
+- ✅ **New Repository Methods**
+  - `getRentCollectionGrid(userId, month, year, propertyId?)` - Optimized grid data
+  - `getCollectionRateTrend(userId, months)` - Multi-month trend analysis
+  - `getTenantPaymentLedger(tenantId, userId, year?)` - Complete payment history with stats
+
+- ✅ **Service Layer Methods**
+  - `getRentCollectionData()` - Orchestrates grid, summary, and trends
+  - Payment behavior calculation with on-time rate and avg days to pay
+
+#### Key Features Summary
+
+- ✅ **Single-View Payment Monitoring**: Answer "Who has paid?" for entire portfolio
+- ✅ **Historical Payment Analysis**: 6-month trends with visual charts
+- ✅ **Flexible Invoicing**: Create custom invoices for any charge type
+- ✅ **Tenant Payment Insights**: Track payment behavior and reliability
+- ✅ **Multi-Tenant Support**: Handles properties with multiple units/tenants
+- ✅ **Quick Actions**: Record payments, send reminders, verify proofs from grid
+- ✅ **Payment Health Indicators**: Visual badges on property cards
 
 ---
 
@@ -1068,12 +1231,12 @@ property-crm/
 - **TypeScript Errors**: Not audited in this pass
 - **Test Coverage**: Manual testing (automated tests pending)
 
-### Features Completed (21 major phases)
+### Features Completed (22 major phases)
 
-- **Properties**: ✅ Full CRUD + Import (no export) + Valuations + Documents
+- **Properties**: ✅ Full CRUD + Import (no export) + Valuations + Documents + Multi-Tenant Support
 - **Bookings**: ✅ Full CRUD + Availability + Pricing
-- **Tenants**: ✅ Full CRUD + Documents + Portal
-- **Payments**: ✅ Full CRUD + Reminder endpoints + PayFast Recurring
+- **Tenants**: ✅ Full CRUD + Documents + Portal + Multi-Property Per Tenant
+- **Payments**: ✅ Full CRUD + Reminder endpoints + PayFast Recurring + Per-Lease Generation
 - **Messaging**: ✅ Automation backend + Templates + Queue + Complete UI + Cron configured
 - **Auth**: ✅ Multi-role + Password Management
 - **Admin**: ✅ User Creation + Management + Subscription Monitoring
@@ -1087,10 +1250,11 @@ property-crm/
 - **Property Docs**: ✅ Folder-based organization + Auto-creation
 - **Inspections**: ✅ Listing/detail/create pages + items API
 - **Tax Reports**: ✅ Tax summary report page
-- **Reports**: ✅ 9 reports + CSV export endpoint (UI export not wired)
+- **Reports**: ✅ 9 reports + CSV export wired on all pages
 - **Subscriptions**: ✅ PayFast recurring billing + Invoice tracking
 - **Admin Dashboard**: ✅ Subscription monitoring + MRR tracking + Payment alerts
 - **Billing**: ✅ Dynamic pricing + Invoice generation + Payment history
+- **Multi-Tenant Properties**: ✅ Unit labels + Per-lease payments + Multiple tenants per property
 
 ---
 
@@ -1114,7 +1278,7 @@ property-crm/
 
 ### Supporting Models
 
-- PropertyTenant (lease assignments)
+- PropertyTenant (lease assignments with optional unit labels for multi-tenant properties)
 - PropertyValuation (property value history)
 - TeamMember (organization members)
 - Document (file storage)
@@ -1234,7 +1398,7 @@ UPLOADTHING_APP_ID
 ✅ Property document management with folder organization
 ✅ Inspections module foundation implemented
 ✅ **9 comprehensive reports implemented** (Tax, Revenue, Payments, Aging, Maintenance, Occupancy, Leases, Cash Flow, Analytics)
-🚧 **Advanced reporting with date filtering; export endpoint exists but UI not wired**
+✅ **Advanced reporting with date filtering and CSV export on all report pages**
 ✅ **PayFast recurring subscription billing implemented**
 ✅ **Secure payment processing with MD5 signatures and IP whitelisting**
 ✅ **Admin subscription monitoring dashboard operational**

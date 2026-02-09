@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
+import { exportToCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
 interface MaintenanceCostsData {
   summary: {
@@ -194,7 +195,24 @@ export default function MaintenanceCostsReportPage() {
             </div>
             <div />
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data?.byProperty) return;
+                  exportToCsv({
+                    filename: `maintenance-costs-${data.year}.csv`,
+                    headers: ['Property', 'Requests', 'Total Cost', 'Avg Cost', 'Completed'],
+                    rows: data.byProperty.map((p) => [
+                      p.property.name,
+                      p.requestCount,
+                      formatCurrencyForCsv(p.totalCost),
+                      formatCurrencyForCsv(p.avgCost),
+                      p.completedCount,
+                    ]),
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

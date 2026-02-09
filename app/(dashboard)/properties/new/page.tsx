@@ -34,6 +34,7 @@ const propertySchema = z.object({
   monthlyRent: z.number().optional(),
   dailyRate: z.number().optional(),
   securityDeposit: z.number().optional(),
+  allowsMultipleTenants: z.boolean(),
   petsAllowed: z.boolean(),
   smokingAllowed: z.boolean(),
 });
@@ -83,6 +84,7 @@ export default function NewPropertyPage() {
       bathrooms: 1,
       parkingSpaces: 0,
       furnished: false,
+      allowsMultipleTenants: false,
       petsAllowed: false,
       smokingAllowed: false,
     },
@@ -325,6 +327,11 @@ export default function NewPropertyPage() {
               <label className="flex items-center gap-2">
                 <input type="checkbox" className="rounded" {...register('furnished')} />
                 <span className="text-sm">Furnished</span>
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="rounded" {...register('allowsMultipleTenants')} />
+                <span className="text-sm">Allows Multiple Tenants</span>
               </label>
 
               <label className="flex items-center gap-2">

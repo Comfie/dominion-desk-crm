@@ -54,6 +54,7 @@ const tenantSchema = z
     propertyMonthlyRent: z.union([z.number(), z.nan()]).optional(),
     propertyDepositPaid: z.union([z.number(), z.nan()]).optional(),
     propertyMoveInDate: z.string().optional(),
+    propertyUnitLabel: z.string().optional(),
   })
 
   .refine(
@@ -589,6 +590,18 @@ function NewTenantForm() {
                       {...register('propertyDepositPaid', { valueAsNumber: true })}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="propertyUnitLabel">Unit / Room Label (optional)</Label>
+                  <Input
+                    id="propertyUnitLabel"
+                    placeholder="e.g., Room A, Unit 3, Ground Floor"
+                    {...register('propertyUnitLabel')}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    For properties with multiple tenants. Leave blank for single-tenant properties.
+                  </p>
                 </div>
 
                 <div className="space-y-2">

@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
+import { exportToCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
 interface CashFlowData {
   summary: {
@@ -206,7 +207,24 @@ export default function CashFlowReportPage() {
             </div>
             <div />
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data?.monthlyData) return;
+                  exportToCsv({
+                    filename: `cash-flow-report-${year}.csv`,
+                    headers: ['Month', 'Inflows', 'Outflows', 'Net Cash Flow', 'Running Balance'],
+                    rows: data.monthlyData.map((m) => [
+                      m.month,
+                      formatCurrencyForCsv(m.inflows),
+                      formatCurrencyForCsv(m.outflows),
+                      formatCurrencyForCsv(m.netCashFlow),
+                      formatCurrencyForCsv(m.runningBalance),
+                    ]),
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

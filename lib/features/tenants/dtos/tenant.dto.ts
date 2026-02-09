@@ -55,6 +55,7 @@ export const createTenantSchema = z.object({
   propertyMonthlyRent: z.number().optional().nullable(),
   propertyDepositPaid: z.number().optional().nullable(),
   propertyMoveInDate: z.string().optional().nullable(),
+  propertyUnitLabel: z.string().optional().nullable(),
 });
 
 export type CreateTenantDTO = z.infer<typeof createTenantSchema>;
@@ -120,6 +121,7 @@ export const propertyAssignmentSchema = z.object({
   monthlyRent: z.number().positive('Monthly rent must be positive'),
   depositPaid: z.number().min(0).optional().default(0),
   moveInDate: z.string().optional().nullable(),
+  unitLabel: z.string().optional().nullable(),
 });
 
 export type PropertyAssignmentDTO = z.infer<typeof propertyAssignmentSchema>;

@@ -34,6 +34,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
+import { exportToCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
 interface RevenueData {
   summary: {
@@ -182,7 +183,34 @@ export default function RevenueReportPage() {
             </div>
             <div />
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data) return;
+                  const rows = [
+                    ...data.byMonth.map((m) => [
+                      m.month,
+                      formatCurrencyForCsv(m.revenue),
+                      formatCurrencyForCsv(m.expenses),
+                      formatCurrencyForCsv(m.netIncome),
+                    ]),
+                    [],
+                    ['--- By Property ---'],
+                    ...data.byProperty.map((p) => [
+                      p.property.name,
+                      formatCurrencyForCsv(p.revenue),
+                      formatCurrencyForCsv(p.expenses),
+                      formatCurrencyForCsv(p.netIncome),
+                    ]),
+                  ];
+                  exportToCsv({
+                    filename: `revenue-report-${year}.csv`,
+                    headers: ['Period/Property', 'Revenue', 'Expenses', 'Net Income'],
+                    rows: rows as any,
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

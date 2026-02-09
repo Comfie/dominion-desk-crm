@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth';
 import { propertyService, createPropertySchema } from '@/lib/features/properties';
 import { ValidationError, ForbiddenError } from '@/lib/shared/errors/app-error';
 import { canAddProperty } from '@/lib/services/subscription.service';
+import { prisma } from '@/lib/db';
+import { PaymentStatus, PaymentType } from '@prisma/client';
 
 // Query params schema for list endpoint
 const listQuerySchema = z.object({
@@ -14,6 +16,7 @@ const listQuerySchema = z.object({
   occupied: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
+  includePaymentSummary: z.coerce.boolean().default(false),
 });
 
 /**
@@ -35,6 +38,7 @@ export async function GET(request: Request) {
       occupied: searchParams.get('occupied') || undefined,
       page: searchParams.get('page') || 1,
       limit: searchParams.get('limit') || 20,
+      includePaymentSummary: searchParams.get('includePaymentSummary') || false,
     });
 
     // Parse comma-separated filters
@@ -49,6 +53,56 @@ export async function GET(request: Request) {
 
     if (params.occupied) {
       result = result.filter((property) => property.hasActiveTenant);
+    }
+
+    // Add payment summary for current month if requested
+    if (params.includePaymentSummary) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      // Get payment summary for all properties
+      const propertyIds = result.map((p) => p.id);
+      const payments = await prisma.payment.findMany({
+        where: {
+          userId: session.user.id,
+          propertyId: { in: propertyIds },
+          paymentType: PaymentType.RENT,
+          dueDate: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+        select: {
+          propertyId: true,
+          status: true,
+        },
+      });
+
+      // Group payments by property
+      const paymentsByProperty = payments.reduce(
+        (acc, payment) => {
+          if (!payment.propertyId) return acc;
+          if (!acc[payment.propertyId]) {
+            acc[payment.propertyId] = { paid: 0, pending: 0, overdue: 0 };
+          }
+          if (payment.status === PaymentStatus.PAID) {
+            acc[payment.propertyId].paid++;
+          } else if (payment.status === PaymentStatus.OVERDUE) {
+            acc[payment.propertyId].overdue++;
+          } else {
+            acc[payment.propertyId].pending++;
+          }
+          return acc;
+        },
+        {} as Record<string, { paid: number; pending: number; overdue: number }>
+      );
+
+      // Add payment summary to each property
+      result = result.map((property) => ({
+        ...property,
+        paymentSummary: paymentsByProperty[property.id] || { paid: 0, pending: 0, overdue: 0 },
+      }));
     }
 
     // Apply pagination (service returns all, we paginate here)

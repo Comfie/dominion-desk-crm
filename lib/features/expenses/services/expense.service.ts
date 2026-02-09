@@ -1,4 +1,4 @@
-import { ExpenseCategory } from '@prisma/client';
+import { ExpenseCategory, ExpenseStatus } from '@prisma/client';
 import { expenseRepository } from '@/lib/features/expenses/repositories/expense.repository';
 import { logger } from '@/lib/shared/logger';
 import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
@@ -96,6 +96,7 @@ export class ExpenseService {
       invoiceNumber?: string;
       receiptUrl?: string;
       notes?: string;
+      status?: ExpenseStatus;
     }
   ) {
     const expense = await expenseRepository.findById(expenseId);

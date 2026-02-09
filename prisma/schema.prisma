@@ -242,6 +242,9 @@ model Property {
   minimumStay     Int?      // Minimum nights for short-term
   maximumStay     Int?      // Maximum nights for short-term
 
+  // Multi-Tenant Configuration
+  allowsMultipleTenants Boolean @default(false) // Enable multiple concurrent tenants
+
   // Rules
   petsAllowed     Boolean   @default(false)
   smokingAllowed  Boolean   @default(false)
@@ -532,6 +535,7 @@ model PropertyTenant {
   monthlyRent     Decimal   @db.Decimal(10, 2)
   depositPaid     Decimal   @default(0) @db.Decimal(10, 2)
   leaseDocumentUrl String?
+  unitLabel       String?   // Optional label for multi-tenant properties (e.g., "Room A", "Unit 3")
 
   // Status
   isActive        Boolean   @default(true)
@@ -542,8 +546,9 @@ model PropertyTenant {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  @@unique([propertyId, tenantId])
+  @@unique([propertyId, tenantId, unitLabel])
   @@index([userId])
+  @@index([propertyId, isActive])
 }
 
 // ============== INQUIRY MANAGEMENT ==============

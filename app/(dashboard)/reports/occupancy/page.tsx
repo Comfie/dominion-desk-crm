@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
+import { exportToCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
 interface OccupancyData {
   summary: {
@@ -185,7 +186,38 @@ export default function OccupancyReportPage() {
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
             <div className="flex items-end">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!data?.byProperty) return;
+                  exportToCsv({
+                    filename: `occupancy-report.csv`,
+                    headers: [
+                      'Property',
+                      'Type',
+                      'Occupancy %',
+                      'Occupied Days',
+                      'Vacant Days',
+                      'Bookings',
+                      'Revenue',
+                      'ADR',
+                      'RevPAR',
+                    ],
+                    rows: data.byProperty.map((p) => [
+                      p.property.name,
+                      p.property.rentalType,
+                      p.metrics.occupancyRate.toFixed(1),
+                      p.metrics.occupiedDays,
+                      p.metrics.vacantDays,
+                      p.metrics.totalBookings,
+                      formatCurrencyForCsv(p.metrics.totalRevenue),
+                      formatCurrencyForCsv(p.metrics.averageDailyRate),
+                      formatCurrencyForCsv(p.metrics.revPAR),
+                    ]),
+                  });
+                }}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>

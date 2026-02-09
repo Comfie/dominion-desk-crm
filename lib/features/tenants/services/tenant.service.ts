@@ -102,6 +102,7 @@ export class TenantService {
         monthlyRent: data.propertyMonthlyRent,
         depositPaid: data.propertyDepositPaid || 0,
         moveInDate: data.propertyMoveInDate,
+        unitLabel: data.propertyUnitLabel,
       });
     }
 
@@ -171,26 +172,52 @@ export class TenantService {
       monthlyRent: number;
       depositPaid?: number;
       moveInDate?: string | null;
+      unitLabel?: string | null;
     }
   ): Promise<void> {
-    // Verify property belongs to user
+    // Verify property belongs to user and check multi-tenant support
     const property = await prisma.property.findFirst({
       where: { id: assignment.propertyId, userId },
+      include: {
+        tenants: {
+          where: { isActive: true },
+        },
+      },
     });
 
     if (!property) {
       throw new NotFoundError('Property', assignment.propertyId);
     }
 
-    // Check if property already has an active tenant assignment
+    // Check if property allows multiple tenants
+    if (!property.allowsMultipleTenants && property.tenants.length > 0) {
+      throw new ValidationError(
+        'This property does not allow multiple tenants and already has an active tenant assigned. Enable "Allows Multiple Tenants" in property settings to add more tenants.',
+        {
+          propertyId: assignment.propertyId,
+          allowsMultipleTenants: property.allowsMultipleTenants,
+        }
+      );
+    }
+
+    // Check for duplicate: same tenant, same property, same unit, still active
     const existingAssignment = await prisma.propertyTenant.findFirst({
-      where: { propertyId: assignment.propertyId, isActive: true },
+      where: {
+        propertyId: assignment.propertyId,
+        tenantId,
+        unitLabel: assignment.unitLabel || null,
+        isActive: true,
+      },
     });
 
     if (existingAssignment) {
-      throw new ValidationError('Property already has an active tenant assignment', {
-        propertyId: assignment.propertyId,
-      });
+      throw new ValidationError(
+        'This tenant already has an active lease for this property/unit combination',
+        {
+          propertyId: assignment.propertyId,
+          unitLabel: assignment.unitLabel,
+        }
+      );
     }
 
     // Create property-tenant assignment
@@ -204,11 +231,16 @@ export class TenantService {
         monthlyRent: new Prisma.Decimal(assignment.monthlyRent),
         depositPaid: new Prisma.Decimal(assignment.depositPaid || 0),
         moveInDate: assignment.moveInDate ? new Date(assignment.moveInDate) : null,
+        unitLabel: assignment.unitLabel || null,
         isActive: true,
       },
     });
 
-    logger.info('Tenant assigned to property', { tenantId, propertyId: assignment.propertyId });
+    logger.info('Tenant assigned to property', {
+      tenantId,
+      propertyId: assignment.propertyId,
+      unitLabel: assignment.unitLabel,
+    });
   }
 
   /**

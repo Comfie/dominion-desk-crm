@@ -159,11 +159,13 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       return hasStarted && notEnded;
     }
   );
-  const activeLease = activeLeases[0] as { monthlyRent?: number | string | null } | undefined;
-  const leaseMonthlyRent =
-    activeLease?.monthlyRent !== undefined && activeLease?.monthlyRent !== null
-      ? Number(activeLease.monthlyRent)
-      : null;
+
+  // Calculate total monthly rent from all active leases (for multi-tenant properties)
+  const totalLeaseRent = activeLeases.reduce((sum, lease: any) => {
+    return sum + (lease.monthlyRent ? Number(lease.monthlyRent) : 0);
+  }, 0);
+
+  const leaseMonthlyRent = totalLeaseRent > 0 ? totalLeaseRent : null;
 
   if (isLoading) {
     return (
@@ -342,6 +344,14 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                         <X className="text-muted-foreground h-4 w-4" />
                       )}
                       <span className="text-sm">Smoking Allowed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {property.allowsMultipleTenants ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <X className="text-muted-foreground h-4 w-4" />
+                      )}
+                      <span className="text-sm">Allows Multiple Tenants</span>
                     </div>
                   </div>
                 </CardContent>
@@ -752,6 +762,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                     leaseEndDate?: string | null;
                     moveInDate?: string | null;
                     monthlyRent?: number | null;
+                    unitLabel?: string | null;
                     tenant?: {
                       id: string;
                       firstName: string;
@@ -763,11 +774,18 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                     <div key={lease.id} className="space-y-3 rounded-lg border p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold">
-                            {lease.tenant
-                              ? `${lease.tenant.firstName} ${lease.tenant.lastName}`
-                              : 'Tenant'}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold">
+                              {lease.tenant
+                                ? `${lease.tenant.firstName} ${lease.tenant.lastName}`
+                                : 'Tenant'}
+                            </p>
+                            {lease.unitLabel && (
+                              <Badge variant="outline" className="text-xs">
+                                {lease.unitLabel}
+                              </Badge>
+                            )}
+                          </div>
                           {lease.tenant?.email && (
                             <p className="text-muted-foreground text-xs">{lease.tenant.email}</p>
                           )}
@@ -837,7 +855,9 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   <p className="text-muted-foreground text-xs font-semibold uppercase">Long-term</p>
                   {(leaseMonthlyRent || property.monthlyRent) && (
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Monthly Rent</span>
+                      <span className="text-muted-foreground">
+                        {activeLeases.length > 1 ? 'Total Monthly Rent' : 'Monthly Rent'}
+                      </span>
                       <span className="text-lg font-semibold">
                         {formatCurrency(leaseMonthlyRent ?? Number(property.monthlyRent))}
                       </span>

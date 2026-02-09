@@ -32,7 +32,21 @@ export async function GET(request: Request) {
         isAvailable: true, // Only include properties marked as available
         ...(rentalTypeFilter && { rentalType: rentalTypeFilter }),
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        province: true,
+        propertyType: true,
+        bedrooms: true,
+        bathrooms: true,
+        parkingSpaces: true,
+        rentalType: true,
+        monthlyRent: true,
+        dailyRate: true,
+        securityDeposit: true,
+        allowsMultipleTenants: true,
         tenants: {
           where: {
             isActive: true,
@@ -41,6 +55,7 @@ export async function GET(request: Request) {
             id: true,
             leaseStartDate: true,
             leaseEndDate: true,
+            unitLabel: true,
           },
         },
         bookings: {
@@ -63,8 +78,9 @@ export async function GET(request: Request) {
 
     // Filter properties based on availability criteria
     const availableProperties = properties.filter((property) => {
-      // Criteria 1: No active tenant assignments
-      if (property.tenants.length > 0) {
+      // Criteria 1: Check multi-tenant support
+      // If property doesn't allow multiple tenants and already has active tenants, exclude it
+      if (!property.allowsMultipleTenants && property.tenants.length > 0) {
         return false;
       }
 
@@ -114,6 +130,12 @@ export async function GET(request: Request) {
       monthlyRent: property.monthlyRent,
       dailyRate: property.dailyRate,
       securityDeposit: property.securityDeposit,
+      allowsMultipleTenants: property.allowsMultipleTenants,
+      activeTenantsCount: property.tenants.length,
+      activeTenants: property.tenants.map((t) => ({
+        unitLabel: t.unitLabel,
+        leaseEndDate: t.leaseEndDate,
+      })),
     }));
 
     return NextResponse.json(formattedProperties);

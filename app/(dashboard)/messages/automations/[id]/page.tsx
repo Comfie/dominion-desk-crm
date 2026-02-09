@@ -63,8 +63,8 @@ export default function EditAutomationPage() {
     queryFn: async () => {
       const res = await fetch('/api/properties');
       if (!res.ok) throw new Error('Failed to fetch properties');
-      const data = await res.json();
-      return data.properties || [];
+      const result = await res.json();
+      return result.data || [];
     },
   });
 

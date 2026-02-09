@@ -33,6 +33,15 @@ interface PropertyCardProps {
     isAvailable: boolean;
     hasActiveTenant?: boolean;
     activeTenantCount?: number;
+    occupiedTenantCount?: number;
+    reservedTenantCount?: number;
+    isOccupied?: boolean;
+    isReserved?: boolean;
+    paymentSummary?: {
+      paid: number;
+      pending: number;
+      overdue: number;
+    };
     _count?: {
       bookings: number;
       tenants: number;
@@ -73,7 +82,22 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
     property.rentalType === 'SHORT_TERM' || property.rentalType === 'BOTH' ? '/night' : '/month';
 
   const activeTenantCount = property.activeTenantCount ?? 0;
-  const isOccupied = property.hasActiveTenant ?? activeTenantCount > 0;
+  const occupiedCount = property.occupiedTenantCount ?? 0;
+  const reservedCount = property.reservedTenantCount ?? 0;
+  const isOccupied = property.isOccupied ?? occupiedCount > 0;
+  const isReserved = property.isReserved ?? reservedCount > 0;
+
+  // Payment health badge logic
+  const paymentSummary = property.paymentSummary;
+  const hasPaymentData =
+    paymentSummary && paymentSummary.paid + paymentSummary.pending + paymentSummary.overdue > 0;
+  const allPaid =
+    paymentSummary &&
+    paymentSummary.paid > 0 &&
+    paymentSummary.pending === 0 &&
+    paymentSummary.overdue === 0;
+  const hasOverdue = paymentSummary && paymentSummary.overdue > 0;
+  const hasPending = paymentSummary && paymentSummary.pending > 0;
 
   if (variant === 'list') {
     return (
@@ -101,8 +125,33 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
                 </Badge>
                 {isOccupied && (
                   <Badge className="border-red-200 bg-red-100 text-red-800">
-                    Occupied{activeTenantCount > 1 ? ` · ${activeTenantCount}` : ''}
+                    Occupied{occupiedCount > 1 ? ` · ${occupiedCount}` : ''}
                   </Badge>
+                )}
+                {isReserved && (
+                  <Badge className="border-orange-200 bg-orange-100 text-orange-800">
+                    Reserved{reservedCount > 1 ? ` · ${reservedCount}` : ''}
+                  </Badge>
+                )}
+                {/* Payment Health Badge */}
+                {hasPaymentData && (
+                  <>
+                    {allPaid && (
+                      <Badge className="border-green-200 bg-green-100 text-green-800">
+                        All Paid
+                      </Badge>
+                    )}
+                    {hasOverdue && (
+                      <Badge className="border-red-200 bg-red-100 text-red-800">
+                        {paymentSummary.overdue} Overdue
+                      </Badge>
+                    )}
+                    {hasPending && !allPaid && !hasOverdue && (
+                      <Badge className="border-yellow-200 bg-yellow-100 text-yellow-800">
+                        {paymentSummary.pending} Pending
+                      </Badge>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -233,8 +282,31 @@ export function PropertyCard({ property, onDelete, variant = 'grid' }: PropertyC
           </Badge>
           {isOccupied && (
             <Badge className="border-red-200 bg-red-100 text-red-800">
-              Occupied{activeTenantCount > 1 ? ` · ${activeTenantCount}` : ''}
+              Occupied{occupiedCount > 1 ? ` · ${occupiedCount}` : ''}
             </Badge>
+          )}
+          {isReserved && (
+            <Badge className="border-orange-200 bg-orange-100 text-orange-800">
+              Reserved{reservedCount > 1 ? ` · ${reservedCount}` : ''}
+            </Badge>
+          )}
+          {/* Payment Health Badge */}
+          {hasPaymentData && (
+            <>
+              {allPaid && (
+                <Badge className="border-green-200 bg-green-100 text-green-800">All Paid</Badge>
+              )}
+              {hasOverdue && (
+                <Badge className="border-red-200 bg-red-100 text-red-800">
+                  {paymentSummary.overdue} Overdue
+                </Badge>
+              )}
+              {hasPending && !allPaid && !hasOverdue && (
+                <Badge className="border-yellow-200 bg-yellow-100 text-yellow-800">
+                  {paymentSummary.pending} Pending
+                </Badge>
+              )}
+            </>
           )}
         </div>
 

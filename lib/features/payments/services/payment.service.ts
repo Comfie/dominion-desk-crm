@@ -385,6 +385,82 @@ export class PaymentService {
     await paymentRepository.updateInvoiceUrl(paymentId, invoiceUrl);
     logger.info('Payment invoice URL updated', { paymentId, invoiceUrl });
   }
+
+  /**
+   * Get rent collection data for the rent collection grid
+   * Orchestrates grid data, summary stats, and collection trend
+   */
+  async getRentCollectionData(
+    userId: string,
+    month: number,
+    year: number,
+    filters?: {
+      propertyId?: string;
+      status?: PaymentStatus;
+    }
+  ) {
+    // Get the grid data
+    const gridData = await paymentRepository.getRentCollectionGrid(
+      userId,
+      month,
+      year,
+      filters?.propertyId
+    );
+
+    // Calculate summary statistics
+    let totalExpected = 0;
+    let totalCollected = 0;
+    let overdueCount = 0;
+    let pendingVerificationCount = 0;
+
+    gridData.forEach((propertyData) => {
+      totalExpected += propertyData.subtotals.expected;
+      totalCollected += propertyData.subtotals.collected;
+
+      propertyData.tenants.forEach((tenant) => {
+        if (tenant.payment?.status === PaymentStatus.OVERDUE) {
+          overdueCount++;
+        }
+        if (tenant.payment?.status === PaymentStatus.PENDING_VERIFICATION) {
+          pendingVerificationCount++;
+        }
+      });
+    });
+
+    const outstandingAmount = totalExpected - totalCollected;
+    const collectionRate = totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0;
+
+    // Get collection rate trend for the last 6 months
+    const monthlyTrend = await paymentRepository.getCollectionRateTrend(userId, 6);
+
+    // Apply status filter if provided
+    let filteredGridData = gridData;
+    if (filters?.status) {
+      filteredGridData = gridData
+        .map((propertyData) => ({
+          ...propertyData,
+          tenants: propertyData.tenants.filter(
+            (tenant) =>
+              tenant.payment?.status === filters.status ||
+              (!tenant.payment && filters.status === PaymentStatus.PENDING)
+          ),
+        }))
+        .filter((propertyData) => propertyData.tenants.length > 0);
+    }
+
+    return {
+      summary: {
+        totalExpected,
+        totalCollected,
+        collectionRate: Math.round(collectionRate * 100) / 100,
+        outstandingAmount,
+        overdueCount,
+        pendingVerificationCount,
+      },
+      properties: filteredGridData,
+      monthlyTrend,
+    };
+  }
 }
 
 // Export singleton instance

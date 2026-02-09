@@ -15,6 +15,7 @@ const assignPropertySchema = z
     depositPaid: z.number().min(0, 'Deposit must be a positive number').optional().default(0),
     moveInDate: z.string().optional().nullable(),
     leaseDocumentUrl: z.string().optional().nullable(),
+    unitLabel: z.string().optional().nullable(),
   })
   .refine(
     (data) => {
@@ -59,7 +60,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           userId: session.user.id,
         },
       },
-      include: {
+      select: {
+        id: true,
+        leaseStartDate: true,
+        leaseEndDate: true,
+        monthlyRent: true,
+        depositPaid: true,
+        moveInDate: true,
+        moveOutDate: true,
+        isActive: true,
+        unitLabel: true,
         property: {
           select: {
             id: true,
@@ -111,11 +121,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const body = await request.json();
     const validatedData = assignPropertySchema.parse(body);
 
-    // Verify property belongs to user
+    // Verify property belongs to user and check multi-tenant support
     const property = await prisma.property.findFirst({
       where: {
         id: validatedData.propertyId,
         userId: session.user.id,
+      },
+      include: {
+        tenants: {
+          where: { isActive: true },
+        },
       },
     });
 
@@ -123,17 +138,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    // Check if property already has an active tenant assignment
+    // Check if property allows multiple tenants
+    if (!property.allowsMultipleTenants && property.tenants.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'This property does not allow multiple tenants and already has an active tenant assigned. Enable "Allows Multiple Tenants" in property settings to add more tenants.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate: same tenant, same property, same unit, still active
     const existingAssignment = await prisma.propertyTenant.findFirst({
       where: {
         propertyId: validatedData.propertyId,
+        tenantId: id,
+        unitLabel: validatedData.unitLabel || null,
         isActive: true,
       },
     });
 
     if (existingAssignment) {
       return NextResponse.json(
-        { error: 'Property already has an active tenant assignment' },
+        { error: 'This tenant already has an active lease for this property/unit' },
         { status: 400 }
       );
     }
@@ -201,6 +229,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         depositPaid: new Prisma.Decimal(validatedData.depositPaid),
         moveInDate: validatedData.moveInDate ? new Date(validatedData.moveInDate) : null,
         leaseDocumentUrl: validatedData.leaseDocumentUrl,
+        unitLabel: validatedData.unitLabel || null,
         isActive: true,
       },
       include: {

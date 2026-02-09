@@ -12,6 +12,12 @@ export class InvoiceService {
     const property = payment.property || payment.tenant?.properties?.[0]?.property;
     const tenant = payment.tenant;
     const organization = payment.user;
+
+    // Find the active lease to get unitLabel
+    const activeLease = payment.tenant?.properties?.find(
+      (pt) => pt.property?.id === property?.id && pt.isActive
+    );
+    const unitLabel = activeLease?.unitLabel;
     const bankingDetails = organization as unknown as {
       bankName?: string;
       bankAccountName?: string;
@@ -262,7 +268,7 @@ export class InvoiceService {
         ? `
     <div class="detail-section" style="margin-bottom: 20px;">
       <h3>Property</h3>
-      <p><strong>${property.name}</strong></p>
+      <p><strong>${property.name}${unitLabel ? ` - ${unitLabel}` : ''}</strong></p>
       ${property.address ? `<p>${property.address}</p>` : ''}
     </div>
     `
@@ -410,6 +416,12 @@ export class InvoiceService {
       paymentInstructions?: string;
     } | null;
 
+    // Find the active lease to get unitLabel
+    const activeLease = payment.tenant?.properties?.find(
+      (pt) => pt.property?.id === property?.id && pt.isActive
+    );
+    const unitLabel = activeLease?.unitLabel;
+
     const formatCurrency = (amount: number | string) => {
       const num = typeof amount === 'string' ? parseFloat(amount) : amount;
       return new Intl.NumberFormat('en-ZA', {
@@ -451,7 +463,7 @@ ${tenant?.phone ? `Phone: ${tenant.phone}` : ''}
 ${
   property
     ? `PROPERTY:
-${property.name}
+${property.name}${unitLabel ? ` - ${unitLabel}` : ''}
 ${property.address || ''}`
     : ''
 }

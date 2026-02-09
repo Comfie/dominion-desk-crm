@@ -115,6 +115,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const [monthlyRent, setMonthlyRent] = useState('');
   const [depositPaid, setDepositPaid] = useState('');
   const [moveInDate, setMoveInDate] = useState('');
+  const [unitLabel, setUnitLabel] = useState('');
   const [moveOutDate, setMoveOutDate] = useState('');
   const [propertyToTerminate, setPropertyToTerminate] = useState<string | null>(null);
   const [propertyToEdit, setPropertyToEdit] = useState<any>(null);
@@ -366,6 +367,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       monthlyRent: parseFloat(monthlyRent),
       depositPaid: depositPaid ? parseFloat(depositPaid) : 0,
       moveInDate: moveInDate || undefined,
+      unitLabel: unitLabel || undefined,
     });
   };
 
@@ -950,12 +952,19 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                     <div key={pt.property.id} className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <Link
-                            href={`/properties/${pt.property.id}`}
-                            className="hover:text-primary font-medium transition-colors"
-                          >
-                            {pt.property.name}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/properties/${pt.property.id}`}
+                              className="hover:text-primary font-medium transition-colors"
+                            >
+                              {pt.property.name}
+                            </Link>
+                            {pt.unitLabel && (
+                              <Badge variant="outline" className="text-xs">
+                                {pt.unitLabel}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-muted-foreground text-sm">
                             {pt.property.address}, {pt.property.city}
                           </p>
@@ -1035,6 +1044,26 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           </Card>
 
           {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                View complete payment history and statistics
+              </p>
+              <Button asChild variant="outline" className="w-full">
+                <Link href={`/tenants/${tenant.id}/payments`}>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  View Payment History
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1235,6 +1264,19 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="unitLabel">Unit / Room Label (optional)</Label>
+              <Input
+                id="unitLabel"
+                placeholder="e.g., Room A, Unit 3, Ground Floor"
+                value={unitLabel}
+                onChange={(e) => setUnitLabel(e.target.value)}
+              />
+              <p className="text-muted-foreground text-xs">
+                For properties with multiple tenants. Leave blank for single-tenant properties.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="moveInDate">Move-In Date</Label>
               <Input
                 id="moveInDate"
@@ -1255,6 +1297,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 setMonthlyRent('');
                 setDepositPaid('');
                 setMoveInDate('');
+                setUnitLabel('');
               }}
             >
               Cancel

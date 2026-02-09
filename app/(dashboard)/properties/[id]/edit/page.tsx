@@ -35,6 +35,7 @@ const propertySchema = z.object({
   monthlyRent: z.number().optional().nullable(),
   dailyRate: z.number().optional().nullable(),
   securityDeposit: z.number().optional().nullable(),
+  allowsMultipleTenants: z.boolean(),
   petsAllowed: z.boolean(),
   smokingAllowed: z.boolean(),
   status: z.string(),
@@ -110,6 +111,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
       bathrooms: 1,
       parkingSpaces: 0,
       furnished: false,
+      allowsMultipleTenants: false,
       petsAllowed: false,
       smokingAllowed: false,
       status: 'ACTIVE',
@@ -136,6 +138,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
         monthlyRent: property.monthlyRent || null,
         dailyRate: property.dailyRate || null,
         securityDeposit: property.securityDeposit || null,
+        allowsMultipleTenants: property.allowsMultipleTenants || false,
         petsAllowed: property.petsAllowed,
         smokingAllowed: property.smokingAllowed,
         status: property.status,
@@ -426,6 +429,11 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
               <label className="flex items-center gap-2">
                 <input type="checkbox" className="rounded" {...register('furnished')} />
                 <span className="text-sm">Furnished</span>
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="rounded" {...register('allowsMultipleTenants')} />
+                <span className="text-sm">Allows Multiple Tenants</span>
               </label>
 
               <label className="flex items-center gap-2">

@@ -258,7 +258,9 @@ export class PropertyService {
 
     return properties.map(({ tenants, ...property }) => {
       const today = new Date();
-      const activeTenantCount =
+
+      // Count tenants who have moved in (occupied)
+      const occupiedTenantCount =
         tenants?.filter((lease) => {
           const moveInDate = lease.moveInDate ?? lease.leaseStartDate;
           const leaseEndDate = lease.leaseEndDate;
@@ -266,10 +268,28 @@ export class PropertyService {
           const notEnded = !leaseEndDate || leaseEndDate >= today;
           return hasStarted && notEnded;
         }).length ?? 0;
+
+      // Count tenants who are assigned but haven't moved in yet (reserved)
+      const reservedTenantCount =
+        tenants?.filter((lease) => {
+          const moveInDate = lease.moveInDate ?? lease.leaseStartDate;
+          const leaseEndDate = lease.leaseEndDate;
+          const notStarted = moveInDate > today;
+          const notEnded = !leaseEndDate || leaseEndDate >= today;
+          return notStarted && notEnded;
+        }).length ?? 0;
+
+      // Total active tenants (both occupied and reserved)
+      const activeTenantCount = occupiedTenantCount + reservedTenantCount;
+
       return {
         ...property,
         activeTenantCount,
+        occupiedTenantCount,
+        reservedTenantCount,
         hasActiveTenant: activeTenantCount > 0,
+        isOccupied: occupiedTenantCount > 0,
+        isReserved: reservedTenantCount > 0,
       };
     });
   }

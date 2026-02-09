@@ -391,19 +391,19 @@ export class PaymentRepository {
 
     const rentalDueDay = user?.rentalDueDay || 1;
 
-    // Find all active tenants with monthly rent configured
-    const tenants = await prisma.tenant.findMany({
+    // Find all ACTIVE leases (PropertyTenant records) for this user's properties
+    const activeLeases = await prisma.propertyTenant.findMany({
       where: {
         userId,
-        status: 'ACTIVE',
-        monthlyRent: { not: null },
+        isActive: true,
+        monthlyRent: { gt: 0 },
+        // Only include leases that are active during this month
+        leaseStartDate: { lte: new Date(year, month - 1, 28) },
+        OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: new Date(year, month - 1, 1) } }],
       },
       include: {
-        properties: {
-          include: {
-            property: true,
-          },
-        },
+        tenant: true,
+        property: true,
       },
     });
 
@@ -423,21 +423,20 @@ export class PaymentRepository {
       'December',
     ];
 
-    for (const tenant of tenants) {
-      const property = tenant.properties[0]?.property;
+    // Calculate due date using user's global rental due day setting
+    const dueDay = Math.min(rentalDueDay, 28); // Cap at 28 to avoid month-end issues
+    const dueDate = new Date(year, month - 1, dueDay, 9, 0, 0);
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0);
 
-      // Calculate due date using user's global rental due day setting
-      const dueDay = Math.min(rentalDueDay, 28); // Cap at 28 to avoid month-end issues
-      const dueDate = new Date(year, month - 1, dueDay, 9, 0, 0);
-
-      // Check if payment already exists for this month
-      const startOfMonth = new Date(year, month - 1, 1);
-      const endOfMonth = new Date(year, month, 0);
-
+    for (const lease of activeLeases) {
+      // Check if payment already exists for this lease+month
+      // Use both tenantId AND propertyId to avoid duplicates
       const existing = await prisma.payment.findFirst({
         where: {
           userId,
-          tenantId: tenant.id,
+          tenantId: lease.tenantId,
+          propertyId: lease.propertyId,
           paymentType: PaymentType.RENT,
           dueDate: {
             gte: startOfMonth,
@@ -446,30 +445,34 @@ export class PaymentRepository {
         },
       });
 
-      if (!existing && tenant.monthlyRent) {
+      if (!existing) {
         const monthName = monthNames[month - 1];
         const paymentReference = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-        const invoiceNumber = `INV-${year}${String(month).padStart(2, '0')}-${tenant.id.substring(0, 8)}`;
 
+        // Include unitLabel in invoice number for uniqueness
+        const unitSuffix = lease.unitLabel ? `-${lease.unitLabel.replace(/\s+/g, '')}` : '';
+        const invoiceNumber = `INV-${year}${String(month).padStart(2, '0')}-${lease.tenantId.substring(0, 8)}${unitSuffix}`;
+
+        const unitDescription = lease.unitLabel ? ` (${lease.unitLabel})` : '';
         const paymentData: Prisma.PaymentCreateManyInput = {
           userId,
-          tenantId: tenant.id,
-          propertyId: property?.id,
+          tenantId: lease.tenantId,
+          propertyId: lease.propertyId,
           paymentReference,
           paymentType: PaymentType.RENT,
-          amount: tenant.monthlyRent,
+          amount: lease.monthlyRent, // USE LEASE rent, not tenant rent
           currency: 'ZAR',
           dueDate,
           status: PaymentStatus.PENDING,
           invoiceNumber,
-          description: `Monthly rent for ${monthName} ${year}${property?.name ? ` - ${property.name}` : ''}`,
+          description: `Monthly rent for ${monthName} ${year} - ${lease.property.name}${unitDescription}`,
         };
 
         payments.push(paymentData);
 
         // Update tenant's nextPaymentDue
         await prisma.tenant.update({
-          where: { id: tenant.id },
+          where: { id: lease.tenantId },
           data: { nextPaymentDue: dueDate },
         });
       }
@@ -523,6 +526,336 @@ export class PaymentRepository {
       totalAmount: Number(totalAmount._sum.amount || 0),
       paidAmount: Number(paidAmount._sum.amount || 0),
       pendingAmount: Number(totalAmount._sum.amount || 0) - Number(paidAmount._sum.amount || 0),
+    };
+  }
+
+  /**
+   * Get rent collection grid data for a specific month
+   * Returns all properties with their tenants and payment status
+   */
+  async getRentCollectionGrid(userId: string, month: number, year: number, propertyId?: string) {
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0);
+
+    // Build property filter
+    const propertyWhere: Prisma.PropertyWhereInput = {
+      userId,
+      ...(propertyId && propertyId !== 'all' ? { id: propertyId } : {}),
+    };
+
+    // Get all active leases for this month, then group by property
+    const activeLeases = await prisma.propertyTenant.findMany({
+      where: {
+        userId,
+        isActive: true,
+        leaseStartDate: { lte: endOfMonth },
+        OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: startOfMonth } }],
+        ...(propertyId && propertyId !== 'all' ? { propertyId } : {}),
+      },
+      include: {
+        tenant: true,
+        property: true,
+      },
+    });
+
+    // Group leases by property
+    const propertyMap = new Map<
+      string,
+      { property: (typeof activeLeases)[0]['property']; leases: typeof activeLeases }
+    >();
+    activeLeases.forEach((lease) => {
+      const existing = propertyMap.get(lease.propertyId);
+      if (existing) {
+        existing.leases.push(lease);
+      } else {
+        propertyMap.set(lease.propertyId, { property: lease.property, leases: [lease] });
+      }
+    });
+
+    const properties = Array.from(propertyMap.values()).sort((a, b) =>
+      a.property.name.localeCompare(b.property.name)
+    );
+
+    // Get all payments for the month
+    const payments = await prisma.payment.findMany({
+      where: {
+        userId,
+        paymentType: PaymentType.RENT,
+        dueDate: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+        ...(propertyId && propertyId !== 'all' ? { propertyId } : {}),
+      },
+      include: {
+        tenant: true,
+        property: true,
+      },
+    });
+
+    // Create a map for quick payment lookup by tenant+property
+    const paymentMap = new Map<string, (typeof payments)[0]>();
+    payments.forEach((payment) => {
+      if (payment.tenantId && payment.propertyId) {
+        const key = `${payment.tenantId}-${payment.propertyId}`;
+        paymentMap.set(key, payment);
+      }
+    });
+
+    // Build the grid data
+    const gridData = properties.map(({ property, leases }) => {
+      const tenants = leases.map((lease) => {
+        const key = `${lease.tenantId}-${property.id}`;
+        const payment = paymentMap.get(key);
+
+        // Calculate days overdue
+        let daysOverdue = 0;
+        if (payment && payment.dueDate && payment.status !== PaymentStatus.PAID) {
+          const today = new Date();
+          const due = new Date(payment.dueDate);
+          daysOverdue = Math.max(
+            0,
+            Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24))
+          );
+        }
+
+        return {
+          lease,
+          tenant: lease.tenant,
+          unitLabel: lease.unitLabel,
+          monthlyRent: Number(lease.monthlyRent),
+          payment: payment
+            ? {
+                id: payment.id,
+                amount: Number(payment.amount),
+                status: payment.status,
+                dueDate: payment.dueDate,
+                paymentDate: payment.paymentDate,
+                invoiceNumber: payment.invoiceNumber,
+                invoiceUrl: payment.invoiceUrl,
+                proofOfPaymentUrl: payment.proofOfPaymentUrl,
+                proofUploadedAt: payment.proofUploadedAt,
+              }
+            : null,
+          daysOverdue,
+        };
+      });
+
+      // Calculate property subtotals
+      const expected = tenants.reduce((sum, t) => sum + t.monthlyRent, 0);
+      const collected = tenants.reduce((sum, t) => {
+        return sum + (t.payment?.status === PaymentStatus.PAID ? t.payment?.amount || 0 : 0);
+      }, 0);
+      const outstanding = expected - collected;
+      const paidCount = tenants.filter((t) => t.payment?.status === PaymentStatus.PAID).length;
+
+      return {
+        property: {
+          id: property.id,
+          name: property.name,
+          address: property.address,
+        },
+        tenants,
+        subtotals: {
+          expected,
+          collected,
+          outstanding,
+          paidCount,
+          totalCount: tenants.length,
+        },
+      };
+    });
+
+    return gridData;
+  }
+
+  /**
+   * Get collection rate trend for the last N months
+   * Returns monthly expected vs collected amounts
+   */
+  async getCollectionRateTrend(userId: string, months: number = 6) {
+    const trends: Array<{ month: string; expected: number; collected: number; rate: number }> = [];
+    const now = new Date();
+
+    for (let i = months - 1; i >= 0; i--) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = targetDate.getMonth() + 1;
+      const year = targetDate.getFullYear();
+
+      const startOfMonth = new Date(year, month - 1, 1);
+      const endOfMonth = new Date(year, month, 0);
+
+      const [expectedResult, collectedResult] = await Promise.all([
+        prisma.payment.aggregate({
+          where: {
+            userId,
+            paymentType: PaymentType.RENT,
+            dueDate: {
+              gte: startOfMonth,
+              lte: endOfMonth,
+            },
+          },
+          _sum: { amount: true },
+        }),
+        prisma.payment.aggregate({
+          where: {
+            userId,
+            paymentType: PaymentType.RENT,
+            status: PaymentStatus.PAID,
+            dueDate: {
+              gte: startOfMonth,
+              lte: endOfMonth,
+            },
+          },
+          _sum: { amount: true },
+        }),
+      ]);
+
+      const expected = Number(expectedResult._sum.amount || 0);
+      const collected = Number(collectedResult._sum.amount || 0);
+      const rate = expected > 0 ? (collected / expected) * 100 : 0;
+
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      const monthLabel = `${monthNames[month - 1]} ${year}`;
+
+      trends.push({
+        month: monthLabel,
+        expected,
+        collected,
+        rate: Math.round(rate * 100) / 100, // Round to 2 decimal places
+      });
+    }
+
+    return trends;
+  }
+
+  /**
+   * Get tenant payment ledger with complete payment history
+   * Returns chronological payment history with statistics
+   */
+  async getTenantPaymentLedger(tenantId: string, userId: string, year?: number) {
+    // Build date filter
+    const whereDate: any = {};
+    if (year) {
+      const startOfYear = new Date(year, 0, 1);
+      const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+      whereDate.dueDate = {
+        gte: startOfYear,
+        lte: endOfYear,
+      };
+    }
+
+    // Get all payments for the tenant
+    const payments = await prisma.payment.findMany({
+      where: {
+        tenantId,
+        userId,
+        ...whereDate,
+      },
+      include: {
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    // Calculate statistics
+    const now = new Date();
+    const paidPayments = payments.filter((p) => p.status === PaymentStatus.PAID);
+    const totalPaid = paidPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Calculate on-time payment rate
+    const onTimePayments = paidPayments.filter((p) => {
+      if (!p.paymentDate || !p.dueDate) return false;
+      return new Date(p.paymentDate) <= new Date(p.dueDate);
+    });
+    const onTimeRate =
+      paidPayments.length > 0 ? (onTimePayments.length / paidPayments.length) * 100 : 0;
+
+    // Calculate average days to pay
+    const daysToPayArray = paidPayments
+      .filter((p) => p.paymentDate && p.dueDate)
+      .map((p) => {
+        const payDate = new Date(p.paymentDate!);
+        const dueDate = new Date(p.dueDate!);
+        return Math.floor((payDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      });
+    const avgDaysToPay =
+      daysToPayArray.length > 0
+        ? daysToPayArray.reduce((sum, days) => sum + days, 0) / daysToPayArray.length
+        : 0;
+
+    // Calculate current balance (outstanding amount)
+    const currentBalance = payments
+      .filter((p) => p.status !== PaymentStatus.PAID && p.status !== PaymentStatus.REFUNDED)
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Format payment records with additional calculated fields
+    const paymentRecords = payments.map((payment) => {
+      let daysLate = 0;
+      if (payment.paymentDate && payment.dueDate) {
+        const payDate = new Date(payment.paymentDate);
+        const dueDate = new Date(payment.dueDate);
+        daysLate = Math.max(
+          0,
+          Math.floor((payDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+        );
+      } else if (payment.status !== PaymentStatus.PAID && payment.dueDate) {
+        // For unpaid payments, calculate days overdue from today
+        const dueDate = new Date(payment.dueDate);
+        if (dueDate < now) {
+          daysLate = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      return {
+        id: payment.id,
+        date: payment.paymentDate || payment.dueDate || payment.createdAt,
+        description: payment.description || `${payment.paymentType} payment`,
+        amount: Number(payment.amount),
+        status: payment.status,
+        daysLate,
+        paymentMethod: payment.paymentMethod,
+        invoiceNumber: payment.invoiceNumber,
+        invoiceUrl: payment.invoiceUrl,
+        receiptUrl: payment.receiptUrl,
+        dueDate: payment.dueDate,
+        paymentDate: payment.paymentDate,
+        paymentType: payment.paymentType,
+        property: payment.property,
+      };
+    });
+
+    return {
+      payments: paymentRecords,
+      summary: {
+        totalPaid,
+        onTimeRate: Math.round(onTimeRate * 100) / 100,
+        avgDaysToPay: Math.round(avgDaysToPay * 10) / 10,
+        currentBalance,
+        totalPayments: payments.length,
+        paidCount: paidPayments.length,
+        pendingCount: payments.filter((p) => p.status === PaymentStatus.PENDING).length,
+        overdueCount: payments.filter((p) => p.status === PaymentStatus.OVERDUE).length,
+      },
     };
   }
 }
