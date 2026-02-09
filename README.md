@@ -138,3 +138,30 @@ For questions or issues, refer to the [documentation](docs/PROJECT_STATUS.md) or
 ---
 
 **Built with ❤️ for South African property managers**
+
+// "crons": [
+// {
+// "path": "/api/payments/generate-monthly",
+// "schedule": "0 0 25 * *"
+// },
+// {
+// "path": "/api/payments/send-reminders",
+// "schedule": "0 9 * * *"
+// },
+// {
+// "path": "/api/payments/mark-overdue",
+// "schedule": "0 0 * * *"
+// },
+// {
+// "path": "/api/payments/send-overdue-reminders",
+// "schedule": "0 10 * * *"
+// },
+// {
+// "path": "/api/maintenance/send-follow-ups",
+// "schedule": "0 10 * * *"
+// },
+// {
+// "path": "/api/messaging/scheduled/process",
+// "schedule": "*/15 * * * *"
+// }
+// ]
