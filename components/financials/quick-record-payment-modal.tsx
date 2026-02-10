@@ -75,8 +75,8 @@ export function QuickRecordPaymentModal({
         return;
       }
 
-      const response = await fetch(`/api/payments/${payment.id}/record`, {
-        method: 'POST',
+      const response = await fetch(`/api/payments/${payment.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentMethod: formData.paymentMethod,

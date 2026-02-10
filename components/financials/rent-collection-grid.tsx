@@ -169,6 +169,7 @@ export function RentCollectionGrid({
           size="sm"
           variant="outline"
           onClick={() => onRecordPayment?.(null, tenant.tenant, property)}
+          className="whitespace-nowrap"
         >
           Record Payment
         </Button>
@@ -178,7 +179,7 @@ export function RentCollectionGrid({
     switch (payment.status) {
       case PaymentStatus.PAID:
         return (
-          <Button size="sm" variant="ghost" asChild>
+          <Button size="sm" variant="ghost" asChild className="whitespace-nowrap">
             <Link href={`/financials/payments/${payment.id}`}>
               <FileText className="mr-1 h-4 w-4" />
               View Invoice
@@ -188,7 +189,12 @@ export function RentCollectionGrid({
       case PaymentStatus.PENDING_VERIFICATION:
         return (
           <div className="flex gap-2">
-            <Button size="sm" variant="default" onClick={() => onVerifyProof?.(payment)}>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => onVerifyProof?.(payment)}
+              className="whitespace-nowrap"
+            >
               <Eye className="mr-1 h-4 w-4" />
               Verify Proof
             </Button>
@@ -197,11 +203,12 @@ export function RentCollectionGrid({
       case PaymentStatus.PENDING:
       case PaymentStatus.OVERDUE:
         return (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               variant="outline"
               onClick={() => onRecordPayment?.(payment, tenant.tenant, property)}
+              className="whitespace-nowrap"
             >
               Record Payment
             </Button>
@@ -209,6 +216,7 @@ export function RentCollectionGrid({
               size="sm"
               variant="ghost"
               onClick={() => onSendReminder?.(payment, tenant.tenant)}
+              className="whitespace-nowrap"
             >
               <Send className="mr-1 h-4 w-4" />
               Send Reminder
@@ -231,16 +239,16 @@ export function RentCollectionGrid({
   }
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[300px]">Property</TableHead>
-            <TableHead>Tenant</TableHead>
-            <TableHead>Unit</TableHead>
-            <TableHead className="text-right">Rent</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="min-w-[250px]">Property</TableHead>
+            <TableHead className="min-w-[180px]">Tenant</TableHead>
+            <TableHead className="min-w-[80px]">Unit</TableHead>
+            <TableHead className="min-w-[100px] text-right">Rent</TableHead>
+            <TableHead className="min-w-[180px]">Status</TableHead>
+            <TableHead className="min-w-[200px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -191,29 +191,48 @@ export default function RentCollectionPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Rent Collection</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Rent Collection</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Monitor payment status across your entire portfolio
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleRefresh} disabled={loading || refreshing}>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={loading || refreshing}
+            size="sm"
+            className="sm:size-default"
+          >
             {refreshing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
+            <span className="sm:hidden">Refresh</span>
           </Button>
-          <Button variant="outline" onClick={handleExportCSV} disabled={loading || !data}>
+          <Button
+            variant="outline"
+            onClick={handleExportCSV}
+            disabled={loading || !data}
+            size="sm"
+            className="sm:size-default"
+          >
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
+            <span className="sm:hidden">CSV</span>
           </Button>
-          <Button onClick={() => router.push('/financials/invoices/new')}>
+          <Button
+            onClick={() => router.push('/financials/invoices/new')}
+            size="sm"
+            className="sm:size-default"
+          >
             <FileText className="mr-2 h-4 w-4" />
-            Create Invoice
+            <span className="hidden sm:inline">Create Invoice</span>
+            <span className="sm:hidden">Invoice</span>
           </Button>
         </div>
       </div>

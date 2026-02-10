@@ -72,20 +72,24 @@ export function CollectionSummaryCards({ summary, currency = 'ZAR' }: Collection
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
           <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-muted-foreground text-sm font-medium">{card.title}</p>
-                  <p className="mt-2 text-2xl font-bold">{card.value}</p>
-                  {card.subtitle && <p className={`mt-1 text-xs ${card.color}`}>{card.subtitle}</p>}
+            <CardContent className="p-4 sm:p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-muted-foreground truncate text-xs font-medium sm:text-sm">
+                    {card.title}
+                  </p>
+                  <p className="mt-2 truncate text-xl font-bold sm:text-xl">{card.value}</p>
+                  {card.subtitle && (
+                    <p className={`mt-1 text-xs ${card.color} truncate`}>{card.subtitle}</p>
+                  )}
                 </div>
-                <div className={`rounded-full p-3 ${card.bgColor}`}>
-                  <Icon className={`h-6 w-6 ${card.color}`} />
+                <div className={`flex-shrink-0 rounded-full p-2 sm:p-3 ${card.bgColor}`}>
+                  <Icon className={`h-5 w-5 sm:h-4 sm:w-4 ${card.color}`} />
                 </div>
               </div>
             </CardContent>
