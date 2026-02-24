@@ -16,29 +16,70 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const tenantSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().min(1, 'Phone is required'),
-  alternatePhone: z.string().optional(),
-  idNumber: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  currentAddress: z.string().optional(),
-  city: z.string().optional(),
-  province: z.string().optional(),
-  postalCode: z.string().optional(),
-  employmentStatus: z.string().optional(),
-  employer: z.string().optional(),
-  employerPhone: z.string().optional(),
-  monthlyIncome: z.number().optional(),
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().optional(),
-  emergencyContactRelation: z.string().optional(),
-  tenantType: z.string(),
-  status: z.string(),
-  notes: z.string().optional(),
-});
+const tenantSchema = z
+  .object({
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    email: z.string().email('Invalid email'),
+    phone: z.string().min(1, 'Phone is required'),
+    alternatePhone: z.string().optional(),
+    idNumber: z.string().optional(),
+    idType: z.string().optional(),
+    dateOfBirth: z.string().optional(),
+    currentAddress: z.string().optional(),
+    city: z.string().optional(),
+    province: z.string().optional(),
+    postalCode: z.string().optional(),
+    employmentStatus: z.string().optional(),
+    employer: z.string().optional(),
+    employerPhone: z.string().optional(),
+    monthlyIncome: z.union([z.number(), z.nan()]).optional(),
+    emergencyContactName: z.string().optional(),
+    emergencyContactPhone: z.string().optional(),
+    emergencyContactRelation: z.string().optional(),
+    tenantType: z.string(),
+    status: z.string(),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tenantType === 'TENANT') {
+      if (!data.idNumber?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'ID/Passport number is required',
+          path: ['idNumber'],
+        });
+      }
+      if (!data.dateOfBirth?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Date of birth is required',
+          path: ['dateOfBirth'],
+        });
+      }
+      if (!data.emergencyContactName?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Emergency contact name is required',
+          path: ['emergencyContactName'],
+        });
+      }
+      if (!data.emergencyContactPhone?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Emergency contact phone is required',
+          path: ['emergencyContactPhone'],
+        });
+      }
+      if (!data.emergencyContactRelation?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Emergency contact relationship is required',
+          path: ['emergencyContactRelation'],
+        });
+      }
+    }
+  });
 
 type TenantFormData = z.infer<typeof tenantSchema>;
 
@@ -75,10 +116,13 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<TenantFormData>({
     resolver: zodResolver(tenantSchema),
   });
+
+  const tenantType = watch('tenantType');
 
   // Reset form when tenant data is loaded
   useEffect(() => {
@@ -90,6 +134,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
         phone: tenant.phone,
         alternatePhone: tenant.alternatePhone || '',
         idNumber: tenant.idNumber || '',
+        idType: tenant.idType || 'ID',
         dateOfBirth: tenant.dateOfBirth
           ? new Date(tenant.dateOfBirth).toISOString().split('T')[0]
           : '',
@@ -230,13 +275,34 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="idNumber">ID Number</Label>
-                <Input id="idNumber" {...register('idNumber')} />
+                <Label htmlFor="idNumber">
+                  ID / Passport Number{' '}
+                  {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
+                </Label>
+                <div className="flex">
+                  <select
+                    className="border-input focus-visible:ring-ring h-[40px] rounded-md rounded-r-none border border-r-0 bg-transparent px-2 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none"
+                    {...register('idType')}
+                  >
+                    <option value="ID">ID</option>
+                    <option value="PASSPORT">Passport</option>
+                  </select>
+                  <Input id="idNumber" className="rounded-l-none" {...register('idNumber')} />
+                </div>
+                {errors.idNumber && (
+                  <p className="text-destructive text-sm">{errors.idNumber.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Label htmlFor="dateOfBirth">
+                  Date of Birth{' '}
+                  {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
+                </Label>
                 <Input id="dateOfBirth" type="date" {...register('dateOfBirth')} />
+                {errors.dateOfBirth && (
+                  <p className="text-destructive text-sm">{errors.dateOfBirth.message}</p>
+                )}
               </div>
             </div>
 
@@ -343,7 +409,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                   type="number"
                   min="0"
                   step="0.01"
-                  {...register('monthlyIncome')}
+                  {...register('monthlyIncome', { valueAsNumber: true })}
                 />
               </div>
             </div>
@@ -366,23 +432,44 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
         <Card>
           <CardHeader>
             <CardTitle>Emergency Contact</CardTitle>
-            <CardDescription>Person to contact in case of emergency</CardDescription>
+            <CardDescription>
+              Person to contact in case of emergency
+              {tenantType === 'TENANT' && ' — required for long-term tenants'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="emergencyContactName">Name</Label>
+                <Label htmlFor="emergencyContactName">
+                  Name {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
+                </Label>
                 <Input id="emergencyContactName" {...register('emergencyContactName')} />
+                {errors.emergencyContactName && (
+                  <p className="text-destructive text-sm">{errors.emergencyContactName.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergencyContactPhone">Phone</Label>
+                <Label htmlFor="emergencyContactPhone">
+                  Phone {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
+                </Label>
                 <Input id="emergencyContactPhone" {...register('emergencyContactPhone')} />
+                {errors.emergencyContactPhone && (
+                  <p className="text-destructive text-sm">{errors.emergencyContactPhone.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergencyContactRelation">Relationship</Label>
+                <Label htmlFor="emergencyContactRelation">
+                  Relationship{' '}
+                  {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
+                </Label>
                 <Input id="emergencyContactRelation" {...register('emergencyContactRelation')} />
+                {errors.emergencyContactRelation && (
+                  <p className="text-destructive text-sm">
+                    {errors.emergencyContactRelation.message}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>

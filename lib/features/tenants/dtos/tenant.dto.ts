@@ -23,6 +23,7 @@ export const createTenantSchema = z.object({
   // Optional personal info
   alternatePhone: z.string().optional().nullable(),
   idNumber: z.string().optional().nullable(),
+  idType: z.string().optional().nullable(),
   dateOfBirth: z.string().optional().nullable(),
   currentAddress: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
@@ -70,6 +71,7 @@ export const updateTenantSchema = z.object({
   phone: z.string().min(1).optional(),
   alternatePhone: z.string().optional().nullable(),
   idNumber: z.string().optional().nullable(),
+  idType: z.string().optional().nullable(),
   dateOfBirth: z.string().optional().nullable(),
   currentAddress: z.string().optional().nullable(),
   city: z.string().optional().nullable(),

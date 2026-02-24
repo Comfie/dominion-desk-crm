@@ -58,6 +58,7 @@ export class TenantService {
         phone: data.phone,
         alternatePhone: data.alternatePhone,
         idNumber: data.idNumber,
+        idType: data.idType,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         currentAddress: data.currentAddress,
         city: data.city,

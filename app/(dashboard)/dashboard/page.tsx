@@ -502,6 +502,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-3">
               {data.paymentsWithIssues.slice(0, 5).map((payment) => {
+                const awaitingVerification = payment.status === 'PENDING_VERIFICATION';
                 const isOverdue = payment.status === 'OVERDUE';
                 const daysOverdue = payment.dueDate
                   ? Math.floor(
@@ -536,7 +537,9 @@ export default function DashboardPage() {
                         <Badge variant={isOverdue ? 'destructive' : 'secondary'} className="mb-1">
                           {isOverdue
                             ? `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`
-                            : payment.status}
+                            : awaitingVerification
+                              ? 'Pending Verification'
+                              : 'Due'}
                         </Badge>
                         <p className="text-muted-foreground text-xs">
                           Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'}

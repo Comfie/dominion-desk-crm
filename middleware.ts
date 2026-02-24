@@ -100,7 +100,10 @@ export default withAuth(
           pathname.startsWith('/verify-email') ||
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/public') ||
-          pathname.startsWith('/mockups')
+          pathname.startsWith('/mockups') ||
+          pathname.startsWith('/terms') ||
+          pathname.startsWith('/privacy') ||
+          pathname.startsWith('/demo')
         ) {
           return true;
         }

@@ -20,33 +20,44 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="space-y-6">
-          <blockquote className="space-y-2">
+          <div className="space-y-4">
             <p className="text-lg leading-relaxed font-medium">
-              &ldquo;Dominion Desk has transformed how I manage my rental properties. No more double
-              bookings, and I can finally see all my finances in one place.&rdquo;
+              Stop chasing rent. Automate reminders, manage tenants, track maintenance, and generate
+              tax-ready reports — all from one dashboard built for South Africa.
             </p>
-            <footer className="text-sm opacity-80">
-              — Sarah M., Property Owner in Johannesburg
-            </footer>
-          </blockquote>
+          </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-4">
-            <div className="space-y-1">
-              <p className="text-2xl font-bold">500+</p>
-              <p className="text-xs opacity-80">Active Properties</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold">R2M+</p>
-              <p className="text-xs opacity-80">Revenue Tracked</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold">98%</p>
-              <p className="text-xs opacity-80">Customer Satisfaction</p>
-            </div>
+          <div className="space-y-3 pt-2">
+            {[
+              'Automated rent reminders via email',
+              'Tenant portal with proof-of-payment upload',
+              '9 financial reports + CSV export',
+              'Document vault for leases & FICA docs',
+              'No credit card required — 2 months free',
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-2 text-sm">
+                <svg
+                  className="h-4 w-4 flex-shrink-0 opacity-80"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="opacity-90">{item}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="text-xs opacity-60">© 2026 Dominion Desk. All rights reserved.</div>
+        <div className="text-xs opacity-60">
+          © {new Date().getFullYear()} DominionDesk. All rights reserved.
+        </div>
       </div>
 
       {/* Right side - Auth forms */}

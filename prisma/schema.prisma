@@ -437,7 +437,8 @@ model Tenant {
   email           String
   phone           String
   alternatePhone  String?
-  idNumber        String?   // SA ID number
+  idNumber        String?   // SA ID or Passport number
+  idType          String?   // 'ID' or 'PASSPORT'
   dateOfBirth     DateTime?
 
   // Address
