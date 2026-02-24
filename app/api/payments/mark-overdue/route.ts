@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       logger.warn('Unauthorized cron job access attempt', {
         path: '/api/payments/mark-overdue',
         authHeader: authHeader ? '[REDACTED]' : 'missing',

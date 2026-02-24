@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const headersList = await headers();
     const authHeader = headersList.get('authorization');
 
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       logger.warn('Unauthorized cron job access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

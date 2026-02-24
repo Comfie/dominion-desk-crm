@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       logger.warn('Unauthorized cron job access attempt', {
         path: '/api/payments/send-overdue-reminders',
         authHeader: authHeader ? '[REDACTED]' : 'missing',
@@ -27,7 +27,10 @@ export async function POST(request: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Find all overdue payments
+    // Only re-send if not reminded in the last 23 hours (prevents spamming on re-runs)
+    const cooldownCutoff = new Date(Date.now() - 23 * 60 * 60 * 1000);
+
+    // Find all overdue payments not recently reminded
     const overduePayments = await prisma.payment.findMany({
       where: {
         status: 'OVERDUE',
@@ -38,6 +41,7 @@ export async function POST(request: NextRequest) {
         tenant: {
           status: 'ACTIVE',
         },
+        OR: [{ reminderSentAt: null }, { reminderSentAt: { lt: cooldownCutoff } }],
       },
       include: {
         booking: {
