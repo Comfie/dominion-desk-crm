@@ -1,27 +1,12 @@
 import type { Metadata } from 'next';
-import { LandingPageClient } from './components/LandingPageClient';
+import EarlyAccessPage from './_components/EarlyAccessPage';
 
 export const metadata: Metadata = {
-  title: 'DominionDesk | Property Management Software for SA Landlords',
+  title: 'DominionDesk — Early Access',
   description:
-    'Stop chasing rent. DominionDesk is the all-in-one property management platform built specifically for South Africa. Automate rent reminders, manage tenants, and generate tax-ready reports.',
-  openGraph: {
-    title: 'DominionDesk | Property Management Software for SA Landlords',
-    description:
-      'The all-in-one property management platform built specifically for South African landlords.',
-    url: 'https://dominiondesk.com',
-    siteName: 'DominionDesk',
-    locale: 'en_ZA',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'DominionDesk | Property Management Software for SA Landlords',
-    description:
-      'Automate rent reminders, manage tenants, and track maintenance from one dashboard.',
-  },
+    'Apply for early access to DominionDesk — the property management platform built for South African landlords.',
 };
 
 export default function Page() {
-  return <LandingPageClient />;
+  return <EarlyAccessPage />;
 }
