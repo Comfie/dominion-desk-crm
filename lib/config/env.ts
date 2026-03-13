@@ -24,6 +24,7 @@ const envSchema = z.object({
   // Email (Resend)
   RESEND_API_KEY: z.string().optional(),
   FROM_EMAIL: z.string().email().optional(),
+  OWNER_EMAIL: z.string().email().optional(),
 
   // UploadThing
   UPLOADTHING_SECRET: z.string().optional(),
