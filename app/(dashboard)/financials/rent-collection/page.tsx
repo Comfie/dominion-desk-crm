@@ -15,6 +15,7 @@ import { CollectionSummaryCards } from '@/components/financials/collection-summa
 import { CollectionTrendChart } from '@/components/financials/collection-trend-chart';
 import { RentCollectionGrid } from '@/components/financials/rent-collection-grid';
 import { QuickRecordPaymentModal } from '@/components/financials/quick-record-payment-modal';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, FileText, Download } from 'lucide-react';
 import { PaymentStatus } from '@prisma/client';
@@ -42,6 +43,7 @@ export default function RentCollectionPage() {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
   const [selectedPropertyData, setSelectedPropertyData] = useState<any>(null);
+  const [generatingFollowUpTasks, setGeneratingFollowUpTasks] = useState(false);
 
   // Fetch properties for filter dropdown
   useEffect(() => {
@@ -131,6 +133,47 @@ export default function RentCollectionPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchRentCollectionData();
+  };
+
+  const handleGenerateFollowUpTasks = async () => {
+    try {
+      setGeneratingFollowUpTasks(true);
+
+      const response = await fetch('/api/tasks/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: 'arrears_follow_up',
+          month: Number(selectedMonth),
+          year: Number(selectedYear),
+          propertyId: selectedProperty,
+          includePendingVerification: true,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create arrears follow-up tasks');
+      }
+
+      toast({
+        title: `Created ${result.createdCount} follow-up task${result.createdCount === 1 ? '' : 's'}`,
+        description:
+          result.skippedCount > 0
+            ? `${result.skippedCount} payment${result.skippedCount === 1 ? '' : 's'} already had open tasks.`
+            : 'All current arrears cases now have workflow tasks.',
+      });
+
+      fetchRentCollectionData();
+    } catch (error: any) {
+      console.error('Error generating follow-up tasks:', error);
+      toast({
+        title: error.message || 'Failed to generate follow-up tasks',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingFollowUpTasks(false);
+    }
   };
 
   const handleExportCSV = () => {
@@ -320,6 +363,43 @@ export default function RentCollectionPage() {
         <>
           {/* Summary Cards */}
           <CollectionSummaryCards summary={data.summary} />
+
+          {(data.summary.overdueCount > 0 || data.summary.pendingVerificationCount > 0) && (
+            <Alert className="border-yellow-200 bg-yellow-50/60 dark:border-yellow-900 dark:bg-yellow-950/20">
+              <AlertTitle>Arrears workflow queue</AlertTitle>
+              <AlertDescription className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1">
+                  <p>
+                    {data.summary.overdueCount} overdue payment
+                    {data.summary.overdueCount === 1 ? '' : 's'} and{' '}
+                    {data.summary.pendingVerificationCount} proof-review case
+                    {data.summary.pendingVerificationCount === 1 ? '' : 's'} need follow-up.
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    Open follow-up tasks: {data.summary.openFollowUpTasks || 0}. Missing tasks:{' '}
+                    {data.summary.paymentsWithoutFollowUpTask || 0}.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleGenerateFollowUpTasks}
+                    disabled={generatingFollowUpTasks || !data.summary.paymentsWithoutFollowUpTask}
+                  >
+                    {generatingFollowUpTasks ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Create Follow-Up Tasks
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/tasks?taskType=PAYMENT_REMINDER')}
+                  >
+                    View Task Queue
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Rent Roll Grid */}
           <RentCollectionGrid

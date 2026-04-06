@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Wrench } from 'lucide-react';
+import { Loader2, Plus, Search, Wrench } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,6 +33,7 @@ async function fetchMaintenanceRequests(filters: Record<string, string>, page = 
 }
 
 export default function MaintenancePage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
@@ -40,6 +43,7 @@ export default function MaintenancePage() {
   const [page, setPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
+  const [generatingWorkflowTasks, setGeneratingWorkflowTasks] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -60,6 +64,7 @@ export default function MaintenancePage() {
 
   const requests = data?.data || [];
   const pagination = data?.pagination;
+  const summary = data?.summary;
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -92,11 +97,50 @@ export default function MaintenancePage() {
     setDeleteDialogOpen(true);
   };
 
-  // Count requests by status
-  const statusCounts = requests?.reduce((acc: Record<string, number>, req: { status: string }) => {
-    acc[req.status] = (acc[req.status] || 0) + 1;
-    return acc;
-  }, {});
+  const statusCounts = summary
+    ? {
+        PENDING: summary.pending,
+        SCHEDULED: summary.scheduled,
+        IN_PROGRESS: summary.inProgress,
+        COMPLETED: summary.completed,
+      }
+    : null;
+
+  const handleGenerateWorkflowTasks = async () => {
+    try {
+      setGeneratingWorkflowTasks(true);
+
+      const response = await fetch('/api/tasks/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: 'maintenance_operations',
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create maintenance workflow tasks');
+      }
+
+      toast({
+        title: `Created ${result.createdCount} maintenance task${result.createdCount === 1 ? '' : 's'}`,
+        description:
+          result.skippedCount > 0
+            ? `${result.skippedCount} request${result.skippedCount === 1 ? '' : 's'} already had open tasks.`
+            : 'The maintenance workflow queue is now covered with tasks.',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+    } catch (error: any) {
+      toast({
+        title: error.message || 'Failed to generate maintenance tasks',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingWorkflowTasks(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -128,7 +172,48 @@ export default function MaintenancePage() {
             <span className="text-muted-foreground text-sm">Completed: </span>
             <span className="font-semibold">{statusCounts.COMPLETED || 0}</span>
           </div>
+          <div className="bg-muted rounded-lg px-4 py-2">
+            <span className="text-muted-foreground text-sm">Ops Queue: </span>
+            <span className="font-semibold">{summary?.activeQueue || 0}</span>
+          </div>
         </div>
+      )}
+
+      {summary?.activeQueue > 0 && (
+        <Alert>
+          <AlertTitle>Maintenance operations queue</AlertTitle>
+          <AlertDescription className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <p>
+                {summary.unassigned} unassigned, {summary.unscheduled} awaiting ETA,{' '}
+                {summary.overdueVisits} overdue visit{summary.overdueVisits === 1 ? '' : 's'},{' '}
+                {summary.stalled} stalled, and {summary.closeoutRequired} needing close-out.
+              </p>
+              <p className="text-muted-foreground">
+                {summary.requestsWithoutWorkflowTask} request
+                {summary.requestsWithoutWorkflowTask === 1 ? '' : 's'} still need task coverage.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/tasks?relatedType=maintenance')}
+              >
+                View Task Queue
+              </Button>
+              <Button onClick={handleGenerateWorkflowTasks} disabled={generatingWorkflowTasks}>
+                {generatingWorkflowTasks ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Workflow Tasks'
+                )}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Filters */}

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { notifyMaintenanceRequest } from '@/lib/notifications';
+import { getTenantBySessionEmail } from '@/lib/tenant-session';
 
 const maintenanceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -19,9 +20,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    if (!tenantProfile) {
+      return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
+    }
+
     // Find tenant record matching user's email
-    const tenant = await prisma.tenant.findFirst({
-      where: { email: session.user.email },
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantProfile.id },
       select: {
         id: true,
         userId: true,
@@ -44,7 +50,7 @@ export async function POST(request: Request) {
     });
 
     if (!tenant) {
-      return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
+      return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });
     }
 
     const propertyId = tenant.properties[0]?.propertyId;

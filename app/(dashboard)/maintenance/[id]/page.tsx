@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { formatDate, formatCurrency } from '@/lib/utils';
 
 async function fetchMaintenanceRequest(id: string) {
@@ -65,7 +67,11 @@ const categoryLabels: Record<string, string> = {
 export default function MaintenanceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [actualCost, setActualCost] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [estimatedCost, setEstimatedCost] = useState('');
   const [resolutionNotes, setResolutionNotes] = useState('');
 
   const {
@@ -87,9 +93,27 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
       if (!res.ok) throw new Error('Failed to update request');
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedRequest) => {
       queryClient.invalidateQueries({ queryKey: ['maintenance', id] });
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+      setAssignedTo(updatedRequest.assignedTo || '');
+      setScheduledDate(
+        updatedRequest.scheduledDate
+          ? new Date(updatedRequest.scheduledDate).toISOString().slice(0, 16)
+          : ''
+      );
+      setEstimatedCost(updatedRequest.estimatedCost ? String(updatedRequest.estimatedCost) : '');
+      setActualCost(updatedRequest.actualCost ? String(updatedRequest.actualCost) : '');
+      setResolutionNotes(updatedRequest.resolutionNotes || '');
+      toast({
+        title: 'Maintenance request updated',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: error.message || 'Failed to update maintenance request',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -106,8 +130,32 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance', id] });
+      toast({
+        title: 'Task created',
+        description: 'The maintenance task is now linked to this request.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: error.message || 'Failed to create task',
+        variant: 'destructive',
+      });
     },
   });
+
+  useEffect(() => {
+    if (!request) {
+      return;
+    }
+
+    setAssignedTo(request.assignedTo || '');
+    setScheduledDate(
+      request.scheduledDate ? new Date(request.scheduledDate).toISOString().slice(0, 16) : ''
+    );
+    setEstimatedCost(request.estimatedCost ? String(request.estimatedCost) : '');
+    setActualCost(request.actualCost ? String(request.actualCost) : '');
+    setResolutionNotes(request.resolutionNotes || '');
+  }, [request]);
 
   const handleStatusChange = (status: string) => {
     const data: Record<string, unknown> = { status };
@@ -117,6 +165,14 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
       if (resolutionNotes) data.resolutionNotes = resolutionNotes;
     }
     updateMutation.mutate(data);
+  };
+
+  const handleSaveOperations = () => {
+    updateMutation.mutate({
+      assignedTo: assignedTo.trim() || undefined,
+      scheduledDate: scheduledDate || undefined,
+      estimatedCost: estimatedCost ? parseFloat(estimatedCost) : undefined,
+    });
   };
 
   if (isLoading) {
@@ -220,6 +276,85 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
                   </Button>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {request.workflow && (
+            <Alert className="border-orange-200 bg-orange-50/70">
+              <AlertTitle>{request.workflow.label}</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{request.workflow.guidance}</p>
+                <p className="text-muted-foreground">
+                  Open for {request.workflow.ageDays} day{request.workflow.ageDays === 1 ? '' : 's'}
+                  {request.workflow.daysPastSchedule > 0
+                    ? `, ${request.workflow.daysPastSchedule} day${request.workflow.daysPastSchedule === 1 ? '' : 's'} past the planned visit`
+                    : request.workflow.staleDays >= 3
+                      ? `, ${request.workflow.staleDays} day${request.workflow.staleDays === 1 ? '' : 's'} since the last update`
+                      : ''}
+                  .
+                </p>
+                {request.workflow.task ? (
+                  <Link
+                    href={`/tasks/${request.workflow.task.id}`}
+                    className="text-sm font-medium underline underline-offset-4"
+                  >
+                    Open workflow task
+                  </Link>
+                ) : (
+                  <p className="text-sm font-medium">No workflow task has been created yet.</p>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Operations</CardTitle>
+              <CardDescription>
+                Assign the job, set an ETA, and record expected cost.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="assignedTo">Assigned To</Label>
+                <Input
+                  id="assignedTo"
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  placeholder="Contractor or staff owner"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="scheduledDate">Scheduled Date</Label>
+                <Input
+                  id="scheduledDate"
+                  type="datetime-local"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="estimatedCost">Estimated Cost (R)</Label>
+                <Input
+                  id="estimatedCost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={estimatedCost}
+                  onChange={(e) => setEstimatedCost(e.target.value)}
+                  placeholder="Enter estimate"
+                />
+              </div>
+              <Button onClick={handleSaveOperations} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Ops Details'
+                )}
+              </Button>
             </CardContent>
           </Card>
 
@@ -450,25 +585,45 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
             </CardHeader>
             <CardContent>
               {request.tasks && request.tasks.length > 0 ? (
-                <div className="space-y-2">
-                  <Link
-                    href={`/tasks/${request.tasks[0].id}`}
-                    className="hover:text-primary block font-medium transition-colors"
-                  >
-                    {request.tasks[0].title}
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={request.tasks[0].status === 'COMPLETED' ? 'default' : 'outline'}
+                <div className="space-y-3">
+                  {request.tasks.slice(0, 3).map((task: any) => (
+                    <div key={task.id} className="space-y-2 rounded-md border p-3">
+                      <Link
+                        href={`/tasks/${task.id}`}
+                        className="hover:text-primary block font-medium transition-colors"
+                      >
+                        {task.title}
+                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={task.status === 'COMPLETED' ? 'default' : 'outline'}>
+                          {task.status.replace('_', ' ')}
+                        </Badge>
+                        <Badge variant="outline">{task.taskType.replace('_', ' ')}</Badge>
+                      </div>
+                      {task.dueDate && (
+                        <p className="text-muted-foreground text-xs">
+                          Due {formatDate(task.dueDate)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  {request.tasks.length > 3 && (
+                    <Link
+                      href="/tasks?relatedType=maintenance"
+                      className="text-sm font-medium underline underline-offset-4"
                     >
-                      {request.tasks[0].status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground text-xs">Status synced automatically</p>
+                      View all maintenance tasks
+                    </Link>
+                  )}
+                  <p className="text-muted-foreground text-xs">
+                    Workflow tasks keep assignment, ETA, and close-out work visible.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-muted-foreground text-sm">No linked task</p>
+                  <p className="text-muted-foreground text-sm">
+                    {request.workflow ? 'No workflow task yet for this request.' : 'No linked task'}
+                  </p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -491,6 +646,12 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
                   {createTaskMutation.isError && (
                     <p className="text-destructive text-xs">
                       {createTaskMutation.error?.message || 'Failed to create task'}
+                    </p>
+                  )}
+                  {request.workflow && (
+                    <p className="text-muted-foreground text-xs">
+                      The bulk workflow generator on the maintenance list can create the targeted
+                      ops task for this stage.
                     </p>
                   )}
                 </div>

@@ -6,15 +6,16 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   Calendar,
-  Building2,
   AlertTriangle,
   Clock,
   CheckCircle,
   Download,
   Users,
+  Loader2,
 } from 'lucide-react';
 
 import { PageHeader, Loading } from '@/components/shared';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -34,6 +35,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { exportToCsv, formatDateForCsv, formatCurrencyForCsv } from '@/lib/utils/export-csv';
 
@@ -60,6 +62,18 @@ interface LeaseExpirationData {
       address: string;
       city: string;
     };
+    renewalWorkflow: {
+      stage: string;
+      label: string;
+      guidance: string;
+      priority: string;
+    } | null;
+    renewalTask: {
+      id: string;
+      status: string;
+      priority: string;
+      dueDate: string | null;
+    } | null;
   }>;
   byWindow: {
     '0-30': { count: number; rentAtRisk: number };
@@ -81,12 +95,16 @@ interface LeaseExpirationData {
     expiredLeases: number;
     totalMonthlyRent: number;
     atRiskRent: number;
+    openRenewalTasks: number;
+    leasesWithoutRenewalTask: number;
   };
 }
 
 export default function LeaseExpirationReportPage() {
+  const { toast } = useToast();
   const [propertyId, setPropertyId] = useState<string>('all');
   const [window, setWindow] = useState<string>('all');
+  const [generatingRenewalTasks, setGeneratingRenewalTasks] = useState(false);
 
   // Fetch properties for filter
   const { data: propertiesData } = useQuery({
@@ -100,7 +118,7 @@ export default function LeaseExpirationReportPage() {
   });
 
   // Fetch report data
-  const { data, isLoading } = useQuery<LeaseExpirationData>({
+  const { data, isLoading, refetch } = useQuery<LeaseExpirationData>({
     queryKey: ['lease-expiration-report', propertyId, window],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -147,6 +165,55 @@ export default function LeaseExpirationReportPage() {
         {daysUntilExpiry} days
       </Badge>
     );
+  };
+
+  const getWorkflowBadge = (priority: string, label: string) => {
+    const className =
+      priority === 'URGENT'
+        ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
+        : priority === 'HIGH'
+          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200'
+          : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
+
+    return <Badge className={className}>{label}</Badge>;
+  };
+
+  const handleGenerateRenewalTasks = async () => {
+    try {
+      setGeneratingRenewalTasks(true);
+
+      const response = await fetch('/api/tasks/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: 'lease_renewal',
+          propertyId,
+          windowDays: window === 'all' ? 90 : Number(window),
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create renewal tasks');
+      }
+
+      toast({
+        title: `Created ${result.createdCount} renewal task${result.createdCount === 1 ? '' : 's'}`,
+        description:
+          result.skippedCount > 0
+            ? `${result.skippedCount} lease${result.skippedCount === 1 ? '' : 's'} already had open tasks.`
+            : 'All leases in scope now have renewal workflow tasks.',
+      });
+
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: error.message || 'Failed to generate renewal tasks',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingRenewalTasks(false);
+    }
   };
 
   if (isLoading) {
@@ -329,6 +396,37 @@ export default function LeaseExpirationReportPage() {
         </Card>
       </div>
 
+      {data?.summary && (
+        <Alert className="border-blue-200 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/20">
+          <AlertTitle>Renewal pipeline</AlertTitle>
+          <AlertDescription className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <p>
+                {data.summary.openRenewalTasks} renewal task
+                {data.summary.openRenewalTasks === 1 ? '' : 's'} already open.{' '}
+                {data.summary.leasesWithoutRenewalTask} lease
+                {data.summary.leasesWithoutRenewalTask === 1 ? '' : 's'} still need workflow tasks.
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Create tasks here to push expiring leases into a real renewal pipeline.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleGenerateRenewalTasks}
+                disabled={generatingRenewalTasks || !data.summary.leasesWithoutRenewalTask}
+              >
+                {generatingRenewalTasks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Create Renewal Tasks
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/tasks?taskType=LEASE_RENEWAL">View Renewal Tasks</Link>
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Alert for expired leases */}
       {data?.expiredLeases && data.expiredLeases.length > 0 && (
         <Card className="border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-900">
@@ -392,6 +490,7 @@ export default function LeaseExpirationReportPage() {
                     <TableHead>Lease End</TableHead>
                     <TableHead className="text-right">Monthly Rent</TableHead>
                     <TableHead>Time Remaining</TableHead>
+                    <TableHead>Renewal Workflow</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -425,6 +524,28 @@ export default function LeaseExpirationReportPage() {
                         {formatCurrency(lease.monthlyRent)}
                       </TableCell>
                       <TableCell>{getUrgencyBadge(lease.daysUntilExpiry)}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1.5">
+                          {lease.renewalWorkflow ? (
+                            getWorkflowBadge(
+                              lease.renewalWorkflow.priority,
+                              lease.renewalWorkflow.label
+                            )
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                          {lease.renewalTask ? (
+                            <Link
+                              href={`/tasks/${lease.renewalTask.id}`}
+                              className="block text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              Task in queue
+                            </Link>
+                          ) : (
+                            <p className="text-muted-foreground text-xs">No task yet</p>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
+import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { allowMockTenantPayments } from '@/lib/features/payments/utils/mock-payments';
 
 /**
  * POST /api/tenant/payments/[id]/complete
@@ -17,9 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Find tenant record for this user
-    const tenant = await prisma.tenant.findFirst({
-      where: { email: session.user.email || '' },
-    });
+    const tenant = await getTenantBySessionEmail(session.user.email);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });
@@ -30,6 +30,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     if (!reference || status !== 'success') {
       return NextResponse.json({ error: 'Invalid payment completion request' }, { status: 400 });
+    }
+
+    if (reference.startsWith('MOCK-') && !allowMockTenantPayments()) {
+      return NextResponse.json(
+        { error: 'Mock payment completion is disabled in this environment' },
+        { status: 400 }
+      );
     }
 
     // Get the payment and verify it belongs to this tenant

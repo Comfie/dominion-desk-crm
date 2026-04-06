@@ -189,6 +189,60 @@ export async function generatePropertyCalendar(
 }
 
 /**
+ * Generate a public iCal feed for a property using its shareable ID.
+ */
+export async function generatePublicPropertyCalendar(propertyId: string): Promise<string> {
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+  });
+
+  if (!property) {
+    throw new Error('Property not found');
+  }
+
+  const bookings = await prisma.booking.findMany({
+    where: {
+      propertyId,
+      status: {
+        in: ['CONFIRMED', 'CHECKED_IN', 'PENDING'],
+      },
+    },
+    orderBy: { checkInDate: 'asc' },
+  });
+
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Dominion Desk//Calendar//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${property.name}`,
+  ];
+
+  for (const booking of bookings) {
+    const startDate = formatICalDate(booking.checkInDate);
+    const endDate = formatICalDate(booking.checkOutDate);
+    const createdDate = formatICalDateTime(booking.createdAt);
+
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${booking.id}@propertycrm.com`,
+      `DTSTAMP:${createdDate}`,
+      `DTSTART;VALUE=DATE:${startDate}`,
+      `DTEND;VALUE=DATE:${endDate}`,
+      `SUMMARY:${booking.guestName} - ${booking.status}`,
+      `DESCRIPTION:Booking Reference: ${booking.bookingReference}\\nGuests: ${booking.numberOfGuests}\\nSource: ${booking.bookingSource}`,
+      'STATUS:CONFIRMED',
+      'END:VEVENT'
+    );
+  }
+
+  lines.push('END:VCALENDAR');
+
+  return lines.join('\r\n');
+}
+
+/**
  * Check availability for a property
  */
 export async function checkAvailability(

@@ -190,10 +190,23 @@ export class TenantService {
       throw new NotFoundError('Property', assignment.propertyId);
     }
 
+    const activeTenantCount = Array.isArray(property.tenants) ? property.tenants.length : undefined;
+    const hasActiveTenant = Boolean(
+      activeTenantCount !== undefined
+        ? activeTenantCount > 0
+        : await prisma.propertyTenant.findFirst({
+            where: {
+              propertyId: assignment.propertyId,
+              isActive: true,
+            },
+            select: { id: true },
+          })
+    );
+
     // Check if property allows multiple tenants
-    if (!property.allowsMultipleTenants && property.tenants.length > 0) {
+    if (!property.allowsMultipleTenants && hasActiveTenant) {
       throw new ValidationError(
-        'This property does not allow multiple tenants and already has an active tenant assigned. Enable "Allows Multiple Tenants" in property settings to add more tenants.',
+        'Property already has an active tenant assignment. Enable "Allows Multiple Tenants" in property settings to add more tenants.',
         {
           propertyId: assignment.propertyId,
           allowsMultipleTenants: property.allowsMultipleTenants,

@@ -115,6 +115,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             },
           });
           break;
+        case 'payment':
+          relatedEntity = await prisma.payment.findUnique({
+            where: { id: task.relatedId },
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              dueDate: true,
+              paymentReference: true,
+              property: { select: { id: true, name: true } },
+              tenant: { select: { id: true, firstName: true, lastName: true } },
+            },
+          });
+          break;
+        case 'lease':
+          relatedEntity = await prisma.propertyTenant.findUnique({
+            where: { id: task.relatedId },
+            select: {
+              id: true,
+              leaseEndDate: true,
+              property: { select: { id: true, name: true } },
+              tenant: { select: { id: true, firstName: true, lastName: true } },
+            },
+          });
+          break;
       }
     }
 

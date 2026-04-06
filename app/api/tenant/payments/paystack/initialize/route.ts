@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
+import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { allowMockTenantPayments } from '@/lib/features/payments/utils/mock-payments';
 
 /**
  * POST /api/tenant/payments/paystack/initialize
@@ -16,9 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find tenant record for this user
-    const tenant = await prisma.tenant.findFirst({
-      where: { email: session.user.email || '' },
-    });
+    const tenant = await getTenantBySessionEmail(session.user.email);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });
@@ -114,15 +114,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Mock response for development / when Paystack not configured
-    console.log('Using mock Paystack response (Paystack not configured)');
-    const mockPaymentUrl = `${baseUrl}/portal/payments/${paymentId}/pay/mock?reference=${reference}&amount=${amount}`;
+    if (!allowMockTenantPayments()) {
+      return NextResponse.json(
+        { error: 'Online card payments are not available right now. Please use EFT instead.' },
+        { status: 503 }
+      );
+    }
+
+    // Mock response for development / explicitly enabled beta environments
+    const mockReference = `MOCK-${payment.paymentReference}-${Date.now()}`;
+    const mockPaymentUrl = `${baseUrl}/portal/payments/${paymentId}/pay/mock?reference=${mockReference}&amount=${amount}`;
 
     return NextResponse.json({
       success: true,
-      reference,
+      reference: mockReference,
       authorizationUrl: mockPaymentUrl,
-      accessCode: `mock_${reference}`,
+      accessCode: `mock_${mockReference}`,
       mock: true,
     });
   } catch (error) {

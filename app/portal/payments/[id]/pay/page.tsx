@@ -55,6 +55,7 @@ interface PaymentDetails {
     bankBranchCode: string | null;
     paymentInstructions: string | null;
   };
+  onlinePaymentAvailable: boolean;
 }
 
 export default function PaymentCheckoutPage() {
@@ -324,12 +325,18 @@ export default function PaymentCheckoutPage() {
                   <CardContent className="space-y-4">
                     {/* Card Payment Option */}
                     <div
-                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                        selectedMethod === 'card'
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
+                      className={`rounded-lg border-2 p-4 transition-all ${
+                        payment.onlinePaymentAvailable
+                          ? selectedMethod === 'card'
+                            ? 'border-primary bg-primary/5 cursor-pointer'
+                            : 'border-border hover:border-primary/50 cursor-pointer'
+                          : 'border-border bg-muted/40 cursor-not-allowed opacity-60'
                       }`}
-                      onClick={() => setSelectedMethod('card')}
+                      onClick={() => {
+                        if (payment.onlinePaymentAvailable) {
+                          setSelectedMethod('card');
+                        }
+                      }}
                     >
                       <div className="flex items-start gap-4">
                         <div
@@ -344,7 +351,9 @@ export default function PaymentCheckoutPage() {
                         <div className="flex-1">
                           <h3 className="font-semibold">Pay with Card</h3>
                           <p className="text-muted-foreground text-sm">
-                            Credit or Debit Card via Paystack
+                            {payment.onlinePaymentAvailable
+                              ? 'Credit or Debit Card via Paystack'
+                              : 'Temporarily unavailable for this payment'}
                           </p>
                           <div className="mt-2 flex items-center gap-2">
                             <Shield className="h-4 w-4 text-green-600" />
@@ -355,6 +364,11 @@ export default function PaymentCheckoutPage() {
                               <strong>Note:</strong> A {payment.transactionFeePercentage}% service
                               fee ({payment.currency} {transactionFee.toFixed(2)}) will be added for
                               card payments.
+                            </div>
+                          )}
+                          {!payment.onlinePaymentAvailable && (
+                            <div className="mt-2 rounded border border-dashed px-2 py-1 text-xs">
+                              Use EFT and upload proof of payment instead.
                             </div>
                           )}
                         </div>
@@ -565,7 +579,9 @@ export default function PaymentCheckoutPage() {
                       className="flex-1"
                       size="lg"
                       onClick={handlePayNow}
-                      disabled={initiatePaystackPayment.isPending}
+                      disabled={
+                        initiatePaystackPayment.isPending || !payment.onlinePaymentAvailable
+                      }
                     >
                       {initiatePaystackPayment.isPending ? (
                         <>

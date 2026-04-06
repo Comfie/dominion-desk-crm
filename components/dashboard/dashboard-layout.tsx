@@ -15,7 +15,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="bg-background flex h-screen overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -25,14 +25,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       />
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Page content */}
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 lg:pb-6"
+          className="flex-1 overflow-y-auto p-4 pb-20 md:p-5 lg:pb-5"
           tabIndex={-1}
         >
           {children}

@@ -7,6 +7,7 @@ import {
   updateMaintenanceSchema,
   maintenanceIdSchema,
 } from '@/lib/features/maintenance';
+import { getMaintenanceWorkflow } from '@/lib/features/maintenance/utils/maintenance-workflows';
 import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
 
 /**
@@ -25,8 +26,34 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Use service layer - handles ownership verification
     const maintenanceRequest = await maintenanceService.getById(id, session.user.id);
+    const workflow = getMaintenanceWorkflow(maintenanceRequest);
+    const workflowTask =
+      workflow && maintenanceRequest.tasks.length > 0
+        ? maintenanceRequest.tasks.find((task) =>
+            workflow.taskType === 'FOLLOW_UP'
+              ? task.taskType === 'FOLLOW_UP'
+              : task.taskType === 'MAINTENANCE'
+          ) || maintenanceRequest.tasks[0]
+        : null;
 
-    return NextResponse.json(maintenanceRequest);
+    return NextResponse.json({
+      ...maintenanceRequest,
+      workflow: workflow
+        ? {
+            ...workflow,
+            task: workflowTask
+              ? {
+                  id: workflowTask.id,
+                  title: workflowTask.title,
+                  taskType: workflowTask.taskType,
+                  priority: workflowTask.priority,
+                  status: workflowTask.status,
+                  dueDate: workflowTask.dueDate,
+                }
+              : null,
+          }
+        : null,
+    });
   } catch (error) {
     if (error instanceof NotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 404 });

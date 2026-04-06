@@ -18,6 +18,7 @@ export class MaintenanceRepository {
             id: true,
             name: true,
             address: true,
+            city: true,
           },
         },
         tenant: {
@@ -27,6 +28,20 @@ export class MaintenanceRepository {
             lastName: true,
             email: true,
             phone: true,
+          },
+        },
+        tasks: {
+          orderBy: [{ status: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+          select: {
+            id: true,
+            title: true,
+            taskType: true,
+            priority: true,
+            status: true,
+            dueDate: true,
+            relatedType: true,
+            relatedId: true,
+            createdAt: true,
           },
         },
       },
@@ -78,6 +93,7 @@ export class MaintenanceRepository {
           select: {
             id: true,
             name: true,
+            city: true,
           },
         },
         tenant: {
@@ -85,6 +101,26 @@ export class MaintenanceRepository {
             id: true,
             firstName: true,
             lastName: true,
+          },
+        },
+        tasks: {
+          where: {
+            status: {
+              in: ['TODO', 'IN_PROGRESS'],
+            },
+          },
+          orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+          take: 2,
+          select: {
+            id: true,
+            title: true,
+            taskType: true,
+            priority: true,
+            status: true,
+            dueDate: true,
+            relatedType: true,
+            relatedId: true,
+            createdAt: true,
           },
         },
       },
