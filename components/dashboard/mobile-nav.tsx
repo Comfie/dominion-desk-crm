@@ -37,8 +37,8 @@ export function MobileNav({ onMoreClick }: MobileNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-background border-border fixed inset-x-0 bottom-0 z-50 border-t lg:hidden">
-      <div className="flex h-16 items-center justify-around">
+    <nav className="shell-surface-strong fixed inset-x-0 bottom-0 z-40 border-t lg:hidden">
+      <div className="shell-mobile-nav-frame grid grid-cols-5 gap-1 px-2 pt-2">
         {mobileNavItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -49,8 +49,10 @@ export function MobileNav({ onMoreClick }: MobileNavProps) {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                'shell-action flex min-h-[var(--10x-shell-mobile-nav-height)] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-medium',
+                isActive
+                  ? 'bg-primary/10 text-primary shadow-[var(--10x-elev-shell-1)]'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -59,8 +61,9 @@ export function MobileNav({ onMoreClick }: MobileNavProps) {
           );
         })}
         <button
+          type="button"
           onClick={onMoreClick}
-          className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-1 py-2 text-xs font-medium transition-colors"
+          className="shell-action text-muted-foreground hover:bg-secondary hover:text-foreground flex min-h-[var(--10x-shell-mobile-nav-height)] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-medium"
         >
           <MoreHorizontal className="h-5 w-5" />
           <span>More</span>

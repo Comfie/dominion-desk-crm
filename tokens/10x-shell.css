@@ -1,0 +1,55 @@
+:root {
+  --10x-type-shell-title: clamp(1.625rem, 1.35rem + 0.85vw, 2.2rem);
+  --10x-type-shell-heading: 1.125rem;
+  --10x-type-shell-body: 0.9375rem;
+  --10x-type-shell-label: 0.75rem;
+  --10x-type-shell-nav: 0.8125rem;
+
+  --10x-color-shell-canvas: hsl(var(--background));
+  --10x-color-shell-surface: hsl(var(--card));
+  --10x-color-shell-surface-muted: hsl(var(--secondary));
+  --10x-color-shell-border: hsl(var(--border));
+  --10x-color-shell-border-strong: hsl(var(--foreground) / 0.08);
+  --10x-color-shell-text-soft: hsl(var(--muted-foreground));
+  --10x-color-shell-scrim: hsl(var(--foreground) / 0.45);
+
+  --10x-space-shell-gutter-x: 1rem;
+  --10x-space-shell-gutter-y: 1rem;
+  --10x-space-shell-gutter-x-lg: 1.5rem;
+  --10x-space-shell-gutter-y-lg: 1.25rem;
+  --10x-space-shell-nav-item-y: 0.625rem;
+
+  --10x-shell-sidebar-width: 16.5rem;
+  --10x-shell-sidebar-width-collapsed: 5.25rem;
+  --10x-shell-header-height: 4.25rem;
+  --10x-shell-mobile-nav-height: 4.5rem;
+  --10x-shell-mobile-nav-offset: calc(
+    var(--10x-shell-mobile-nav-height) + env(safe-area-inset-bottom)
+  );
+
+  --10x-elev-shell-1: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 1px rgb(15 23 42 / 0.03);
+  --10x-elev-shell-2: 0 10px 30px -12px rgb(15 23 42 / 0.18), 0 6px 16px -12px rgb(15 23 42 / 0.12);
+  --10x-elev-shell-3:
+    0 24px 56px -24px rgb(15 23 42 / 0.28), 0 12px 24px -18px rgb(15 23 42 / 0.18);
+
+  --10x-motion-fast: 160ms;
+  --10x-motion-base: 220ms;
+  --10x-motion-slow: 320ms;
+  --10x-motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --10x-bp-shell-content-max: 90rem;
+}
+
+.dark {
+  --10x-color-shell-canvas: hsl(var(--background));
+  --10x-color-shell-surface: hsl(var(--card));
+  --10x-color-shell-surface-muted: hsl(var(--secondary));
+  --10x-color-shell-border: hsl(var(--border));
+  --10x-color-shell-border-strong: hsl(var(--foreground) / 0.14);
+  --10x-color-shell-text-soft: hsl(var(--muted-foreground));
+  --10x-color-shell-scrim: hsl(var(--foreground) / 0.55);
+
+  --10x-elev-shell-1: 0 1px 2px rgb(2 6 23 / 0.3), 0 1px 1px rgb(2 6 23 / 0.22);
+  --10x-elev-shell-2: 0 10px 26px -12px rgb(2 6 23 / 0.48), 0 8px 16px -14px rgb(2 6 23 / 0.34);
+  --10x-elev-shell-3: 0 24px 52px -24px rgb(2 6 23 / 0.6), 0 14px 28px -20px rgb(2 6 23 / 0.42);
+}

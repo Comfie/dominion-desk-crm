@@ -174,7 +174,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
       {/* Backdrop for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="shell-scrim fixed inset-0 z-40 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -183,32 +183,49 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-sidebar/95 text-sidebar-foreground border-sidebar-border/80 fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r shadow-[0_0_0_1px_rgb(0_0_0_/_0.02),0_12px_32px_rgb(15_23_42_/_0.06)] backdrop-blur transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0',
+          'shell-surface-strong text-sidebar-foreground fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r backdrop-blur-xl transition-[width,transform,box-shadow,background-color,border-color] duration-[var(--10x-motion-slow)] ease-[var(--10x-motion-ease-standard)] lg:relative lg:h-dvh lg:shrink-0 lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
-          isCollapsed ? 'w-20' : 'w-64'
+          isCollapsed ? 'shell-sidebar-collapsed' : 'shell-sidebar-frame'
         )}
       >
         {/* Logo and close button */}
         <div
           className={cn(
-            'border-sidebar-border/80 flex h-16 items-center border-b px-4',
+            'shell-header-bar flex items-center border-b px-4',
             isCollapsed ? 'justify-center' : 'justify-between'
           )}
         >
-          <Link href="/dashboard" className="flex items-center" onClick={onClose}>
-            {isCollapsed ? (
-              <Logo variant="icon" width={32} height={32} />
-            ) : (
-              <Logo variant="full" width={160} height={32} />
-            )}
-          </Link>
-          <div className="flex items-center gap-1">
+          <div
+            className={cn('flex items-center gap-2', isCollapsed && 'w-full justify-center gap-0')}
+          >
+            <div
+              className={cn(
+                'overflow-hidden transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                isCollapsed
+                  ? 'max-w-0 -translate-x-2 opacity-0'
+                  : 'max-w-[11rem] translate-x-0 opacity-100'
+              )}
+            >
+              <Link href="/dashboard" className="flex items-center" onClick={onClose}>
+                <Logo variant="full" width={156} height={34} />
+              </Link>
+            </div>
+            <div
+              className={cn(
+                'overflow-hidden transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                isCollapsed ? 'max-w-[2.5rem] scale-100 opacity-100' : 'max-w-0 scale-90 opacity-0'
+              )}
+            >
+              <div className="flex justify-center">
+                <Logo variant="icon" width={36} height={36} />
+              </div>
+            </div>
             {toggleCollapse && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleCollapse}
-                className="hidden h-8 w-8 rounded-lg lg:flex"
+                className="shell-action text-sidebar-foreground/70 hover:text-sidebar-foreground hidden h-9 w-9 rounded-xl lg:flex"
               >
                 {isCollapsed ? (
                   <PanelLeftOpen className="h-4 w-4" />
@@ -220,7 +237,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
                 </span>
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shell-action text-sidebar-foreground/70 hover:text-sidebar-foreground rounded-xl lg:hidden"
+              onClick={onClose}
+            >
               <X className="h-5 w-5" />
               <span className="sr-only">Close sidebar</span>
             </Button>
@@ -228,17 +252,22 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
         </div>
 
         {/* Navigation */}
-        <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 py-4">
-          <div className="space-y-4">
+        <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 py-4 md:py-5">
+          <div className="space-y-5">
             {navigationSections.map((section) => (
-              <div key={section.title} className="space-y-1">
-                {!isCollapsed && (
-                  <div className="px-3">
-                    <p className="text-sidebar-foreground/45 text-[11px] font-semibold tracking-[0.18em] uppercase">
-                      {section.title}
-                    </p>
-                  </div>
-                )}
+              <div key={section.title} className="space-y-2">
+                <div
+                  className={cn(
+                    'overflow-hidden px-3 transition-[max-height,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                    isCollapsed
+                      ? 'max-h-0 -translate-y-1 opacity-0'
+                      : 'max-h-8 translate-y-0 opacity-100'
+                  )}
+                >
+                  <p className="shell-label text-sidebar-foreground/45 whitespace-nowrap">
+                    {section.title}
+                  </p>
+                </div>
                 <ul className="space-y-1">
                   {section.items.map((item) => {
                     const isActive = isItemActive(item);
@@ -253,29 +282,42 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
                             <button
                               onClick={() => toggleExpanded(item.name)}
                               className={cn(
-                                'group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-all active:scale-[0.98]',
+                                'shell-action shell-nav-item group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 font-medium active:scale-[0.99]',
                                 isActive
-                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                                  : 'text-sidebar-foreground/72 hover:bg-sidebar-primary/[0.08] hover:text-sidebar-foreground',
+                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-[var(--10x-elev-shell-1)]'
+                                  : 'text-sidebar-foreground/72 hover:bg-primary/5 hover:text-sidebar-foreground',
                                 isCollapsed && 'justify-center px-2.5'
                               )}
                               title={isCollapsed ? item.name : undefined}
                             >
-                              <item.icon className="h-4.5 w-4.5 shrink-0" />
-                              {!isCollapsed && (
-                                <>
-                                  <span className="flex-1 text-left">{item.name}</span>
-                                  <ChevronDown
-                                    className={cn(
-                                      'h-4 w-4 transition-transform',
-                                      showExpanded && 'rotate-180'
-                                    )}
-                                  />
-                                </>
-                              )}
+                              <item.icon className="h-4 w-4 shrink-0" />
+                              <span
+                                className={cn(
+                                  'min-w-0 flex-1 overflow-hidden text-left whitespace-nowrap transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                  isCollapsed
+                                    ? 'max-w-0 -translate-x-2 opacity-0'
+                                    : 'max-w-[9rem] translate-x-0 opacity-100'
+                                )}
+                              >
+                                {item.name}
+                              </span>
+                              <ChevronDown
+                                className={cn(
+                                  'shell-action h-4 w-4 shrink-0 transition-[opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                  showExpanded && 'rotate-180',
+                                  isCollapsed && 'pointer-events-none opacity-0'
+                                )}
+                              />
                             </button>
-                            {!isCollapsed && showExpanded && (
-                              <ul className="border-sidebar-border/70 bg-sidebar-primary/[0.03] mt-1 space-y-1 rounded-xl border p-1.5">
+                            <div
+                              className={cn(
+                                'overflow-hidden transition-[max-height,opacity,transform,margin] duration-[var(--10x-motion-slow)] ease-[var(--10x-motion-ease-standard)]',
+                                !isCollapsed && showExpanded
+                                  ? 'mt-2 max-h-48 translate-y-0 opacity-100'
+                                  : 'mt-0 max-h-0 -translate-y-1 opacity-0'
+                              )}
+                            >
+                              <ul className="bg-primary/5 space-y-1 rounded-2xl border p-2">
                                 {item.children!.map((child) => {
                                   const isChildActive = pathname.startsWith(child.href);
 
@@ -285,10 +327,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
                                         href={child.href}
                                         onClick={onClose}
                                         className={cn(
-                                          'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[12px] transition-colors',
+                                          'shell-action shell-nav-item flex items-center gap-2 rounded-xl px-3 py-2',
                                           isChildActive
                                             ? 'bg-sidebar-primary/10 text-sidebar-primary font-medium'
-                                            : 'text-sidebar-foreground/68 hover:bg-sidebar-primary/[0.08] hover:text-sidebar-foreground'
+                                            : 'text-sidebar-foreground/68 hover:bg-primary/6 hover:text-sidebar-foreground'
                                         )}
                                       >
                                         <Receipt className="h-3.5 w-3.5 shrink-0 opacity-70" />
@@ -298,28 +340,40 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
                                   );
                                 })}
                               </ul>
-                            )}
+                            </div>
                           </>
                         ) : (
                           <Link
                             href={item.href!}
                             onClick={onClose}
                             className={cn(
-                              'group flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-all active:scale-[0.98]',
+                              'shell-action shell-nav-item group flex items-center gap-3 rounded-2xl px-3 py-2.5 font-medium active:scale-[0.99]',
                               isActive
-                                ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                                : 'text-sidebar-foreground/72 hover:bg-sidebar-primary/[0.08] hover:text-sidebar-foreground',
+                                ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-[var(--10x-elev-shell-1)]'
+                                : 'text-sidebar-foreground/72 hover:bg-primary/5 hover:text-sidebar-foreground',
                               isCollapsed && 'justify-center px-2.5'
                             )}
                             title={isCollapsed ? item.name : undefined}
                           >
-                            <item.icon className="h-4.5 w-4.5 shrink-0" />
-                            {!isCollapsed && (
-                              <>
-                                <span className="flex-1">{item.name}</span>
-                                {isActive && <ArrowUpRight className="h-3.5 w-3.5 opacity-80" />}
-                              </>
-                            )}
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            <span
+                              className={cn(
+                                'min-w-0 flex-1 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                isCollapsed
+                                  ? 'max-w-0 -translate-x-2 opacity-0'
+                                  : 'max-w-[9rem] translate-x-0 opacity-100'
+                              )}
+                            >
+                              {item.name}
+                            </span>
+                            <ArrowUpRight
+                              className={cn(
+                                'h-3.5 w-3.5 shrink-0 transition-[opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                isActive && !isCollapsed
+                                  ? 'translate-x-0 opacity-80'
+                                  : 'pointer-events-none translate-x-1 opacity-0'
+                              )}
+                            />
                           </Link>
                         )}
                       </li>
@@ -333,16 +387,23 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
 
         {/* Footer */}
         <div className="border-sidebar-border/80 border-t p-3">
-          {!isCollapsed ? (
-            <div className="border-sidebar-border/70 bg-sidebar-primary/[0.03] rounded-xl border px-3 py-2.5">
-              <p className="text-sidebar-foreground/75 truncate text-xs font-medium">
-                Dominion Desk
-              </p>
-              <p className="text-sidebar-foreground/45 text-[11px]">v0.2.0 landlord workspace</p>
-            </div>
-          ) : (
-            <div className="text-sidebar-foreground/45 text-center text-[11px]">v0.2.0</div>
-          )}
+          <div
+            className={cn(
+              'bg-primary/5 overflow-hidden rounded-2xl border transition-[padding,opacity,max-height] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+              isCollapsed ? 'max-h-8 px-2 py-1.5 opacity-80' : 'max-h-20 px-3 py-3 opacity-100'
+            )}
+          >
+            {!isCollapsed ? (
+              <>
+                <p className="text-sidebar-foreground/80 truncate text-sm font-semibold">
+                  Dominion Desk
+                </p>
+                <p className="text-sidebar-foreground/45 text-[11px]">v0.2.0 landlord workspace</p>
+              </>
+            ) : (
+              <div className="text-sidebar-foreground/45 text-center text-[11px]">v0.2.0</div>
+            )}
+          </div>
         </div>
       </aside>
     </>
