@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { NavigationProgress } from '@/components/navigation-progress';
 
 interface ProvidersProps {
@@ -27,7 +27,9 @@ export function Providers({ children }: ProvidersProps) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem enableColorScheme>
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
-          <NavigationProgress />
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           {children}
         </QueryClientProvider>
       </SessionProvider>
