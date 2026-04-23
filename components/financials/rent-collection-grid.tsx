@@ -49,6 +49,18 @@ interface TenantPaymentData {
     proofUploadedAt: Date | null;
   } | null;
   daysOverdue: number;
+  arrearsWorkflow?: {
+    stage: string;
+    label: string;
+    guidance: string;
+    priority: string;
+    task: {
+      id: string;
+      status: string;
+      priority: string;
+      dueDate: Date | null;
+    } | null;
+  } | null;
 }
 
 interface PropertyPaymentData {
@@ -228,6 +240,35 @@ export function RentCollectionGrid({
     }
   };
 
+  const getWorkflowCell = (tenant: TenantPaymentData) => {
+    if (!tenant.arrearsWorkflow) {
+      return <span className="text-muted-foreground text-xs">-</span>;
+    }
+
+    const badgeClass =
+      tenant.arrearsWorkflow.priority === 'URGENT'
+        ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
+        : tenant.arrearsWorkflow.priority === 'HIGH'
+          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200'
+          : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
+
+    return (
+      <div className="space-y-1.5">
+        <Badge className={badgeClass}>{tenant.arrearsWorkflow.label}</Badge>
+        {tenant.arrearsWorkflow.task ? (
+          <Link
+            href={`/tasks/${tenant.arrearsWorkflow.task.id}`}
+            className="text-xs font-medium text-blue-600 hover:underline"
+          >
+            Task in queue
+          </Link>
+        ) : (
+          <p className="text-muted-foreground text-xs">No task yet</p>
+        )}
+      </div>
+    );
+  };
+
   if (!data || data.length === 0) {
     return (
       <div className="rounded-lg border p-8 text-center">
@@ -248,6 +289,7 @@ export function RentCollectionGrid({
             <TableHead className="min-w-[80px]">Unit</TableHead>
             <TableHead className="min-w-[100px] text-right">Rent</TableHead>
             <TableHead className="min-w-[180px]">Status</TableHead>
+            <TableHead className="min-w-[180px]">Workflow</TableHead>
             <TableHead className="min-w-[200px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -291,6 +333,7 @@ export function RentCollectionGrid({
                       {subtotals.paidCount}/{subtotals.totalCount} Paid
                     </Badge>
                   </TableCell>
+                  <TableCell></TableCell>
                   <TableCell className="text-right">
                     <span className="text-muted-foreground text-sm">
                       Collected: {formatCurrency(subtotals.collected)}
@@ -316,6 +359,7 @@ export function RentCollectionGrid({
                         {formatCurrency(tenant.monthlyRent)}
                       </TableCell>
                       <TableCell>{getStatusBadge(tenant)}</TableCell>
+                      <TableCell>{getWorkflowCell(tenant)}</TableCell>
                       <TableCell className="text-right">
                         {getActions(tenant, propertyData.property)}
                       </TableCell>

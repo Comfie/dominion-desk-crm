@@ -1,4 +1,5 @@
-import { TenantStatus, Prisma, TenantType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { TenantStatus, TenantType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { tenantRepository } from '@/lib/features/tenants/repositories/tenant.repository';
@@ -7,7 +8,8 @@ import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/err
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { generateTenantPassword } from '@/lib/password-generator';
 import { createDefaultFoldersForTenant } from '@/lib/document-folders';
-import { CreateTenantDTO, UpdateTenantDTO, ListTenantsDTO } from '../dtos/tenant.dto';
+import type { CreateTenantDTO, UpdateTenantDTO, ListTenantsDTO } from '../dtos/tenant.dto';
+import { isValidLeaseDateRange, LEASE_END_DATE_ERROR } from '../lease-dates';
 
 /**
  * Tenant Service
@@ -176,6 +178,16 @@ export class TenantService {
       unitLabel?: string | null;
     }
   ): Promise<void> {
+    if (
+      assignment.leaseEndDate &&
+      !isValidLeaseDateRange(assignment.leaseStartDate, assignment.leaseEndDate)
+    ) {
+      throw new ValidationError(LEASE_END_DATE_ERROR, {
+        leaseStartDate: assignment.leaseStartDate,
+        leaseEndDate: assignment.leaseEndDate,
+      });
+    }
+
     // Verify property belongs to user and check multi-tenant support
     const property = await prisma.property.findFirst({
       where: { id: assignment.propertyId, userId },
@@ -190,10 +202,23 @@ export class TenantService {
       throw new NotFoundError('Property', assignment.propertyId);
     }
 
+    const activeTenantCount = Array.isArray(property.tenants) ? property.tenants.length : undefined;
+    const hasActiveTenant = Boolean(
+      activeTenantCount !== undefined
+        ? activeTenantCount > 0
+        : await prisma.propertyTenant.findFirst({
+            where: {
+              propertyId: assignment.propertyId,
+              isActive: true,
+            },
+            select: { id: true },
+          })
+    );
+
     // Check if property allows multiple tenants
-    if (!property.allowsMultipleTenants && property.tenants.length > 0) {
+    if (!property.allowsMultipleTenants && hasActiveTenant) {
       throw new ValidationError(
-        'This property does not allow multiple tenants and already has an active tenant assigned. Enable "Allows Multiple Tenants" in property settings to add more tenants.',
+        'Property already has an active tenant assignment. Enable "Allows Multiple Tenants" in property settings to add more tenants.',
         {
           propertyId: assignment.propertyId,
           allowsMultipleTenants: property.allowsMultipleTenants,

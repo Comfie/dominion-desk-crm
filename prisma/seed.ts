@@ -1,9 +1,21 @@
 import 'dotenv/config';
-import { PrismaClient, SubscriptionTier, TaskType, Priority } from '@prisma/client';
+import {
+  PaymentMethod,
+  PaymentStatus,
+  PaymentType,
+  PrismaClient,
+  Priority,
+  PropertyType,
+  RentalType,
+  SubscriptionTier,
+  TaskType,
+  TenantType,
+} from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { createDefaultFoldersForTenant } from '../lib/document-folders';
+import { generateTenantPassword } from '../lib/password-generator';
 import { saveBankingDetails } from '../lib/services/banking-encryption.service';
 import { initializeDefaultSettings } from '../lib/services/system-settings.service';
 
@@ -181,8 +193,84 @@ async function seedTaskTemplates() {
   console.log(`✅ Created ${systemTaskTemplates.length} system task templates`);
 }
 
-async function main() {
+async function resetDatabase() {
+  console.log('🧹 Cleaning up existing database data...');
+
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN (
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename NOT IN (
+            '_prisma_migrations',
+            'spatial_ref_sys',
+            'geometry_columns',
+            'geography_columns',
+            'raster_columns',
+            'raster_overviews'
+          )
+      )
+      LOOP
+        EXECUTE format('TRUNCATE TABLE %I RESTART IDENTITY CASCADE', r.tablename);
+      END LOOP;
+    END $$;
+  `);
+
+  console.log('✅ Database cleared');
+}
+
+async function createTenantPortalUser(details: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}) {
+  const password = generateTenantPassword(details.firstName, details.lastName);
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await prisma.user.upsert({
+    where: { email: details.email },
+    update: {
+      password: hashedPassword,
+      firstName: details.firstName,
+      lastName: details.lastName,
+      phone: details.phone || '',
+      accountType: 'TENANT',
+      role: 'TENANT',
+      isActive: true,
+      isFirstLogin: true,
+      emailVerified: false,
+      requirePasswordChange: true,
+      propertyLimit: 0,
+    },
+    create: {
+      email: details.email,
+      password: hashedPassword,
+      firstName: details.firstName,
+      lastName: details.lastName,
+      phone: details.phone || '',
+      accountType: 'TENANT',
+      role: 'TENANT',
+      isActive: true,
+      isFirstLogin: true,
+      emailVerified: false,
+      requirePasswordChange: true,
+      propertyLimit: 0,
+      subscriptionTier: SubscriptionTier.FREE,
+      subscriptionStatus: 'ACTIVE',
+    },
+  });
+
+  return password;
+}
+
+export async function main() {
   console.log('🌱 Starting seed...');
+  await resetDatabase();
 
   // --- 1. SETUP USERS (Login Accounts) ---
 
@@ -192,10 +280,10 @@ async function main() {
 
   // Super Admin
   await prisma.user.upsert({
-    where: { email: 'admin@propertycrm.com' },
+    where: { email: 'admin01.propertycrm@mailinator.com' },
     update: {},
     create: {
-      email: 'admin@propertycrm.com',
+      email: 'admin01.propertycrm@mailinator.com',
       password: adminPassword,
       firstName: 'Super',
       lastName: 'Admin',
@@ -208,10 +296,10 @@ async function main() {
 
   // Landlord (The "Customer")
   const landlordUser = await prisma.user.upsert({
-    where: { email: 'demo@propertycrm.com' },
+    where: { email: 'demo01.propertycrm@mailinator.com' },
     update: {},
     create: {
-      email: 'demo@propertycrm.com',
+      email: 'demo01.propertycrm@mailinator.com',
       password: landlordPassword,
       firstName: 'Demo',
       lastName: 'User',
@@ -240,10 +328,10 @@ async function main() {
   // This creates the ability to log in, but doesn't contain the "Tenant Profile" data yet
   // IMPORTANT: The email must match the Tenant Profile email for the portal to work
   await prisma.user.upsert({
-    where: { email: 'john.smith@example.com' },
+    where: { email: 'john.smith.propertycrm@mailinator.com' },
     update: {},
     create: {
-      email: 'john.smith@example.com',
+      email: 'john.smith.propertycrm@mailinator.com',
       password: tenantPassword,
       firstName: 'John',
       lastName: 'Smith',
@@ -255,21 +343,7 @@ async function main() {
     },
   });
 
-  // --- 2. CLEANUP OLD DATA ---
-  // We delete children first to satisfy Foreign Key constraints
-  console.log('🧹 Cleaning up...');
-
   const landlordId = landlordUser.id;
-
-  // Delete items owned by the landlord
-  await prisma.payment.deleteMany({ where: { userId: landlordId } });
-  await prisma.booking.deleteMany({ where: { userId: landlordId } });
-  await prisma.inquiry.deleteMany({ where: { userId: landlordId } });
-  await prisma.maintenanceRequest.deleteMany({ where: { userId: landlordId } });
-  await prisma.task.deleteMany({ where: { userId: landlordId } });
-  await prisma.propertyTenant.deleteMany({ where: { userId: landlordId } });
-  await prisma.tenant.deleteMany({ where: { userId: landlordId } }); // Deletes the Tenant Profiles
-  await prisma.property.deleteMany({ where: { userId: landlordId } });
 
   console.log('🏗️ Creating Properties...');
 
@@ -350,7 +424,7 @@ async function main() {
       userId: landlordId, // IMPORTANT: This links the tenant to the Landlord's dashboard
       firstName: 'John',
       lastName: 'Smith',
-      email: 'john.smith@example.com', // IMPORTANT: This matches the User Login email
+      email: 'john.smith.propertycrm@mailinator.com', // IMPORTANT: This matches the User Login email
       phone: '+27829876543',
       idNumber: '8501015800086',
       dateOfBirth: new Date('1985-01-01'),
@@ -481,7 +555,7 @@ async function main() {
 
       // Guest details (redundant but often kept for historical records)
       guestName: 'John Smith',
-      guestEmail: 'john.smith@example.com',
+      guestEmail: 'john.smith.propertycrm@mailinator.com',
       guestPhone: '+27829876543',
       numberOfGuests: 2,
 
@@ -520,7 +594,7 @@ async function main() {
       inquirySource: 'WEBSITE',
       inquiryType: 'BOOKING',
       contactName: 'Michael Brown',
-      contactEmail: 'michael.b@example.com',
+      contactEmail: 'michael.b.propertycrm@mailinator.com',
       contactPhone: '+27847654321',
       message: 'Is this available?',
       checkInDate: new Date('2025-01-15'),
@@ -530,15 +604,659 @@ async function main() {
     },
   });
 
+  {
+    console.log('💳 Creating landlord test workspace...');
+
+    const paymentLandlordPassword = await bcrypt.hash('password123', 10);
+    const paymentLandlord = await prisma.user.upsert({
+      where: { email: 'landlord.propertycrm@mailinator.com' },
+      update: {
+        password: paymentLandlordPassword,
+        firstName: 'John',
+        lastName: 'Landlord',
+        phone: '+27 82 123 4567',
+        role: 'CUSTOMER',
+        accountType: 'INDIVIDUAL',
+        subscriptionTier: SubscriptionTier.PROFESSIONAL,
+        subscriptionStatus: 'ACTIVE',
+        emailVerified: true,
+        rentalDueDay: 1,
+        propertyLimit: 20,
+      },
+      create: {
+        email: 'landlord.propertycrm@mailinator.com',
+        password: paymentLandlordPassword,
+        firstName: 'John',
+        lastName: 'Landlord',
+        phone: '+27 82 123 4567',
+        role: 'CUSTOMER',
+        accountType: 'INDIVIDUAL',
+        subscriptionTier: SubscriptionTier.PROFESSIONAL,
+        subscriptionStatus: 'ACTIVE',
+        emailVerified: true,
+        rentalDueDay: 1,
+        propertyLimit: 20,
+      },
+    });
+
+    console.log('👥 Creating tenant portal accounts...');
+    const paymentTenantSeeds: Array<{
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      tenantType: TenantType;
+      status: 'ACTIVE';
+      employmentStatus: 'EMPLOYED' | 'STUDENT' | 'SELF_EMPLOYED';
+      employer?: string;
+      monthlyIncome?: number;
+      monthlyRent: number;
+      paymentDueDay: number;
+      autoSendReminder: boolean;
+      reminderDaysBefore?: number;
+    }> = [
+      {
+        firstName: 'Sarah',
+        lastName: 'Johnson',
+        email: 'sarah.johnson.propertycrm@mailinator.com',
+        phone: '+27 83 111 2222',
+        tenantType: TenantType.TENANT,
+        status: 'ACTIVE',
+        employmentStatus: 'EMPLOYED',
+        employer: 'Tech Corp',
+        monthlyIncome: 25000,
+        monthlyRent: 8500,
+        paymentDueDay: 1,
+        autoSendReminder: true,
+        reminderDaysBefore: 3,
+      },
+      {
+        firstName: 'Michael',
+        lastName: 'Brown',
+        email: 'michael.brown.propertycrm@mailinator.com',
+        phone: '+27 84 222 3333',
+        tenantType: TenantType.TENANT,
+        status: 'ACTIVE',
+        employmentStatus: 'STUDENT',
+        monthlyRent: 5000,
+        paymentDueDay: 1,
+        autoSendReminder: true,
+      },
+      {
+        firstName: 'Emma',
+        lastName: 'Davis',
+        email: 'emma.davis.propertycrm@mailinator.com',
+        phone: '+27 85 333 4444',
+        tenantType: TenantType.TENANT,
+        status: 'ACTIVE',
+        employmentStatus: 'STUDENT',
+        monthlyRent: 5000,
+        paymentDueDay: 1,
+        autoSendReminder: true,
+      },
+      {
+        firstName: 'James',
+        lastName: 'Wilson',
+        email: 'james.wilson.propertycrm@mailinator.com',
+        phone: '+27 86 444 5555',
+        tenantType: TenantType.TENANT,
+        status: 'ACTIVE',
+        employmentStatus: 'STUDENT',
+        monthlyRent: 5000,
+        paymentDueDay: 1,
+        autoSendReminder: true,
+      },
+      {
+        firstName: 'Robert',
+        lastName: 'Taylor',
+        email: 'robert.taylor.propertycrm@mailinator.com',
+        phone: '+27 87 555 6666',
+        tenantType: TenantType.TENANT,
+        status: 'ACTIVE',
+        employmentStatus: 'SELF_EMPLOYED',
+        monthlyRent: 12000,
+        paymentDueDay: 1,
+        autoSendReminder: true,
+      },
+      {
+        firstName: 'Lisa',
+        lastName: 'Anderson',
+        email: 'lisa.anderson.propertycrm@mailinator.com',
+        phone: '+27 88 666 7777',
+        tenantType: TenantType.TENANT,
+        status: 'ACTIVE',
+        employmentStatus: 'EMPLOYED',
+        monthlyRent: 6000,
+        paymentDueDay: 1,
+        autoSendReminder: true,
+      },
+    ];
+
+    const paymentTenantRecords = await Promise.all(
+      paymentTenantSeeds.map(async (seed) => {
+        const password = await createTenantPortalUser({
+          email: seed.email,
+          firstName: seed.firstName,
+          lastName: seed.lastName,
+          phone: seed.phone,
+        });
+
+        const tenant = await prisma.tenant.create({
+          data: {
+            userId: paymentLandlord.id,
+            firstName: seed.firstName,
+            lastName: seed.lastName,
+            email: seed.email,
+            phone: seed.phone,
+            tenantType: seed.tenantType,
+            status: seed.status,
+            employmentStatus: seed.employmentStatus,
+            employer: seed.employer,
+            monthlyIncome: seed.monthlyIncome,
+            monthlyRent: seed.monthlyRent,
+            paymentDueDay: seed.paymentDueDay,
+            autoSendReminder: seed.autoSendReminder,
+            reminderDaysBefore: seed.reminderDaysBefore,
+          },
+        });
+
+        return { ...seed, password, tenant };
+      })
+    );
+
+    const [
+      paymentTenant1,
+      paymentTenant2,
+      paymentTenant3,
+      paymentTenant4,
+      paymentTenant5,
+      paymentTenant6,
+    ] = paymentTenantRecords.map((record) => record.tenant);
+    const paymentTenantReferenceKeys = new Map(
+      paymentTenantRecords.map(({ tenant, firstName, lastName }, index) => [
+        tenant.id,
+        `${firstName}${lastName}${index + 1}`.replace(/[^A-Za-z0-9]/g, '').toUpperCase(),
+      ])
+    );
+    const getTenantReferenceKey = (tenantId: string) =>
+      paymentTenantReferenceKeys.get(tenantId) ?? tenantId.slice(-8).toUpperCase();
+
+    console.log('🏘️  Creating landlord test properties...');
+    const paymentProperties = await Promise.all([
+      prisma.property.create({
+        data: {
+          userId: paymentLandlord.id,
+          name: '12 Ocean View Apartments',
+          description: 'Modern 2-bedroom apartment with sea views',
+          propertyType: PropertyType.APARTMENT,
+          address: '12 Beach Road',
+          city: 'Cape Town',
+          province: 'Western Cape',
+          postalCode: '8001',
+          bedrooms: 2,
+          bathrooms: 1,
+          parkingSpaces: 1,
+          rentalType: RentalType.LONG_TERM,
+          monthlyRent: 8500,
+          isAvailable: false,
+          status: 'ACTIVE',
+          allowsMultipleTenants: false,
+        },
+      }),
+      prisma.property.create({
+        data: {
+          userId: paymentLandlord.id,
+          name: '45 Student House',
+          description: 'Large house divided into 3 units for students',
+          propertyType: PropertyType.HOUSE,
+          address: '45 University Avenue',
+          city: 'Stellenbosch',
+          province: 'Western Cape',
+          postalCode: '7600',
+          bedrooms: 6,
+          bathrooms: 3,
+          parkingSpaces: 2,
+          rentalType: RentalType.LONG_TERM,
+          monthlyRent: 15000,
+          isAvailable: false,
+          status: 'ACTIVE',
+          allowsMultipleTenants: true,
+        },
+      }),
+      prisma.property.create({
+        data: {
+          userId: paymentLandlord.id,
+          name: '7 Sunset Townhouse',
+          description: 'Beautiful 3-bedroom townhouse',
+          propertyType: PropertyType.TOWNHOUSE,
+          address: '7 Sunset Boulevard',
+          city: 'Johannesburg',
+          province: 'Gauteng',
+          postalCode: '2000',
+          bedrooms: 3,
+          bathrooms: 2,
+          parkingSpaces: 2,
+          rentalType: RentalType.LONG_TERM,
+          monthlyRent: 12000,
+          isAvailable: false,
+          status: 'ACTIVE',
+          allowsMultipleTenants: false,
+        },
+      }),
+      prisma.property.create({
+        data: {
+          userId: paymentLandlord.id,
+          name: '22 Garden Cottage',
+          description: 'Charming cottage in quiet neighborhood',
+          propertyType: PropertyType.COTTAGE,
+          address: '22 Rose Street',
+          city: 'Durban',
+          province: 'KwaZulu-Natal',
+          postalCode: '4001',
+          bedrooms: 1,
+          bathrooms: 1,
+          parkingSpaces: 1,
+          rentalType: RentalType.LONG_TERM,
+          monthlyRent: 6000,
+          isAvailable: false,
+          status: 'ACTIVE',
+          allowsMultipleTenants: false,
+        },
+      }),
+    ]);
+    console.log(`✅ Created ${paymentProperties.length} landlord test properties`);
+
+    console.log('🏠 Assigning tenant portal users to properties...');
+    const paymentCurrentDate = new Date();
+    const paymentCurrentMonth = paymentCurrentDate.getMonth();
+    const paymentCurrentYear = paymentCurrentDate.getFullYear();
+    const paymentLeaseStartDate = new Date(paymentCurrentYear, paymentCurrentMonth - 6, 1);
+    const paymentIn15Days = new Date(
+      paymentCurrentDate.getFullYear(),
+      paymentCurrentDate.getMonth(),
+      paymentCurrentDate.getDate() + 15
+    );
+    const paymentIn45Days = new Date(
+      paymentCurrentDate.getFullYear(),
+      paymentCurrentDate.getMonth(),
+      paymentCurrentDate.getDate() + 45
+    );
+    const paymentIn75Days = new Date(
+      paymentCurrentDate.getFullYear(),
+      paymentCurrentDate.getMonth(),
+      paymentCurrentDate.getDate() + 75
+    );
+    const paymentIn120Days = new Date(
+      paymentCurrentDate.getFullYear(),
+      paymentCurrentDate.getMonth(),
+      paymentCurrentDate.getDate() + 120
+    );
+    const paymentExpired5DaysAgo = new Date(
+      paymentCurrentDate.getFullYear(),
+      paymentCurrentDate.getMonth(),
+      paymentCurrentDate.getDate() - 5
+    );
+
+    await prisma.propertyTenant.create({
+      data: {
+        userId: paymentLandlord.id,
+        propertyId: paymentProperties[0].id,
+        tenantId: paymentTenant1.id,
+        leaseStartDate: paymentLeaseStartDate,
+        leaseEndDate: paymentIn15Days,
+        monthlyRent: 8500,
+        depositPaid: 8500,
+        isActive: true,
+        moveInDate: paymentLeaseStartDate,
+      },
+    });
+
+    await prisma.propertyTenant.createMany({
+      data: [
+        {
+          userId: paymentLandlord.id,
+          propertyId: paymentProperties[1].id,
+          tenantId: paymentTenant2.id,
+          unitLabel: 'Room A',
+          leaseStartDate: paymentLeaseStartDate,
+          leaseEndDate: paymentIn120Days,
+          monthlyRent: 5000,
+          depositPaid: 5000,
+          isActive: true,
+          moveInDate: paymentLeaseStartDate,
+        },
+        {
+          userId: paymentLandlord.id,
+          propertyId: paymentProperties[1].id,
+          tenantId: paymentTenant3.id,
+          unitLabel: 'Room B',
+          leaseStartDate: paymentLeaseStartDate,
+          leaseEndDate: paymentIn45Days,
+          monthlyRent: 5000,
+          depositPaid: 5000,
+          isActive: true,
+          moveInDate: paymentLeaseStartDate,
+        },
+        {
+          userId: paymentLandlord.id,
+          propertyId: paymentProperties[1].id,
+          tenantId: paymentTenant4.id,
+          unitLabel: 'Room C',
+          leaseStartDate: paymentLeaseStartDate,
+          leaseEndDate: paymentExpired5DaysAgo,
+          monthlyRent: 5000,
+          depositPaid: 5000,
+          isActive: true,
+          moveInDate: paymentLeaseStartDate,
+        },
+      ],
+    });
+
+    await prisma.propertyTenant.create({
+      data: {
+        userId: paymentLandlord.id,
+        propertyId: paymentProperties[2].id,
+        tenantId: paymentTenant5.id,
+        leaseStartDate: paymentLeaseStartDate,
+        leaseEndDate: paymentIn75Days,
+        monthlyRent: 12000,
+        depositPaid: 12000,
+        isActive: true,
+        moveInDate: paymentLeaseStartDate,
+      },
+    });
+
+    await prisma.propertyTenant.create({
+      data: {
+        userId: paymentLandlord.id,
+        propertyId: paymentProperties[3].id,
+        tenantId: paymentTenant6.id,
+        leaseStartDate: new Date(paymentCurrentYear, paymentCurrentMonth - 1, 1),
+        leaseEndDate: paymentIn45Days,
+        monthlyRent: 6000,
+        depositPaid: 6000,
+        isActive: true,
+        moveInDate: new Date(paymentCurrentYear, paymentCurrentMonth - 1, 1),
+      },
+    });
+
+    console.log('💰 Creating payment history...');
+    const payments: Array<{
+      userId: string;
+      tenantId: string;
+      propertyId: string;
+      paymentReference: string;
+      paymentType: PaymentType;
+      amount: number;
+      currency: string;
+      dueDate: Date;
+      paymentDate?: Date | null;
+      paymentMethod?: PaymentMethod | null;
+      status: PaymentStatus;
+      invoiceNumber: string;
+      description: string;
+    }> = [];
+
+    const createPayments = (
+      tenantId: string,
+      propertyId: string,
+      monthlyRent: number,
+      paymentBehavior: 'excellent' | 'good' | 'late' | 'very-late',
+      monthsBack: number = 6
+    ) => {
+      for (let i = monthsBack - 1; i >= 1; i--) {
+        const month = paymentCurrentMonth - i;
+        const year = month < 0 ? paymentCurrentYear - 1 : paymentCurrentYear;
+        const adjustedMonth = month < 0 ? month + 12 : month;
+
+        const dueDate = new Date(year, adjustedMonth, 1);
+        const monthNames = [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ];
+
+        let paymentDate: Date | null = null;
+        let status: PaymentStatus = PaymentStatus.PENDING;
+        let paymentMethod: PaymentMethod | null = null;
+
+        switch (paymentBehavior) {
+          case 'excellent':
+            paymentDate = new Date(year, adjustedMonth, 0, 29 - Math.floor(Math.random() * 2));
+            status = PaymentStatus.PAID;
+            paymentMethod = PaymentMethod.EFT;
+            break;
+          case 'good': {
+            const daysLate = Math.floor(Math.random() * 4);
+            paymentDate = new Date(year, adjustedMonth, 1 + daysLate);
+            status = PaymentStatus.PAID;
+            paymentMethod = PaymentMethod.EFT;
+            break;
+          }
+          case 'late': {
+            const lateBy = 5 + Math.floor(Math.random() * 10);
+            paymentDate = new Date(year, adjustedMonth, 1 + lateBy);
+            status = PaymentStatus.PAID;
+            paymentMethod = PaymentMethod.CASH;
+            break;
+          }
+          case 'very-late':
+            if (Math.random() > 0.3) {
+              const veryLate = 15 + Math.floor(Math.random() * 15);
+              paymentDate = new Date(year, adjustedMonth, 1 + veryLate);
+              status = PaymentStatus.PAID;
+              paymentMethod = PaymentMethod.CASH;
+            } else {
+              status = PaymentStatus.OVERDUE;
+            }
+            break;
+        }
+
+        payments.push({
+          userId: paymentLandlord.id,
+          tenantId,
+          propertyId,
+          paymentReference: `PAY-${year}${String(adjustedMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+            tenantId
+          )}`,
+          paymentType: PaymentType.RENT,
+          amount: monthlyRent,
+          currency: 'ZAR',
+          dueDate,
+          paymentDate,
+          paymentMethod,
+          status,
+          invoiceNumber: `INV-${year}${String(adjustedMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+            tenantId
+          )}`,
+          description: `Monthly rent for ${monthNames[adjustedMonth]} ${year}`,
+        });
+      }
+    };
+
+    createPayments(paymentTenant1.id, paymentProperties[0].id, 8500, 'excellent');
+    createPayments(paymentTenant2.id, paymentProperties[1].id, 5000, 'good');
+    createPayments(paymentTenant3.id, paymentProperties[1].id, 5000, 'excellent');
+    createPayments(paymentTenant4.id, paymentProperties[1].id, 5000, 'late');
+    createPayments(paymentTenant5.id, paymentProperties[2].id, 12000, 'very-late');
+    createPayments(paymentTenant6.id, paymentProperties[3].id, 6000, 'good', 2);
+
+    await prisma.payment.createMany({ data: payments });
+    console.log(`✅ Created ${payments.length} payment records`);
+
+    console.log('📅 Creating current month payments...');
+    const currentMonthPayments = [
+      {
+        userId: paymentLandlord.id,
+        tenantId: paymentTenant1.id,
+        propertyId: paymentProperties[0].id,
+        paymentReference: `PAY-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant1.id
+        )}`,
+        paymentType: PaymentType.RENT,
+        amount: 8500,
+        currency: 'ZAR',
+        dueDate: new Date(paymentCurrentYear, paymentCurrentMonth, 1),
+        paymentDate: new Date(paymentCurrentYear, paymentCurrentMonth - 1, 30),
+        paymentMethod: PaymentMethod.EFT,
+        status: PaymentStatus.PAID,
+        invoiceNumber: `INV-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant1.id
+        )}`,
+        description: `Monthly rent for ${new Date(
+          paymentCurrentYear,
+          paymentCurrentMonth
+        ).toLocaleString('default', { month: 'long' })} ${paymentCurrentYear}`,
+      },
+      {
+        userId: paymentLandlord.id,
+        tenantId: paymentTenant2.id,
+        propertyId: paymentProperties[1].id,
+        paymentReference: `PAY-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant2.id
+        )}`,
+        paymentType: PaymentType.RENT,
+        amount: 5000,
+        currency: 'ZAR',
+        dueDate: new Date(paymentCurrentYear, paymentCurrentMonth, 1),
+        paymentDate: new Date(paymentCurrentYear, paymentCurrentMonth, 2),
+        paymentMethod: PaymentMethod.EFT,
+        status: PaymentStatus.PAID,
+        invoiceNumber: `INV-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant2.id
+        )}-RoomA`,
+        description: `Monthly rent for ${new Date(
+          paymentCurrentYear,
+          paymentCurrentMonth
+        ).toLocaleString('default', {
+          month: 'long',
+        })} ${paymentCurrentYear} - 45 Student House (Room A)`,
+      },
+      {
+        userId: paymentLandlord.id,
+        tenantId: paymentTenant3.id,
+        propertyId: paymentProperties[1].id,
+        paymentReference: `PAY-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant3.id
+        )}`,
+        paymentType: PaymentType.RENT,
+        amount: 5000,
+        currency: 'ZAR',
+        dueDate: new Date(paymentCurrentYear, paymentCurrentMonth, 1),
+        status: PaymentStatus.PENDING,
+        invoiceNumber: `INV-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant3.id
+        )}-RoomB`,
+        description: `Monthly rent for ${new Date(
+          paymentCurrentYear,
+          paymentCurrentMonth
+        ).toLocaleString('default', {
+          month: 'long',
+        })} ${paymentCurrentYear} - 45 Student House (Room B)`,
+      },
+      {
+        userId: paymentLandlord.id,
+        tenantId: paymentTenant4.id,
+        propertyId: paymentProperties[1].id,
+        paymentReference: `PAY-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant4.id
+        )}`,
+        paymentType: PaymentType.RENT,
+        amount: 5000,
+        currency: 'ZAR',
+        dueDate: new Date(paymentCurrentYear, paymentCurrentMonth, 1),
+        status: PaymentStatus.OVERDUE,
+        invoiceNumber: `INV-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant4.id
+        )}-RoomC`,
+        description: `Monthly rent for ${new Date(
+          paymentCurrentYear,
+          paymentCurrentMonth
+        ).toLocaleString('default', {
+          month: 'long',
+        })} ${paymentCurrentYear} - 45 Student House (Room C)`,
+      },
+      {
+        userId: paymentLandlord.id,
+        tenantId: paymentTenant5.id,
+        propertyId: paymentProperties[2].id,
+        paymentReference: `PAY-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant5.id
+        )}`,
+        paymentType: PaymentType.RENT,
+        amount: 12000,
+        currency: 'ZAR',
+        dueDate: new Date(paymentCurrentYear, paymentCurrentMonth, 1),
+        status: PaymentStatus.OVERDUE,
+        invoiceNumber: `INV-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant5.id
+        )}`,
+        description: `Monthly rent for ${new Date(
+          paymentCurrentYear,
+          paymentCurrentMonth
+        ).toLocaleString('default', { month: 'long' })} ${paymentCurrentYear}`,
+      },
+      {
+        userId: paymentLandlord.id,
+        tenantId: paymentTenant6.id,
+        propertyId: paymentProperties[3].id,
+        paymentReference: `PAY-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant6.id
+        )}`,
+        paymentType: PaymentType.RENT,
+        amount: 6000,
+        currency: 'ZAR',
+        dueDate: new Date(paymentCurrentYear, paymentCurrentMonth, 1),
+        status: PaymentStatus.PENDING_VERIFICATION,
+        proofOfPaymentUrl: 'https://uploadthing.com/mock-proof.pdf',
+        proofOfPaymentName: 'proof-of-payment.pdf',
+        proofUploadedAt: new Date(paymentCurrentYear, paymentCurrentMonth, 3),
+        invoiceNumber: `INV-${paymentCurrentYear}${String(paymentCurrentMonth + 1).padStart(2, '0')}-${getTenantReferenceKey(
+          paymentTenant6.id
+        )}`,
+        description: `Monthly rent for ${new Date(
+          paymentCurrentYear,
+          paymentCurrentMonth
+        ).toLocaleString('default', { month: 'long' })} ${paymentCurrentYear}`,
+      },
+    ];
+
+    await prisma.payment.createMany({ data: currentMonthPayments });
+    console.log(`✅ Created ${currentMonthPayments.length} current month payments`);
+
+    console.log('📊 Payment test summary:');
+    console.log(`   Landlord: ${paymentLandlord.email} / password123`);
+    console.log('   Tenant portal accounts:');
+    for (const tenantRecord of paymentTenantRecords) {
+      console.log(`   - ${tenantRecord.email} / ${tenantRecord.password}`);
+    }
+    console.log(`   Properties: ${paymentProperties.length}`);
+  }
+
   console.log('✅ Database seeded successfully!');
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
+export async function runSeed() {
+  try {
+    await main();
+  } finally {
     await prisma.$disconnect();
     await pool.end();
+  }
+}
+
+if (require.main === module) {
+  runSeed().catch((e) => {
+    console.error(e);
+    process.exit(1);
   });
+}

@@ -3,16 +3,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  CreditCard,
   AlertTriangle,
   CheckCircle2,
   Clock,
   Users,
   DollarSign,
   TrendingUp,
-  FileText,
   Search,
-  Building2,
   RefreshCw,
 } from 'lucide-react';
 
@@ -179,14 +176,14 @@ export default function AdminSubscriptionsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-12 w-64" />
+      <div className="admin-page">
+        <Skeleton className="h-12 w-64 rounded-full bg-white/10" />
         <div className="grid gap-4 md:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} className="h-32 rounded-[1.35rem] bg-white/10" />
           ))}
         </div>
-        <Skeleton className="h-96" />
+        <Skeleton className="h-96 rounded-[1.5rem] bg-white/10" />
       </div>
     );
   }
@@ -195,17 +192,24 @@ export default function AdminSubscriptionsPage() {
   const subscriptions = data?.subscriptions || [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Subscription Management</h1>
-        <p className="text-muted-foreground">
-          Monitor landlord subscriptions, payments, and billing
-        </p>
+    <div className="admin-page">
+      <div className="admin-page-header">
+        <div className="admin-hero">
+          <div className="space-y-4">
+            <span className="admin-kicker">Billing operations</span>
+            <div className="space-y-2">
+              <h1 className="admin-page-title font-semibold">Subscription Management</h1>
+              <p className="admin-page-description">
+                Monitor landlord subscriptions, payment health, recurring billing, and invoice
+                activity across the platform.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="admin-stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total MRR</CardTitle>
             <DollarSign className="text-muted-foreground h-4 w-4" />
@@ -218,7 +222,7 @@ export default function AdminSubscriptionsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <TrendingUp className="text-muted-foreground h-4 w-4" />
@@ -229,7 +233,7 @@ export default function AdminSubscriptionsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Overdue Payments</CardTitle>
             <AlertTriangle className="text-destructive h-4 w-4" />
@@ -242,7 +246,7 @@ export default function AdminSubscriptionsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Due Soon</CardTitle>
             <Clock className="text-muted-foreground h-4 w-4" />

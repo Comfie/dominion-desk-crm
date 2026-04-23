@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../tokens/10x-shell.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -296,6 +297,95 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .shell-action {
+    transition-property: background-color, border-color, color, opacity, box-shadow, transform;
+    transition-duration: var(--10x-motion-base);
+    transition-timing-function: var(--10x-motion-ease-standard);
+  }
+
+  .shell-title {
+    font-size: var(--10x-type-shell-title);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .shell-section-title {
+    font-size: var(--10x-type-shell-heading);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .shell-support {
+    font-size: var(--10x-type-shell-body);
+    line-height: 1.55;
+    color: var(--10x-color-shell-text-soft);
+  }
+
+  .shell-label {
+    font-size: var(--10x-type-shell-label);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--10x-color-shell-text-soft);
+  }
+
+  .shell-nav-item {
+    font-size: var(--10x-type-shell-nav);
+    line-height: 1.35;
+  }
+
+  .shell-scrim {
+    background-color: var(--10x-color-shell-scrim);
+  }
+
+  .shell-surface {
+    background-color: var(--10x-color-shell-surface);
+    border-color: var(--10x-color-shell-border);
+    box-shadow: var(--10x-elev-shell-1);
+  }
+
+  .shell-surface-strong {
+    background-color: var(--10x-color-shell-surface);
+    border-color: var(--10x-color-shell-border-strong);
+    box-shadow: var(--10x-elev-shell-2);
+  }
+
+  .shell-header-bar {
+    min-height: var(--10x-shell-header-height);
+  }
+
+  .shell-sidebar-frame {
+    width: var(--10x-shell-sidebar-width);
+  }
+
+  .shell-sidebar-collapsed {
+    width: var(--10x-shell-sidebar-width-collapsed);
+  }
+
+  .shell-mobile-nav-frame {
+    min-height: calc(var(--10x-shell-mobile-nav-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .shell-main {
+    padding: var(--10x-space-shell-gutter-y) var(--10x-space-shell-gutter-x)
+      calc(var(--10x-space-shell-gutter-y) + var(--10x-shell-mobile-nav-offset));
+  }
+
+  @media (min-width: 48rem) {
+    .shell-main {
+      padding-inline: var(--10x-space-shell-gutter-x-lg);
+      padding-block: var(--10x-space-shell-gutter-y-lg);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .shell-main {
+      padding-bottom: var(--10x-space-shell-gutter-y-lg);
+    }
   }
 
   .scrollbar-thin {
@@ -717,6 +807,17 @@
 
   .parallax-fast {
     will-change: transform;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

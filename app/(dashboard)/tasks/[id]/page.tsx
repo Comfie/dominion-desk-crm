@@ -783,6 +783,24 @@ export default function TaskDetailPage() {
                       {task.relatedEntity.title}
                     </Link>
                   )}
+                  {task.relatedType === 'payment' && (
+                    <Link
+                      href={`/financials/payments/${task.relatedId}`}
+                      className="font-medium text-blue-600 hover:underline"
+                    >
+                      {task.relatedEntity.tenant?.firstName} {task.relatedEntity.tenant?.lastName} -{' '}
+                      {task.relatedEntity.property?.name}
+                    </Link>
+                  )}
+                  {task.relatedType === 'lease' && (
+                    <Link
+                      href={`/tenants/${task.relatedEntity.tenant?.id}`}
+                      className="font-medium text-blue-600 hover:underline"
+                    >
+                      {task.relatedEntity.tenant?.firstName} {task.relatedEntity.tenant?.lastName} -{' '}
+                      {task.relatedEntity.property?.name}
+                    </Link>
+                  )}
                 </div>
               </CardContent>
             </Card>

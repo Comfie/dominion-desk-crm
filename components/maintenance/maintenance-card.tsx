@@ -36,6 +36,18 @@ interface MaintenanceCardProps {
       firstName: string;
       lastName: string;
     } | null;
+    workflow?: {
+      stage: string;
+      label: string;
+      guidance: string;
+      priority: string;
+      task?: {
+        id: string;
+        status: string;
+        taskType: string;
+        dueDate: string | null;
+      } | null;
+    } | null;
   };
   onDelete?: (id: string) => void;
 }
@@ -139,6 +151,28 @@ export function MaintenanceCard({ request, onDelete }: MaintenanceCardProps) {
 
           {/* Description preview */}
           <p className="text-muted-foreground text-sm">{truncatedDescription}</p>
+
+          {request.workflow && (
+            <div className="rounded-md border border-orange-200 bg-orange-50/80 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-orange-900">{request.workflow.label}</p>
+                  <p className="text-xs text-orange-800">{request.workflow.guidance}</p>
+                </div>
+                <Badge
+                  className={priorityColors[request.workflow.priority] || priorityColors.NORMAL}
+                >
+                  {request.workflow.priority}
+                </Badge>
+              </div>
+              {request.workflow.task && (
+                <div className="mt-2 flex items-center justify-between text-xs text-orange-900">
+                  <span>{request.workflow.task.taskType.replace('_', ' ')}</span>
+                  <Badge variant="outline">{request.workflow.task.status.replace('_', ' ')}</Badge>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Details */}
           <div className="text-muted-foreground space-y-1 text-sm">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { paymentRepository } from '@/lib/features/payments/repositories/payment.repository';
 import { invoiceService } from '@/lib/features/payments/services/invoice.service';
+import { getTenantBySessionEmail } from '@/lib/tenant-session';
 
 /**
  * GET /api/tenant/payments/[id]/invoice
@@ -16,11 +17,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const resolvedParams = await params;
+    const tenant = await getTenantBySessionEmail(session.user.email);
+
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });
+    }
 
     // Get payment and verify it belongs to this tenant
     const payment = await paymentRepository.findById(resolvedParams.id);
 
-    if (!payment || payment.tenant?.email !== session.user.email) {
+    if (!payment || payment.tenantId !== tenant.id) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 

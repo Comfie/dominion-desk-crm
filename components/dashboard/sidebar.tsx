@@ -14,15 +14,14 @@ import {
   Mail,
   CheckSquare,
   BarChart3,
-  Link2,
   Settings,
   LayoutDashboard,
   X,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
-  Wallet,
   Receipt,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ArrowUpRight,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -43,79 +42,107 @@ interface NavItem {
   children?: { name: string; href: string }[];
 }
 
-const navigation: NavItem[] = [
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navigationSections: NavSection[] = [
   {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    name: 'Properties',
-    href: '/properties',
-    icon: Building2,
-  },
-  {
-    name: 'Bookings',
-    href: '/bookings',
-    icon: Calendar,
-  },
-  {
-    name: 'Tenants',
-    href: '/tenants',
-    icon: Users,
-  },
-  {
-    name: 'Maintenance',
-    href: '/maintenance',
-    icon: Wrench,
-  },
-  {
-    name: 'Inspections',
-    href: '/inspections',
-    icon: ClipboardCheck,
-  },
-  {
-    name: 'Financials',
-    icon: DollarSign,
-    children: [
-      { name: 'Rent Collection', href: '/financials/rent-collection' },
-      { name: 'Income & Payments', href: '/financials/income' },
-      { name: 'Expenses', href: '/financials/expenses' },
+    title: 'Overview',
+    items: [
+      {
+        name: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+      },
+      {
+        name: 'Properties',
+        href: '/properties',
+        icon: Building2,
+      },
+      {
+        name: 'Tenants',
+        href: '/tenants',
+        icon: Users,
+      },
+      {
+        name: 'Bookings',
+        href: '/bookings',
+        icon: Calendar,
+      },
     ],
   },
   {
-    name: 'Documents',
-    href: '/documents',
-    icon: FileText,
-  },
-  {
-    name: 'Communications',
-    icon: Mail,
-    children: [
-      { name: 'Messages', href: '/messages' },
-      { name: 'Automations', href: '/messages/automations' },
-      { name: 'Scheduled', href: '/messages/scheduled' },
+    title: 'Operations',
+    items: [
+      {
+        name: 'Maintenance',
+        href: '/maintenance',
+        icon: Wrench,
+      },
+      {
+        name: 'Inspections',
+        href: '/inspections',
+        icon: ClipboardCheck,
+      },
+      {
+        name: 'Tasks',
+        href: '/tasks',
+        icon: CheckSquare,
+      },
+      {
+        name: 'Documents',
+        href: '/documents',
+        icon: FileText,
+      },
     ],
   },
   {
-    name: 'Tasks',
-    href: '/tasks',
-    icon: CheckSquare,
+    title: 'Finance',
+    items: [
+      {
+        name: 'Financials',
+        icon: DollarSign,
+        children: [
+          { name: 'Rent Collection', href: '/financials/rent-collection' },
+          { name: 'Income & Payments', href: '/financials/income' },
+          { name: 'Expenses', href: '/financials/expenses' },
+        ],
+      },
+      {
+        name: 'Reports',
+        href: '/reports/analytics',
+        icon: BarChart3,
+      },
+    ],
   },
   {
-    name: 'Reports',
-    href: '/reports/analytics',
-    icon: BarChart3,
+    title: 'Communications',
+    items: [
+      {
+        name: 'Communications',
+        icon: Mail,
+        children: [
+          { name: 'Messages', href: '/messages' },
+          { name: 'Automations', href: '/messages/automations' },
+          { name: 'Scheduled', href: '/messages/scheduled' },
+        ],
+      },
+    ],
   },
   {
-    name: 'Integrations',
-    href: '/settings/integrations',
-    icon: Link2,
-  },
-  {
-    name: 'Settings',
-    href: '/settings/profile',
-    icon: Settings,
+    title: 'Settings',
+    items: [
+      {
+        name: 'Settings',
+        icon: Settings,
+        children: [
+          { name: 'Profile', href: '/settings/profile' },
+          { name: 'Integrations', href: '/settings/integrations' },
+        ],
+      },
+    ],
   },
 ];
 
@@ -147,7 +174,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
       {/* Backdrop for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="shell-scrim fixed inset-0 z-40 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -156,150 +183,227 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 ease-in-out lg:static lg:translate-x-0',
+          'shell-surface-strong text-sidebar-foreground fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r backdrop-blur-xl transition-[width,transform,box-shadow,background-color,border-color] duration-[var(--10x-motion-slow)] ease-[var(--10x-motion-ease-standard)] lg:relative lg:h-dvh lg:shrink-0 lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full',
-          isCollapsed ? 'w-20' : 'w-64'
+          isCollapsed ? 'shell-sidebar-collapsed' : 'shell-sidebar-frame'
         )}
       >
         {/* Logo and close button */}
         <div
           className={cn(
-            'border-sidebar-border flex h-16 items-center border-b px-4',
+            'shell-header-bar flex items-center border-b px-4',
             isCollapsed ? 'justify-center' : 'justify-between'
           )}
         >
-          <Link href="/dashboard" className="flex items-center" onClick={onClose}>
-            {isCollapsed ? (
-              <Logo variant="icon" width={32} height={32} />
-            ) : (
-              <Logo variant="full" width={160} height={32} />
+          <div
+            className={cn('flex items-center gap-2', isCollapsed && 'w-full justify-center gap-0')}
+          >
+            <div
+              className={cn(
+                'overflow-hidden transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                isCollapsed
+                  ? 'max-w-0 -translate-x-2 opacity-0'
+                  : 'max-w-[11rem] translate-x-0 opacity-100'
+              )}
+            >
+              <Link href="/dashboard" className="flex items-center" onClick={onClose}>
+                <Logo variant="full" width={156} height={34} />
+              </Link>
+            </div>
+            <div
+              className={cn(
+                'overflow-hidden transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                isCollapsed ? 'max-w-[2.5rem] scale-100 opacity-100' : 'max-w-0 scale-90 opacity-0'
+              )}
+            >
+              <div className="flex justify-center">
+                <Logo variant="icon" width={36} height={36} />
+              </div>
+            </div>
+            {toggleCollapse && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleCollapse}
+                className="shell-action text-sidebar-foreground/70 hover:text-sidebar-foreground hidden h-9 w-9 rounded-xl lg:flex"
+              >
+                {isCollapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+                <span className="sr-only">
+                  {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                </span>
+              </Button>
             )}
-          </Link>
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close sidebar</span>
-          </Button>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shell-action text-sidebar-foreground/70 hover:text-sidebar-foreground rounded-xl lg:hidden"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5" />
+              <span className="sr-only">Close sidebar</span>
+            </Button>
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="scrollbar-thin flex-1 overflow-y-auto p-4">
-          <ul className="space-y-1">
-            {navigation.map((item) => {
-              const isActive = isItemActive(item);
-              const isExpanded = expandedItems.includes(item.name);
-              const hasChildren = item.children && item.children.length > 0;
+        <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 py-4 md:py-5">
+          <div className="space-y-5">
+            {navigationSections.map((section) => (
+              <div key={section.title} className="space-y-2">
+                <div
+                  className={cn(
+                    'overflow-hidden px-3 transition-[max-height,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                    isCollapsed
+                      ? 'max-h-0 -translate-y-1 opacity-0'
+                      : 'max-h-8 translate-y-0 opacity-100'
+                  )}
+                >
+                  <p className="shell-label text-sidebar-foreground/45 whitespace-nowrap">
+                    {section.title}
+                  </p>
+                </div>
+                <ul className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive = isItemActive(item);
+                    const isExpanded = expandedItems.includes(item.name);
+                    const hasChildren = item.children && item.children.length > 0;
+                    const showExpanded = isExpanded || isActive;
 
-              return (
-                <li key={item.name}>
-                  {hasChildren ? (
-                    // Item with submenu
-                    <>
-                      <button
-                        onClick={() => toggleExpanded(item.name)}
-                        className={cn(
-                          'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors active:scale-[0.98]',
-                          isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                          isCollapsed && 'justify-center px-2'
-                        )}
-                        title={isCollapsed ? item.name : undefined}
-                      >
-                        <item.icon className="h-5 w-5 shrink-0" />
-                        {!isCollapsed && (
+                    return (
+                      <li key={item.name}>
+                        {hasChildren ? (
                           <>
-                            <span className="flex-1 text-left">{item.name}</span>
-                            <ChevronDown
+                            <button
+                              onClick={() => toggleExpanded(item.name)}
                               className={cn(
-                                'h-4 w-4 transition-transform',
-                                isExpanded && 'rotate-180'
+                                'shell-action shell-nav-item group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 font-medium active:scale-[0.99]',
+                                isActive
+                                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-[var(--10x-elev-shell-1)]'
+                                  : 'text-sidebar-foreground/72 hover:bg-primary/5 hover:text-sidebar-foreground',
+                                isCollapsed && 'justify-center px-2.5'
+                              )}
+                              title={isCollapsed ? item.name : undefined}
+                            >
+                              <item.icon className="h-4 w-4 shrink-0" />
+                              <span
+                                className={cn(
+                                  'min-w-0 flex-1 overflow-hidden text-left whitespace-nowrap transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                  isCollapsed
+                                    ? 'max-w-0 -translate-x-2 opacity-0'
+                                    : 'max-w-[9rem] translate-x-0 opacity-100'
+                                )}
+                              >
+                                {item.name}
+                              </span>
+                              <ChevronDown
+                                className={cn(
+                                  'shell-action h-4 w-4 shrink-0 transition-[opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                  showExpanded && 'rotate-180',
+                                  isCollapsed && 'pointer-events-none opacity-0'
+                                )}
+                              />
+                            </button>
+                            <div
+                              className={cn(
+                                'overflow-hidden transition-[max-height,opacity,transform,margin] duration-[var(--10x-motion-slow)] ease-[var(--10x-motion-ease-standard)]',
+                                !isCollapsed && showExpanded
+                                  ? 'mt-2 max-h-48 translate-y-0 opacity-100'
+                                  : 'mt-0 max-h-0 -translate-y-1 opacity-0'
+                              )}
+                            >
+                              <ul className="bg-primary/5 space-y-1 rounded-2xl border p-2">
+                                {item.children!.map((child) => {
+                                  const isChildActive = pathname.startsWith(child.href);
+
+                                  return (
+                                    <li key={child.href}>
+                                      <Link
+                                        href={child.href}
+                                        onClick={onClose}
+                                        className={cn(
+                                          'shell-action shell-nav-item flex items-center gap-2 rounded-xl px-3 py-2',
+                                          isChildActive
+                                            ? 'bg-sidebar-primary/10 text-sidebar-primary font-medium'
+                                            : 'text-sidebar-foreground/68 hover:bg-primary/6 hover:text-sidebar-foreground'
+                                        )}
+                                      >
+                                        <Receipt className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                                        <span>{child.name}</span>
+                                      </Link>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          </>
+                        ) : (
+                          <Link
+                            href={item.href!}
+                            onClick={onClose}
+                            className={cn(
+                              'shell-action shell-nav-item group flex items-center gap-3 rounded-2xl px-3 py-2.5 font-medium active:scale-[0.99]',
+                              isActive
+                                ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-[var(--10x-elev-shell-1)]'
+                                : 'text-sidebar-foreground/72 hover:bg-primary/5 hover:text-sidebar-foreground',
+                              isCollapsed && 'justify-center px-2.5'
+                            )}
+                            title={isCollapsed ? item.name : undefined}
+                          >
+                            <item.icon className="h-4 w-4 shrink-0" />
+                            <span
+                              className={cn(
+                                'min-w-0 flex-1 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                isCollapsed
+                                  ? 'max-w-0 -translate-x-2 opacity-0'
+                                  : 'max-w-[9rem] translate-x-0 opacity-100'
+                              )}
+                            >
+                              {item.name}
+                            </span>
+                            <ArrowUpRight
+                              className={cn(
+                                'h-3.5 w-3.5 shrink-0 transition-[opacity,transform] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+                                isActive && !isCollapsed
+                                  ? 'translate-x-0 opacity-80'
+                                  : 'pointer-events-none translate-x-1 opacity-0'
                               )}
                             />
-                          </>
+                          </Link>
                         )}
-                      </button>
-                      {/* Submenu */}
-                      {!isCollapsed && isExpanded && (
-                        <ul className="border-sidebar-border mt-1 ml-4 space-y-1 border-l pl-4">
-                          {item.children!.map((child) => {
-                            const isChildActive = pathname.startsWith(child.href);
-                            return (
-                              <li key={child.href}>
-                                <Link
-                                  href={child.href}
-                                  onClick={onClose}
-                                  className={cn(
-                                    'flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-                                    isChildActive
-                                      ? 'bg-primary/10 text-primary font-medium'
-                                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                                  )}
-                                >
-                                  {child.name}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </>
-                  ) : (
-                    // Regular item
-                    <Link
-                      href={item.href!}
-                      onClick={onClose}
-                      className={cn(
-                        'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors active:scale-[0.98]',
-                        isActive
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                        isCollapsed && 'justify-center px-2'
-                      )}
-                      title={isCollapsed ? item.name : undefined}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!isCollapsed && <span>{item.name}</span>}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         </nav>
 
         {/* Footer */}
-        <div className="border-sidebar-border border-t p-4">
-          {!isCollapsed ? (
-            <div className="flex items-center justify-between">
-              <div className="text-sidebar-foreground/50 text-xs">
-                <p>Dominion Desk v0.2.0</p>
-                <p>© 2026. All rights reserved</p>
-              </div>
-              {toggleCollapse && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleCollapse}
-                  className="hidden h-6 w-6 lg:flex"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="flex justify-center">
-              {toggleCollapse && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleCollapse}
-                  className="hidden lg:flex"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          )}
+        <div className="border-sidebar-border/80 border-t p-3">
+          <div
+            className={cn(
+              'bg-primary/5 overflow-hidden rounded-2xl border transition-[padding,opacity,max-height] duration-[var(--10x-motion-base)] ease-[var(--10x-motion-ease-standard)]',
+              isCollapsed ? 'max-h-8 px-2 py-1.5 opacity-80' : 'max-h-20 px-3 py-3 opacity-100'
+            )}
+          >
+            {!isCollapsed ? (
+              <>
+                <p className="text-sidebar-foreground/80 truncate text-sm font-semibold">
+                  Dominion Desk
+                </p>
+                <p className="text-sidebar-foreground/45 text-[11px]">v0.2.0 landlord workspace</p>
+              </>
+            ) : (
+              <div className="text-sidebar-foreground/45 text-center text-[11px]">v0.2.0</div>
+            )}
+          </div>
         </div>
       </aside>
     </>

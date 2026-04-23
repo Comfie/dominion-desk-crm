@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TenantService } from '../services/tenant.service';
 
 // Mock dependencies
@@ -88,10 +88,6 @@ describe('TenantService', () => {
   beforeEach(() => {
     service = new TenantService();
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.resetAllMocks();
   });
 
   describe('createTenant', () => {
@@ -211,6 +207,8 @@ describe('TenantService', () => {
         id: 'property-123',
         name: 'Test Property',
         userId: mockUserId,
+        allowsMultipleTenants: false,
+        tenants: [],
       };
 
       vi.mocked(prisma.tenant.findFirst).mockResolvedValue(null);
@@ -266,6 +264,7 @@ describe('TenantService', () => {
       vi.mocked(prisma.property.findFirst).mockResolvedValue({
         id: 'property-123',
         userId: mockUserId,
+        allowsMultipleTenants: false,
       } as never);
       vi.mocked(prisma.propertyTenant.findFirst).mockResolvedValue({
         id: 'existing-assignment',

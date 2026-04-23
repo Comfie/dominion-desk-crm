@@ -7,6 +7,7 @@ import { Search, Grid3x3, List, Loader2, FileText, Home, ChevronRight } from 'lu
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { PortalShell } from '@/components/portal/portal-shell';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { FolderTree } from '@/components/documents/folder-tree';
 import { DocumentGrid } from '@/components/documents/document-grid';
-import { DocumentFolder, Document } from '@/types/document';
+import type { DocumentFolder, Document } from '@/types/document';
 
 export default function TenantDocumentsPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -71,10 +72,9 @@ export default function TenantDocumentsPage() {
   const currentFolder = folders.find((f) => f.id === selectedFolderId);
 
   return (
-    <div className="bg-background flex min-h-screen flex-col">
-      <div className="container mx-auto flex-1 space-y-6 px-4 py-8">
-        {/* Header */}
-        <div>
+    <PortalShell>
+      <div className="portal-page">
+        <div className="portal-page-header">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -91,22 +91,46 @@ export default function TenantDocumentsPage() {
             </BreadcrumbList>
           </Breadcrumb>
 
-          <div className="mt-4">
-            <h1 className="text-2xl font-bold">My Documents</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {currentFolder ? `${currentFolder.name}` : 'All Documents'}
-            </p>
+          <div className="portal-hero">
+            <div className="space-y-4">
+              <span className="portal-kicker">Tenant records</span>
+              <div className="space-y-2">
+                <h1 className="portal-page-title">My Documents</h1>
+                <p className="portal-page-description">
+                  {currentFolder
+                    ? `${currentFolder.name} documents, ready to review or download.`
+                    : 'Keep lease agreements, ID records, and uploaded files in one place.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <div className="portal-stat-card min-w-[10rem] px-4 py-3">
+                  <p className="portal-eyebrow">Visible files</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{documents.length}</p>
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+                  {currentFolder ? `${currentFolder.name}` : 'All Documents'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {/* Sidebar - Folder Tree */}
-          <div className={`lg:col-span-1 ${showFolders ? 'block' : 'hidden lg:block'}`}>
-            <Card>
-              <CardContent className="p-4">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[17rem_minmax(0,1fr)]">
+          <div className={`${showFolders ? 'block' : 'hidden xl:block'}`}>
+            <Card className="portal-panel">
+              <CardContent className="p-4 sm:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="portal-eyebrow">Browse</p>
+                    <h2 className="mt-1 text-lg font-semibold text-white">Folders</h2>
+                  </div>
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/65">
+                    {folders.length}
+                  </div>
+                </div>
                 {foldersLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    <Loader2 className="h-6 w-6 animate-spin text-white/45" />
                   </div>
                 ) : (
                   <FolderTree
@@ -114,7 +138,7 @@ export default function TenantDocumentsPage() {
                     selectedFolderId={selectedFolderId}
                     onSelectFolder={(id) => {
                       handleFolderSelect(id);
-                      setShowFolders(false); // Close on mobile after selection
+                      setShowFolders(false);
                     }}
                     readOnly
                     showDocumentCount
@@ -124,27 +148,25 @@ export default function TenantDocumentsPage() {
             </Card>
           </div>
 
-          {/* Main Content - Documents */}
-          <div className="space-y-4 lg:col-span-3">
-            {/* Toolbar */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center gap-4 sm:flex-row">
-                  <div className="relative w-full flex-1">
-                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <div className="space-y-5">
+            <Card className="portal-panel-muted portal-panel">
+              <CardContent className="p-4 sm:p-5">
+                <div className="portal-toolbar">
+                  <div className="relative w-full max-w-xl flex-1">
+                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-white/40" />
                     <Input
                       placeholder="Search documents..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+                      className="border-white/10 bg-white/5 pl-10 text-white placeholder:text-white/35"
                     />
                   </div>
 
-                  <div className="flex w-full items-center gap-2 sm:w-auto">
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 sm:flex-none lg:hidden"
+                      className="flex-1 border-white/10 bg-white/5 text-white hover:bg-white/10 xl:hidden"
                       onClick={() => setShowFolders(!showFolders)}
                     >
                       <FileText className="mr-2 h-4 w-4" />
@@ -153,6 +175,11 @@ export default function TenantDocumentsPage() {
                     <Button
                       variant={viewMode === 'grid' ? 'default' : 'outline'}
                       size="sm"
+                      className={
+                        viewMode === 'grid'
+                          ? 'bg-sky-400/90 text-slate-950 hover:bg-sky-300'
+                          : 'border-white/10 bg-white/5 text-white hover:bg-white/10'
+                      }
                       onClick={() => setViewMode('grid')}
                     >
                       <Grid3x3 className="h-4 w-4" />
@@ -160,6 +187,11 @@ export default function TenantDocumentsPage() {
                     <Button
                       variant={viewMode === 'list' ? 'default' : 'outline'}
                       size="sm"
+                      className={
+                        viewMode === 'list'
+                          ? 'bg-sky-400/90 text-slate-950 hover:bg-sky-300'
+                          : 'border-white/10 bg-white/5 text-white hover:bg-white/10'
+                      }
                       onClick={() => setViewMode('list')}
                     >
                       <List className="h-4 w-4" />
@@ -169,12 +201,11 @@ export default function TenantDocumentsPage() {
               </CardContent>
             </Card>
 
-            {/* Documents Grid/List */}
-            <Card>
-              <CardContent className="p-6">
+            <Card className="portal-panel">
+              <CardContent className="p-5 sm:p-6">
                 {documentsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <div className="flex items-center justify-center py-14">
+                    <Loader2 className="h-8 w-8 animate-spin text-white/45" />
                   </div>
                 ) : documents.length > 0 ? (
                   <DocumentGrid
@@ -185,10 +216,10 @@ export default function TenantDocumentsPage() {
                     readOnly
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <FileText className="mb-4 h-12 w-12 text-gray-400" />
-                    <h3 className="mb-2 text-lg font-semibold">No documents found</h3>
-                    <p className="text-gray-500">
+                  <div className="portal-empty-state flex flex-col items-center justify-center px-6 py-14 text-center">
+                    <FileText className="mb-4 h-12 w-12 text-white/35" />
+                    <h3 className="mb-2 text-lg font-semibold text-white">No documents found</h3>
+                    <p className="max-w-md text-sm text-white/60">
                       {searchQuery
                         ? 'No documents match your search criteria.'
                         : currentFolder
@@ -202,14 +233,6 @@ export default function TenantDocumentsPage() {
           </div>
         </div>
       </div>
-      {/* Footer */}
-      <footer className="border-border bg-background border-t py-6">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} DominionDesk. All rights reserved.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PortalShell>
   );
 }

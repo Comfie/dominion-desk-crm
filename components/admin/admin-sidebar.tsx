@@ -48,7 +48,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="shell-scrim fixed inset-0 z-40 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -57,25 +57,33 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-card fixed inset-y-0 left-0 z-50 w-64 transform border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0',
+          'shell-surface-strong shell-action shell-sidebar-frame fixed inset-y-0 left-0 z-50 transform border-r backdrop-blur-xl lg:relative lg:h-dvh lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex h-16 items-center justify-between border-b px-6">
-            <Link href="/admin/users" className="flex items-center gap-2">
-              <Logo variant="icon" width={32} height={32} />
-              <span className="text-muted-foreground text-sm font-medium">Admin</span>
+          <div className="shell-header-bar flex items-center justify-between border-b px-4">
+            <Link href="/admin/users" className="flex items-center gap-3">
+              <Logo variant="icon" width={36} height={36} />
+              <div className="space-y-1">
+                <p className="shell-label">Operations Console</p>
+                <span className="text-sm font-semibold text-white">Admin</span>
+              </div>
             </Link>
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shell-action admin-subtle rounded-xl hover:text-white lg:hidden"
+              onClick={onClose}
+            >
               <X className="h-5 w-5" />
             </Button>
           </div>
 
           {/* Navigation */}
-          <div className="flex-1 overflow-y-auto px-3 py-4">
-            <nav className="space-y-1">
+          <div className="scrollbar-thin flex-1 overflow-y-auto px-3 py-4 md:py-5">
+            <nav className="space-y-1.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -85,10 +93,10 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      'shell-action shell-nav-item flex items-center gap-3 rounded-2xl px-3 py-2.5 font-medium',
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? 'bg-sky-400/90 text-slate-950 shadow-[var(--10x-elev-shell-1)]'
+                        : 'admin-subtle hover:bg-white/6 hover:text-white'
                     )}
                     onClick={() => {
                       if (window.innerWidth < 1024) {
@@ -106,13 +114,15 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
           {/* Footer - User info */}
           <div className="border-t p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                <Shield className="text-primary h-5 w-5" />
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-medium">Super Admin</p>
-                <p className="text-muted-foreground text-xs">Platform Administrator</p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-400/15">
+                  <Shield className="h-5 w-5 text-sky-300" />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-sm font-semibold text-white">Super Admin</p>
+                  <p className="shell-support text-xs">Platform Administrator</p>
+                </div>
               </div>
             </div>
           </div>

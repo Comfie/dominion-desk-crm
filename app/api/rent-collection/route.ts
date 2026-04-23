@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { paymentService } from '@/lib/features/payments/services/payment.service';
+import { getArrearsWorkflow } from '@/lib/features/tasks/utils/landlord-workflows';
 import { PaymentStatus } from '@prisma/client';
 import { logger } from '@/lib/shared/logger';
 import { handleApiError } from '@/lib/shared/errors';
@@ -68,6 +70,66 @@ export async function GET(req: NextRequest) {
       status,
     });
 
+    const paymentIds = data.properties.flatMap((property) =>
+      property.tenants
+        .map((tenant) => tenant.payment?.id)
+        .filter((paymentId): paymentId is string => Boolean(paymentId))
+    );
+
+    const followUpTasks =
+      paymentIds.length > 0
+        ? await prisma.task.findMany({
+            where: {
+              userId,
+              taskType: 'PAYMENT_REMINDER',
+              relatedType: 'payment',
+              relatedId: { in: paymentIds },
+              status: { in: ['TODO', 'IN_PROGRESS'] },
+            },
+            select: {
+              id: true,
+              relatedId: true,
+              status: true,
+              priority: true,
+              dueDate: true,
+            },
+          })
+        : [];
+
+    const followUpTaskMap = new Map(
+      followUpTasks.map((task) => [task.relatedId, task] as const).filter((entry) => entry[0])
+    );
+
+    const enrichedProperties = data.properties.map((property) => ({
+      ...property,
+      tenants: property.tenants.map((tenant) => {
+        const arrearsWorkflow = tenant.payment
+          ? getArrearsWorkflow(
+              tenant.payment.status,
+              tenant.payment.dueDate ? new Date(tenant.payment.dueDate) : null
+            )
+          : null;
+
+        return {
+          ...tenant,
+          arrearsWorkflow: arrearsWorkflow
+            ? {
+                ...arrearsWorkflow,
+                task: followUpTaskMap.get(tenant.payment!.id) || null,
+              }
+            : null,
+        };
+      }),
+    }));
+
+    const paymentsWithoutFollowUpTask = enrichedProperties.reduce((count, property) => {
+      return (
+        count +
+        property.tenants.filter((tenant) => tenant.arrearsWorkflow && !tenant.arrearsWorkflow.task)
+          .length
+      );
+    }, 0);
+
     logger.info('Rent collection data retrieved', {
       userId,
       month,
@@ -77,7 +139,15 @@ export async function GET(req: NextRequest) {
       propertiesCount: data.properties.length,
     });
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...data,
+      properties: enrichedProperties,
+      summary: {
+        ...data.summary,
+        openFollowUpTasks: followUpTasks.length,
+        paymentsWithoutFollowUpTask,
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }

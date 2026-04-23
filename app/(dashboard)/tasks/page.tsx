@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
@@ -40,12 +40,14 @@ async function fetchTasks(params: {
   status?: string;
   priority?: string;
   taskType?: string;
+  relatedType?: string;
   page?: number;
 }) {
   const searchParams = new URLSearchParams();
   if (params.status) searchParams.set('status', params.status);
   if (params.priority) searchParams.set('priority', params.priority);
   if (params.taskType) searchParams.set('taskType', params.taskType);
+  if (params.relatedType) searchParams.set('relatedType', params.relatedType);
   if (params.page) searchParams.set('page', params.page.toString());
 
   const response = await fetch(`/api/tasks?${searchParams.toString()}`);
@@ -57,16 +59,32 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [relatedTypeFilter, setRelatedTypeFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const statusParam = params.get('status');
+    const taskTypeParam = params.get('taskType');
+    const priorityParam = params.get('priority');
+    const relatedTypeParam = params.get('relatedType');
+
+    setActiveTab(statusParam ? statusParam.toLowerCase() : 'all');
+    setTypeFilter(taskTypeParam || '');
+    setPriorityFilter(priorityParam || '');
+    setRelatedTypeFilter(relatedTypeParam || '');
+    setPage(1);
+  }, []);
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['tasks', activeTab, priorityFilter, typeFilter, page],
+    queryKey: ['tasks', activeTab, priorityFilter, typeFilter, relatedTypeFilter, page],
     queryFn: () =>
       fetchTasks({
         status: activeTab === 'all' ? undefined : activeTab.toUpperCase(),
         priority: priorityFilter,
         taskType: typeFilter,
+        relatedType: relatedTypeFilter,
         page,
       }),
   });

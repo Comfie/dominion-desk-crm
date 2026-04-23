@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { TenantStatus, EmploymentStatus, TenantType } from '@prisma/client';
+import { isAllowedTenantDateOfBirth, TENANT_DATE_OF_BIRTH_ERROR } from '../date-of-birth';
+import { isValidLeaseDateRange, LEASE_END_DATE_ERROR } from '../lease-dates';
 
 // Employment status enum
 export const employmentStatusEnum = z.nativeEnum(EmploymentStatus);
@@ -13,51 +15,76 @@ export const tenantStatusEnum = z.nativeEnum(TenantStatus);
 /**
  * Create Tenant DTO - includes all fields for tenant creation
  */
-export const createTenantSchema = z.object({
-  // Required fields
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().min(1, 'Phone is required'),
+export const createTenantSchema = z
+  .object({
+    // Required fields
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    email: z.string().email('Invalid email'),
+    phone: z.string().min(1, 'Phone is required'),
 
-  // Optional personal info
-  alternatePhone: z.string().optional().nullable(),
-  idNumber: z.string().optional().nullable(),
-  idType: z.string().optional().nullable(),
-  dateOfBirth: z.string().optional().nullable(),
-  currentAddress: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  province: z.string().optional().nullable(),
-  postalCode: z.string().optional().nullable(),
+    // Optional personal info
+    alternatePhone: z.string().optional().nullable(),
+    idNumber: z.string().optional().nullable(),
+    idType: z.string().optional().nullable(),
+    dateOfBirth: z.string().optional().nullable(),
+    currentAddress: z.string().optional().nullable(),
+    city: z.string().optional().nullable(),
+    province: z.string().optional().nullable(),
+    postalCode: z.string().optional().nullable(),
 
-  // Employment info
-  employmentStatus: employmentStatusEnum.optional().nullable(),
-  employer: z.string().optional().nullable(),
-  employerPhone: z.string().optional().nullable(),
-  monthlyIncome: z.number().optional().nullable(),
+    // Employment info
+    employmentStatus: employmentStatusEnum.optional().nullable(),
+    employer: z.string().optional().nullable(),
+    employerPhone: z.string().optional().nullable(),
+    monthlyIncome: z.number().optional().nullable(),
 
-  // Emergency contact
-  emergencyContactName: z.string().optional().nullable(),
-  emergencyContactPhone: z.string().optional().nullable(),
-  emergencyContactRelation: z.string().optional().nullable(),
+    // Emergency contact
+    emergencyContactName: z.string().optional().nullable(),
+    emergencyContactPhone: z.string().optional().nullable(),
+    emergencyContactRelation: z.string().optional().nullable(),
 
-  // Tenant classification
-  tenantType: tenantTypeEnum.default('TENANT'),
-  notes: z.string().optional().nullable(),
+    // Tenant classification
+    tenantType: tenantTypeEnum.default('TENANT'),
+    notes: z.string().optional().nullable(),
 
-  // Portal access - when enabled, creates User account with auto-generated password
-  createPortalAccess: z.boolean().optional().default(false),
+    // Portal access - when enabled, creates User account with auto-generated password
+    createPortalAccess: z.boolean().optional().default(false),
 
-  // Property assignment - optionally link tenant to property
-  assignProperty: z.boolean().optional().default(false),
-  propertyId: z.string().optional().nullable(),
-  leaseStartDate: z.string().optional().nullable(),
-  leaseEndDate: z.string().optional().nullable(),
-  propertyMonthlyRent: z.number().optional().nullable(),
-  propertyDepositPaid: z.number().optional().nullable(),
-  propertyMoveInDate: z.string().optional().nullable(),
-  propertyUnitLabel: z.string().optional().nullable(),
-});
+    // Property assignment - optionally link tenant to property
+    assignProperty: z.boolean().optional().default(false),
+    propertyId: z.string().optional().nullable(),
+    leaseStartDate: z.string().optional().nullable(),
+    leaseEndDate: z.string().optional().nullable(),
+    propertyMonthlyRent: z.number().optional().nullable(),
+    propertyDepositPaid: z.number().optional().nullable(),
+    propertyMoveInDate: z.string().optional().nullable(),
+    propertyUnitLabel: z.string().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    const dateOfBirth = data.dateOfBirth?.trim();
+
+    if (dateOfBirth && !isAllowedTenantDateOfBirth(dateOfBirth)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: TENANT_DATE_OF_BIRTH_ERROR,
+        path: ['dateOfBirth'],
+      });
+    }
+
+    if (
+      data.assignProperty &&
+      data.leaseStartDate &&
+      data.leaseEndDate &&
+      !isValidLeaseDateRange(data.leaseStartDate, data.leaseEndDate)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: LEASE_END_DATE_ERROR,
+        path: ['leaseEndDate'],
+      });
+    }
+  });
 
 export type CreateTenantDTO = z.infer<typeof createTenantSchema>;
 
@@ -116,15 +143,25 @@ export type TenantIdDTO = z.infer<typeof tenantIdSchema>;
 /**
  * Property Assignment DTO - for linking tenant to property
  */
-export const propertyAssignmentSchema = z.object({
-  propertyId: z.string().min(1, 'Property ID is required'),
-  leaseStartDate: z.string().min(1, 'Lease start date is required'),
-  leaseEndDate: z.string().optional().nullable(),
-  monthlyRent: z.number().positive('Monthly rent must be positive'),
-  depositPaid: z.number().min(0).optional().default(0),
-  moveInDate: z.string().optional().nullable(),
-  unitLabel: z.string().optional().nullable(),
-});
+export const propertyAssignmentSchema = z
+  .object({
+    propertyId: z.string().min(1, 'Property ID is required'),
+    leaseStartDate: z.string().min(1, 'Lease start date is required'),
+    leaseEndDate: z.string().optional().nullable(),
+    monthlyRent: z.number().positive('Monthly rent must be positive'),
+    depositPaid: z.number().min(0).optional().default(0),
+    moveInDate: z.string().optional().nullable(),
+    unitLabel: z.string().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.leaseEndDate && !isValidLeaseDateRange(data.leaseStartDate, data.leaseEndDate)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: LEASE_END_DATE_ERROR,
+        path: ['leaseEndDate'],
+      });
+    }
+  });
 
 export type PropertyAssignmentDTO = z.infer<typeof propertyAssignmentSchema>;
 

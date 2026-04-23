@@ -27,14 +27,16 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
   if (!data) return null;
 
   return (
-    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-      <Card className="col-span-4" variant="elevated">
-        <CardHeader>
-          <CardTitle>Revenue Overview</CardTitle>
-          <CardDescription>Monthly revenue for the last 6 months</CardDescription>
+    <div className="grid gap-5 xl:grid-cols-5">
+      <Card className="xl:col-span-3" variant="elevated">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="text-base">Revenue Overview</CardTitle>
+          <CardDescription className="text-xs">
+            Monthly revenue for the last 6 months
+          </CardDescription>
         </CardHeader>
-        <CardContent className="pl-2">
-          <ResponsiveContainer width="100%" height={350}>
+        <CardContent className="pt-0 pr-4 pb-4 pl-2">
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={data.revenue}>
               <XAxis
                 dataKey="name"
@@ -64,13 +66,15 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </CardContent>
       </Card>
 
-      <Card className="col-span-3" variant="elevated">
-        <CardHeader>
-          <CardTitle>Property Status</CardTitle>
-          <CardDescription>Current distribution of property statuses</CardDescription>
+      <Card className="xl:col-span-2" variant="elevated">
+        <CardHeader className="p-5 pb-3">
+          <CardTitle className="text-base">Property Status</CardTitle>
+          <CardDescription className="text-xs">
+            Current distribution of property statuses
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex h-[350px] w-full items-center justify-center">
+        <CardContent className="px-4 pt-0 pb-4">
+          <div className="flex h-[240px] w-full items-center justify-center">
             {data.propertyStatus.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -78,8 +82,8 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                     data={data.propertyStatus}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={50}
+                    outerRadius={68}
                     paddingAngle={5}
                     dataKey="value"
                   >

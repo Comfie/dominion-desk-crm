@@ -92,15 +92,15 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-sky-400 text-slate-950 hover:bg-sky-300">
           <UserPlus className="mr-2 h-4 w-4" />
           Create User
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="admin-dialog sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New User Account</DialogTitle>
+            <DialogTitle className="text-white">Create New User Account</DialogTitle>
             <DialogDescription>
               Create a new landlord account. The user will receive an email with their login
               credentials and will be required to change their password on first login.
@@ -113,6 +113,7 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
                 id="email"
                 type="email"
                 placeholder="user@example.com"
+                className="admin-input"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
@@ -126,6 +127,7 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
                   id="firstName"
                   type="text"
                   placeholder="John"
+                  className="admin-input"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   required
@@ -138,6 +140,7 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
                   id="lastName"
                   type="text"
                   placeholder="Doe"
+                  className="admin-input"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   required
@@ -152,10 +155,10 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
                 onValueChange={(value) => setFormData({ ...formData, subscriptionTier: value })}
                 disabled={loading}
               >
-                <SelectTrigger id="subscriptionTier">
+                <SelectTrigger id="subscriptionTier" className="admin-input">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-dialog">
                   <SelectItem value="FREE">Free (1 property)</SelectItem>
                   <SelectItem value="STARTER">Starter (5 properties - R199/month)</SelectItem>
                   <SelectItem value="PROFESSIONAL">
@@ -170,12 +173,17 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
             <Button
               type="button"
               variant="outline"
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
               onClick={() => setOpen(false)}
               disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              className="bg-sky-400 text-slate-950 hover:bg-sky-300"
+              disabled={loading}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Account
             </Button>

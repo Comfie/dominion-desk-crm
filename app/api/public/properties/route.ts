@@ -11,7 +11,8 @@ export async function GET(request: Request) {
     const bedrooms = searchParams.get('bedrooms');
 
     const where: Record<string, unknown> = {
-      status: { in: ['ACTIVE', 'OCCUPIED'] },
+      status: 'ACTIVE',
+      isAvailable: true,
     };
 
     if (city) {

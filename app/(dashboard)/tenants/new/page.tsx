@@ -11,6 +11,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  getLatestAllowedTenantDateOfBirthInputValue,
+  isAllowedTenantDateOfBirth,
+  TENANT_DATE_OF_BIRTH_ERROR,
+} from '@/lib/features/tenants/date-of-birth';
 import { useToast } from '@/hooks/use-toast';
 
 const tenantSchema = z
@@ -96,6 +102,16 @@ const tenantSchema = z
     }
   )
   .superRefine((data, ctx) => {
+    const dateOfBirth = data.dateOfBirth?.trim();
+
+    if (dateOfBirth && !isAllowedTenantDateOfBirth(dateOfBirth)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: TENANT_DATE_OF_BIRTH_ERROR,
+        path: ['dateOfBirth'],
+      });
+    }
+
     if (data.tenantType === 'TENANT') {
       if (!data.idNumber?.trim()) {
         ctx.addIssue({
@@ -104,7 +120,7 @@ const tenantSchema = z
           path: ['idNumber'],
         });
       }
-      if (!data.dateOfBirth?.trim()) {
+      if (!dateOfBirth) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Date of birth is required',
@@ -149,7 +165,17 @@ const provinces = [
   'Western Cape',
 ];
 
-async function fetchAvailableProperties(startDate?: string, endDate?: string) {
+type AvailableProperty = {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+};
+
+async function fetchAvailableProperties(
+  startDate?: string,
+  endDate?: string
+): Promise<AvailableProperty[]> {
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
@@ -165,6 +191,7 @@ function NewTenantForm() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const latestAllowedDateOfBirth = getLatestAllowedTenantDateOfBirthInputValue();
 
   const propertyIdFromUrl = searchParams.get('propertyId');
   const leaseStartFromUrl = searchParams.get('leaseStartDate');
@@ -194,6 +221,10 @@ function NewTenantForm() {
   });
 
   const tenantType = watch('tenantType');
+  const dateOfBirth = watch('dateOfBirth');
+  const formLeaseStartDate = watch('leaseStartDate');
+  const formLeaseEndDate = watch('leaseEndDate');
+  const propertyMoveInDate = watch('propertyMoveInDate');
 
   // Pre-fill form from URL parameters (from inquiry conversion)
   useEffect(() => {
@@ -373,7 +404,19 @@ function NewTenantForm() {
                   Date of Birth{' '}
                   {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
                 </Label>
-                <Input id="dateOfBirth" type="date" {...register('dateOfBirth')} />
+                <DatePicker
+                  id="dateOfBirth"
+                  value={dateOfBirth}
+                  max={latestAllowedDateOfBirth}
+                  placeholder="Choose a birth date"
+                  onChange={(value) =>
+                    setValue('dateOfBirth', value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })
+                  }
+                />
                 {errors.dateOfBirth && (
                   <p className="text-destructive text-sm">{errors.dateOfBirth.message}</p>
                 )}
@@ -570,8 +613,8 @@ function NewTenantForm() {
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="text-sm text-blue-900">
                   <strong>📧 Portal Access:</strong> A secure password will be automatically
-                  generated based on the tenant's name and year. The tenant will receive an email
-                  with their login credentials at{' '}
+                  generated based on the tenant&apos;s name and year. The tenant will receive an
+                  email with their login credentials at{' '}
                   <span className="font-semibold">/portal/login</span>
                 </p>
               </div>
@@ -616,7 +659,7 @@ function NewTenantForm() {
                           Loading properties...
                         </SelectItem>
                       ) : availableProperties && availableProperties.length > 0 ? (
-                        availableProperties.map((property: any) => (
+                        availableProperties.map((property) => (
                           <SelectItem key={property.id} value={property.id}>
                             {property.name} - {property.address}, {property.city}
                           </SelectItem>
@@ -636,22 +679,36 @@ function NewTenantForm() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="leaseStartDate">Lease Start Date *</Label>
-                    <Input
+                    <DatePicker
                       id="leaseStartDate"
-                      type="date"
-                      {...register('leaseStartDate')}
-                      onChange={(e) => setLeaseStartDate(e.target.value)}
+                      value={formLeaseStartDate}
+                      placeholder="Choose a lease start date"
+                      onChange={(value) => {
+                        setValue('leaseStartDate', value, {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        });
+                        setLeaseStartDate(value);
+                      }}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="leaseEndDate">Lease End Date *</Label>
-                    <Input
+                    <DatePicker
                       id="leaseEndDate"
-                      type="date"
-                      {...register('leaseEndDate')}
-                      onChange={(e) => setLeaseEndDate(e.target.value)}
-                      required={assignProperty}
+                      value={formLeaseEndDate}
+                      min={formLeaseStartDate}
+                      placeholder="Choose a lease end date"
+                      onChange={(value) => {
+                        setValue('leaseEndDate', value, {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        });
+                        setLeaseEndDate(value);
+                      }}
                     />
                   </div>
                 </div>
@@ -692,7 +749,19 @@ function NewTenantForm() {
 
                 <div className="space-y-2">
                   <Label htmlFor="propertyMoveInDate">Move-In Date</Label>
-                  <Input id="propertyMoveInDate" type="date" {...register('propertyMoveInDate')} />
+                  <DatePicker
+                    id="propertyMoveInDate"
+                    value={propertyMoveInDate}
+                    min={formLeaseStartDate}
+                    placeholder="Choose a move-in date"
+                    onChange={(value) =>
+                      setValue('propertyMoveInDate', value, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  />
                 </div>
               </div>
             )}

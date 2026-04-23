@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StatsCard } from '@/components/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,37 +57,37 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/admin/analytics');
-        if (!response.ok) {
-          throw new Error('Failed to fetch analytics');
-        }
-        const data = await response.json();
-        setAnalytics(data);
-      } catch (error) {
-        console.error('Error fetching analytics:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load analytics. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/analytics');
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
       }
-    };
+      const data = await response.json();
+      setAnalytics(data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load analytics. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
+  useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-          <p className="text-muted-foreground mt-2">Loading analytics...</p>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-white/45 border-r-transparent"></div>
+          <p className="mt-2 text-white/55">Loading analytics...</p>
         </div>
       </div>
     );
@@ -98,13 +98,21 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Platform Analytics</h1>
-        <p className="text-muted-foreground">Overview of platform performance and metrics</p>
+    <div className="admin-page">
+      <div className="admin-page-header">
+        <div className="admin-hero">
+          <div className="space-y-4">
+            <span className="admin-kicker">Platform intelligence</span>
+            <div className="space-y-2">
+              <h1 className="admin-page-title font-semibold">Platform Analytics</h1>
+              <p className="admin-page-description">
+                Track revenue, adoption, signups, and churn metrics across the full platform.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total MRR"
@@ -160,33 +168,34 @@ export default function AdminAnalyticsPage() {
         />
       </div>
 
-      {/* Revenue Breakdown */}
-      <Card>
+      <Card className="admin-panel">
         <CardHeader>
-          <CardTitle>Revenue by Subscription Tier</CardTitle>
-          <CardDescription>Monthly recurring revenue breakdown</CardDescription>
+          <CardTitle className="text-white">Revenue by Subscription Tier</CardTitle>
+          <CardDescription className="text-white/60">
+            Monthly recurring revenue breakdown
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="flex flex-col gap-2">
-              <span className="text-muted-foreground text-sm">Free</span>
-              <span className="text-2xl font-bold">R{analytics.revenueByTier.FREE}</span>
+              <span className="text-sm text-white/55">Free</span>
+              <span className="text-2xl font-bold text-white">R{analytics.revenueByTier.FREE}</span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-muted-foreground text-sm">Starter</span>
-              <span className="text-2xl font-bold">
+              <span className="text-sm text-white/55">Starter</span>
+              <span className="text-2xl font-bold text-white">
                 R{analytics.revenueByTier.STARTER.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-muted-foreground text-sm">Professional</span>
-              <span className="text-2xl font-bold">
+              <span className="text-sm text-white/55">Professional</span>
+              <span className="text-2xl font-bold text-white">
                 R{analytics.revenueByTier.PROFESSIONAL.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-muted-foreground text-sm">Enterprise</span>
-              <span className="text-2xl font-bold">
+              <span className="text-sm text-white/55">Enterprise</span>
+              <span className="text-2xl font-bold text-white">
                 R{analytics.revenueByTier.ENTERPRISE.toLocaleString()}
               </span>
             </div>
@@ -194,29 +203,31 @@ export default function AdminAnalyticsPage() {
         </CardContent>
       </Card>
 
-      {/* Recent Activity */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="admin-panel">
           <CardHeader>
-            <CardTitle>Recent Signups</CardTitle>
-            <CardDescription>Last 7 days</CardDescription>
+            <CardTitle className="text-white">Recent Signups</CardTitle>
+            <CardDescription className="text-white/60">Last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
             {analytics.recentSignups.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No recent signups</p>
+              <p className="text-sm text-white/55">No recent signups</p>
             ) : (
               <div className="space-y-4">
                 {analytics.recentSignups.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3"
+                  >
                     <div>
-                      <p className="font-medium">
+                      <p className="font-medium text-white">
                         {user.firstName} {user.lastName}
                       </p>
-                      <p className="text-muted-foreground text-sm">{user.email}</p>
+                      <p className="text-sm text-white/55">{user.email}</p>
                     </div>
                     <div className="text-right">
                       <Badge variant="outline">{user.subscriptionTier}</Badge>
-                      <p className="text-muted-foreground mt-1 text-xs">
+                      <p className="mt-1 text-xs text-white/45">
                         {formatDistanceToNow(new Date(user.createdAt), {
                           addSuffix: true,
                         })}
@@ -229,27 +240,30 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-panel">
           <CardHeader>
-            <CardTitle>Recent Cancellations</CardTitle>
-            <CardDescription>Last 7 days</CardDescription>
+            <CardTitle className="text-white">Recent Cancellations</CardTitle>
+            <CardDescription className="text-white/60">Last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
             {analytics.recentCancellations.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No recent cancellations</p>
+              <p className="text-sm text-white/55">No recent cancellations</p>
             ) : (
               <div className="space-y-4">
                 {analytics.recentCancellations.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3"
+                  >
                     <div>
-                      <p className="font-medium">
+                      <p className="font-medium text-white">
                         {user.firstName} {user.lastName}
                       </p>
-                      <p className="text-muted-foreground text-sm">{user.email}</p>
+                      <p className="text-sm text-white/55">{user.email}</p>
                     </div>
                     <div className="text-right">
                       <Badge variant="outline">{user.subscriptionTier}</Badge>
-                      <p className="text-muted-foreground mt-1 text-xs">
+                      <p className="mt-1 text-xs text-white/45">
                         {formatDistanceToNow(new Date(user.updatedAt), {
                           addSuffix: true,
                         })}

@@ -3,28 +3,29 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
+  AlertCircle,
+  ArrowRight,
   Building2,
   Calendar,
-  Users,
+  CheckCircle,
+  Clock,
   DollarSign,
   MessageSquare,
-  Wrench,
   Plus,
-  ArrowRight,
-  TrendingUp,
   TrendingDown,
-  Clock,
-  CheckCircle,
-  AlertCircle,
+  TrendingUp,
+  Users,
+  Wrench,
 } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency, formatDate } from '@/lib/utils';
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts';
+import { PageHeader } from '@/components/shared';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface PaymentWithTenant {
   id: string;
@@ -122,6 +123,30 @@ async function fetchSubscriptionStatus() {
   return response.json();
 }
 
+function getRevenueDirection(change: number) {
+  if (change > 0) {
+    return {
+      icon: TrendingUp,
+      tone: 'text-emerald-600',
+      label: `${Math.abs(change)}% vs last month`,
+    };
+  }
+
+  if (change < 0) {
+    return {
+      icon: TrendingDown,
+      tone: 'text-red-600',
+      label: `${Math.abs(change)}% vs last month`,
+    };
+  }
+
+  return {
+    icon: DollarSign,
+    tone: 'text-muted-foreground',
+    label: 'Flat vs last month',
+  };
+}
+
 export default function DashboardPage() {
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
@@ -144,17 +169,22 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="h-10 w-36" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+          <Skeleton className="h-60" />
+          <Skeleton className="h-60" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[...Array(4)].map((_, index) => (
+            <Skeleton key={index} className="h-28" />
           ))}
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-80" />
-          <Skeleton className="h-80" />
+        <Skeleton className="h-12 w-full max-w-md" />
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
         </div>
       </div>
     );
@@ -162,717 +192,867 @@ export default function DashboardPage() {
 
   const stats = data?.stats;
   const longTerm = data?.longTerm;
+  const revenueDirection = getRevenueDirection(stats?.revenueChange || 0);
+  const RevenueTrendIcon = revenueDirection.icon;
+
+  const overviewStats = [
+    {
+      label: 'Properties',
+      value: stats?.totalProperties || 0,
+      hint: `${stats?.propertiesWithTenants || 0} with active tenants`,
+      icon: Building2,
+      iconClassName: 'bg-primary/10 text-primary',
+    },
+    {
+      label: 'Tenants',
+      value: stats?.totalTenants || 0,
+      hint: `${stats?.activeLeases || 0} active lease records`,
+      icon: Users,
+      iconClassName: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+    },
+    {
+      label: 'Maintenance',
+      value: stats?.activeMaintenance || 0,
+      hint: `${stats?.staleMaintenanceCount || 0} aged cases`,
+      icon: Wrench,
+      iconClassName: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300',
+    },
+    {
+      label: 'Inquiries',
+      value: stats?.pendingInquiries || 0,
+      hint: `${stats?.activeBookings || 0} active bookings`,
+      icon: MessageSquare,
+      iconClassName: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+    },
+  ];
+
+  const focusItems = [
+    {
+      title: 'Collect rent',
+      value: formatCurrency(stats?.outstandingPayments || 0),
+      description: `${stats?.paymentsWithIssuesCount || 0} payments need follow-up`,
+      href: '/financials/income',
+      icon: DollarSign,
+      badge:
+        (stats?.paymentsWithIssuesCount || 0) > 0
+          ? `${stats?.paymentsWithIssuesCount} open`
+          : 'Clear',
+      tone:
+        (stats?.paymentsWithIssuesCount || 0) > 0
+          ? 'border-yellow-200 bg-yellow-50/70 dark:border-yellow-900 dark:bg-yellow-950/30'
+          : 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/30',
+    },
+    {
+      title: 'Resolve maintenance',
+      value: `${stats?.activeMaintenance || 0}`,
+      description: `${stats?.staleMaintenanceCount || 0} requests older than 5 days`,
+      href: '/maintenance',
+      icon: Wrench,
+      badge:
+        (stats?.staleMaintenanceCount || 0) > 0
+          ? `${stats?.staleMaintenanceCount} stale`
+          : 'On track',
+      tone:
+        (stats?.staleMaintenanceCount || 0) > 0
+          ? 'border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/30'
+          : 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/30',
+    },
+    {
+      title: 'Prepare move-ins',
+      value: `${stats?.tenantsScheduledMoveIn || 0}`,
+      description: 'Leases starting soon across the portfolio',
+      href: '/tenants',
+      icon: Calendar,
+      badge:
+        (stats?.tenantsScheduledMoveIn || 0) > 0
+          ? `${stats?.tenantsScheduledMoveIn} upcoming`
+          : 'Nothing due',
+      tone: 'border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/30',
+    },
+  ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
         title="Dashboard"
-        description="Welcome back! Here's an overview of your properties."
+        description="Action-first portfolio overview for rent collection, occupancy, and open operations."
+        className="[&_h1]:text-xl md:[&_h1]:text-2xl [&_p]:text-sm"
       >
         {canAddProperties ? (
           <Link href="/properties/new">
-            <Button size="lg">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button>
+              <Plus className="h-4 w-4" />
               Add Property
             </Button>
           </Link>
         ) : (
           <Button
-            size="lg"
             disabled
             title={subscriptionStatus?.restrictionMessage || 'Property limit reached'}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Add Property
           </Button>
         )}
       </PageHeader>
 
-      {/* Stats Grid */}
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <Card variant="elevated" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Properties</p>
-                <p className="mt-2 text-lg font-bold tracking-tight">
-                  {stats?.totalProperties || 0}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+        <Card variant="premium" className="overflow-hidden">
+          <CardHeader className="gap-3 p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-1.5">
+                <Badge variant="secondary" className="w-fit text-[11px]">
+                  Portfolio pulse
+                </Badge>
+                <CardTitle className="text-xl tracking-tight">
+                  Keep the landlord focused on what moves revenue.
+                </CardTitle>
+                <CardDescription className="max-w-2xl text-xs leading-5">
+                  This first screen now prioritizes collection risk, occupancy, and operational
+                  blockers instead of stacking every report in one scroll.
+                </CardDescription>
+              </div>
+              <div className="bg-background/70 rounded-xl border px-3.5 py-3 backdrop-blur">
+                <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
+                  Occupancy
                 </p>
-              </div>
-              <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
-                <Building2 className="text-primary h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="elevated" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Tenants</p>
-                <p className="mt-2 text-lg font-bold tracking-tight">{stats?.totalTenants || 0}</p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20">
-                <Users className="text-chart-3 h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="elevated" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Active Leases</p>
-                <p className="mt-2 text-lg font-bold tracking-tight">{stats?.activeLeases || 0}</p>
-                <p className="text-muted-foreground/70 text-xs">Long-term tenants</p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20">
-                <Users className="text-chart-2 h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="elevated" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Maintenance</p>
-                <p className="mt-2 text-lg font-bold tracking-tight">
-                  {stats?.activeMaintenance || 0}
-                </p>
-                <p className="text-muted-foreground/70 text-xs">Open requests</p>
-              </div>
-              <div className="bg-destructive/10 flex h-12 w-12 items-center justify-center rounded-full">
-                <Wrench className="text-destructive h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Long-term Overview */}
-      <Card variant="elevated" className="hover-lift">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-xl">Long-term Tenancies</CardTitle>
-            <CardDescription>Active leases, move-ins, and occupied properties</CardDescription>
-          </div>
-          <Link href="/tenants">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-              View Tenants
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="bg-muted/30 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground text-sm font-medium">Properties with Tenants</p>
-                <Building2 className="text-primary h-4 w-4" />
-              </div>
-              <p className="mt-2 text-2xl font-bold tracking-tight">
-                {stats?.propertiesWithTenants || 0}
-              </p>
-              <p className="text-muted-foreground/70 text-xs">Active lease properties</p>
-            </div>
-            <div className="bg-muted/30 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground text-sm font-medium">Tenants Moved In</p>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </div>
-              <p className="mt-2 text-2xl font-bold tracking-tight">{stats?.tenantsMovedIn || 0}</p>
-              <p className="text-muted-foreground/70 text-xs">Currently occupying</p>
-            </div>
-            <div className="bg-muted/30 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground text-sm font-medium">Scheduled Move-ins</p>
-                <Calendar className="h-4 w-4 text-blue-600" />
-              </div>
-              <p className="mt-2 text-2xl font-bold tracking-tight">
-                {stats?.tenantsScheduledMoveIn || 0}
-              </p>
-              <p className="text-muted-foreground/70 text-xs">Future lease starts</p>
-            </div>
-            <div className="bg-muted/30 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground text-sm font-medium">Active Leases</p>
-                <Users className="text-chart-3 h-4 w-4" />
-              </div>
-              <p className="mt-2 text-2xl font-bold tracking-tight">{stats?.activeLeases || 0}</p>
-              <p className="text-muted-foreground/70 text-xs">Open lease records</p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold">Properties with tenants</p>
-              <Link href="/properties">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-primary"
-                >
-                  View Properties
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-            {longTerm?.properties && longTerm.properties.length > 0 ? (
-              <div className="space-y-3">
-                {longTerm.properties.map((property) => (
-                  <Link key={property.id} href={`/properties/${property.id}`}>
-                    <div className="hover:bg-muted/50 group flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm">
-                      <div>
-                        <p className="group-hover:text-primary font-semibold">{property.name}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {property.movedInCount} moved in · {property.scheduledMoveInCount}{' '}
-                          scheduled
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="mb-1">
-                          {property.tenantCount} tenant(s)
-                        </Badge>
-                        {property.nextMoveInDate && (
-                          <p className="text-muted-foreground text-xs">
-                            Next move-in {formatDate(property.nextMoveInDate)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-32 items-center justify-center rounded-lg border border-dashed text-sm">
-                No active long-term tenants yet
-              </div>
-            )}
-            {longTerm?.propertyTotal && longTerm.propertyTotal > longTerm.properties.length && (
-              <p className="text-muted-foreground mt-3 text-xs">
-                Showing {longTerm.properties.length} of {longTerm.propertyTotal} properties with
-                tenants.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Secondary Stats */}
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-        <Card variant="premium" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Occupancy Rate</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight">
+                <p className="mt-1.5 text-2xl font-semibold tracking-tight">
                   {stats?.occupancyRate || 0}%
                 </p>
-                <p className="text-muted-foreground/70 text-sm">Current month</p>
-              </div>
-              <div className="bg-primary/10 text-primary flex h-16 w-16 items-center justify-center rounded-full">
-                <span className="text-lg font-bold">{stats?.occupancyRate || 0}%</span>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {stats?.propertiesWithTenants || 0} properties currently occupied
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="premium" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Monthly Revenue</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight">
+          </CardHeader>
+          <CardContent className="space-y-4 px-5 pt-0 pb-5">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="bg-background/70 rounded-xl border p-3.5">
+                <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                  Collected this month
+                </p>
+                <p className="mt-1.5 text-xl font-semibold tracking-tight">
                   {formatCurrency(stats?.monthlyRevenue || 0)}
                 </p>
-                {stats?.revenueChange !== 0 && (
-                  <div
-                    className={`mt-1 flex items-center text-xs font-medium ${stats?.revenueChange && stats.revenueChange > 0 ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {stats?.revenueChange && stats.revenueChange > 0 ? (
-                      <TrendingUp className="mr-1 h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="mr-1 h-3 w-3" />
-                    )}
-                    {Math.abs(stats?.revenueChange || 0)}%
-                  </div>
-                )}
+                <div
+                  className={`mt-2 flex items-center gap-2 text-xs font-medium ${revenueDirection.tone}`}
+                >
+                  <RevenueTrendIcon className="h-3.5 w-3.5" />
+                  <span>{revenueDirection.label}</span>
+                </div>
               </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-                <DollarSign className="h-8 w-8 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="premium" className="hover-lift">
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Outstanding Payments</p>
-                <p className="text-destructive mt-2 text-2xl font-bold tracking-tight">
+              <div className="bg-background/70 rounded-xl border p-3.5">
+                <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                  Outstanding now
+                </p>
+                <p className="mt-1.5 text-xl font-semibold tracking-tight">
                   {formatCurrency(stats?.outstandingPayments || 0)}
                 </p>
-                <p className="text-muted-foreground/70 text-sm">To collect</p>
+                <p className="text-muted-foreground mt-2 text-xs">
+                  {stats?.paymentsWithIssuesCount || 0} payment issues need action
+                </p>
               </div>
-              <div className="bg-destructive/10 flex h-16 w-16 items-center justify-center rounded-full">
-                <AlertCircle className="text-destructive h-8 w-8" />
+              <div className="bg-background/70 rounded-xl border p-3.5">
+                <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                  Lease coverage
+                </p>
+                <p className="mt-1.5 text-xl font-semibold tracking-tight">
+                  {stats?.activeLeases || 0}
+                </p>
+                <p className="text-muted-foreground mt-2 text-xs">
+                  {stats?.tenantsScheduledMoveIn || 0} move-ins are already scheduled
+                </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card variant="elevated">
+          <CardHeader className="p-5 pb-3">
+            <CardTitle className="text-base">Today&apos;s focus</CardTitle>
+            <CardDescription className="text-xs">
+              Three areas most likely to affect cash flow or service quality.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2.5 px-5 pt-0 pb-5">
+            {focusItems.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link key={item.title} href={item.href}>
+                  <div
+                    className={`rounded-xl border p-3.5 transition-all hover:shadow-sm ${item.tone}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex gap-3">
+                        <div className="bg-background/80 flex h-9 w-9 items-center justify-center rounded-lg">
+                          <Icon className="h-4.5 w-4.5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{item.title}</p>
+                          <p className="mt-1 text-lg font-semibold tracking-tight">{item.value}</p>
+                          <p className="text-muted-foreground mt-1 text-xs">{item.description}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-[11px]">
+                        {item.badge}
+                      </Badge>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </CardContent>
         </Card>
       </div>
 
-      {/* Visual Charts */}
-      {data?.charts && <DashboardCharts data={data.charts} />}
+      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+        {overviewStats.map((item) => {
+          const Icon = item.icon;
 
-      {/* Stale Maintenance Alert */}
-      {data?.staleMaintenance && data.staleMaintenance.length > 0 && (
-        <Card variant="elevated" className="border-destructive/50 bg-destructive/5 hover-lift">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="bg-destructive/20 flex h-8 w-8 items-center justify-center rounded-full">
-                <AlertCircle className="text-destructive h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-destructive text-lg">Attention Required</CardTitle>
-                <CardDescription>
-                  {data.staleMaintenance.length} maintenance request(s) pending for 5+ days
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {data.staleMaintenance.map((request) => (
-                <Link key={request.id} href={`/maintenance/${request.id}`}>
-                  <div className="hover:bg-destructive/10 group flex items-center justify-between rounded-lg border bg-white p-4 transition-all dark:bg-black">
-                    <div>
-                      <p className="group-hover:text-destructive font-semibold">{request.title}</p>
-                      <p className="text-muted-foreground text-sm">{request.property.name}</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="destructive" className="mb-1">
-                        {request.daysStale} days old
-                      </Badge>
-                      <p className="text-muted-foreground text-xs">{request.status}</p>
-                    </div>
+          return (
+            <Card key={item.label} variant="elevated" className="hover-lift">
+              <CardContent className="flex items-start justify-between gap-4 p-4">
+                <div>
+                  <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                    {item.label}
+                  </p>
+                  <p className="mt-1.5 text-xl font-semibold tracking-tight">{item.value}</p>
+                  <p className="text-muted-foreground mt-1.5 text-xs">{item.hint}</p>
+                </div>
+                <div
+                  className={`flex h-9 w-9 items-center justify-center rounded-full ${item.iconClassName}`}
+                >
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Tabs defaultValue="operations" className="space-y-3.5">
+        <TabsList className="h-auto w-full justify-start rounded-xl p-1">
+          <TabsTrigger value="operations" className="text-xs">
+            Operations
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="text-xs">
+            Activity
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="text-xs">
+            Performance
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="operations" className="space-y-5">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,1fr)]">
+            <div className="space-y-5">
+              <Card variant="elevated">
+                <CardHeader className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="text-base">Needs attention</CardTitle>
+                    <CardDescription className="text-xs">
+                      Short lists only. Surface the issues that can cost money or trust.
+                    </CardDescription>
                   </div>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-6">
-              <Link href="/maintenance">
-                <Button variant="outline" className="w-full">
-                  <Wrench className="mr-2 h-4 w-4" />
-                  View All Maintenance
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Payments With Issues (Due/Overdue) */}
-      {data?.paymentsWithIssues && data.paymentsWithIssues.length > 0 && (
-        <Card
-          variant="elevated"
-          className="hover-lift border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/30"
-        >
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-600/20">
-                <DollarSign className="h-5 w-5 text-yellow-600" />
-              </div>
-              <div>
-                <CardTitle className="text-lg text-yellow-800 dark:text-yellow-200">
-                  Payments Requiring Attention
-                </CardTitle>
-                <CardDescription>
-                  {data.paymentsWithIssues.length} payment
-                  {data.paymentsWithIssues.length > 1 ? 's' : ''} due or overdue
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {data.paymentsWithIssues.slice(0, 5).map((payment) => {
-                const awaitingVerification = payment.status === 'PENDING_VERIFICATION';
-                const isOverdue = payment.status === 'OVERDUE';
-                const daysOverdue = payment.dueDate
-                  ? Math.floor(
-                      (new Date().getTime() - new Date(payment.dueDate).getTime()) /
-                        (1000 * 60 * 60 * 24)
-                    )
-                  : 0;
-                return (
-                  <Link key={payment.id} href={`/tenants/${payment.tenant?.id}`}>
-                    <div
-                      className={`group flex items-center justify-between rounded-lg border p-4 transition-all ${
-                        isOverdue
-                          ? 'border-red-200 bg-red-50 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/50'
-                          : 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100 dark:border-yellow-800 dark:bg-yellow-950/50'
-                      }`}
-                    >
+                  <Link href="/financials/income">
+                    <Button variant="ghost" size="sm">
+                      Open collections
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardHeader>
+                <CardContent className="grid gap-4 px-5 pt-0 pb-5 lg:grid-cols-2">
+                  <div className="rounded-xl border border-yellow-200 bg-yellow-50/70 p-3.5 dark:border-yellow-900 dark:bg-yellow-950/30">
+                    <div className="mb-3 flex items-center justify-between">
                       <div>
-                        <p className="font-semibold">
-                          {payment.tenant
-                            ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
-                            : 'Unknown'}
+                        <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                          Payments due or overdue
                         </p>
-                        <p className="text-muted-foreground text-sm">
-                          {payment.property?.name || 'No property'}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          Ref: {payment.paymentReference}
+                        <p className="text-xs text-yellow-800/80 dark:text-yellow-200/80">
+                          Follow up on arrears and verification gaps.
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{formatCurrency(Number(payment.amount))}</p>
-                        <Badge variant={isOverdue ? 'destructive' : 'secondary'} className="mb-1">
-                          {isOverdue
-                            ? `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`
-                            : awaitingVerification
-                              ? 'Pending Verification'
-                              : 'Due'}
-                        </Badge>
-                        <p className="text-muted-foreground text-xs">
-                          Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'}
-                        </p>
-                      </div>
+                      <Badge variant="secondary">{data?.paymentsWithIssues?.length || 0}</Badge>
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
-            {data.paymentsWithIssues.length > 5 && (
-              <p className="text-muted-foreground mt-3 text-xs">
-                Showing 5 of {data.paymentsWithIssues.length} payments with issues
-              </p>
-            )}
-            <div className="mt-6">
-              <Link href="/financials/income">
-                <Button variant="outline" className="w-full">
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  View All Payments
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                    {data?.paymentsWithIssues && data.paymentsWithIssues.length > 0 ? (
+                      <div className="space-y-3">
+                        {data.paymentsWithIssues.slice(0, 3).map((payment) => {
+                          const isOverdue = payment.status === 'OVERDUE';
+                          const daysOverdue = payment.dueDate
+                            ? Math.floor(
+                                (Date.now() - new Date(payment.dueDate).getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              )
+                            : 0;
 
-      {/* Recent Paid Payments */}
-      {data?.recentPaidPayments && data.recentPaidPayments.length > 0 && (
-        <Card
-          variant="elevated"
-          className="hover-lift border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/30"
-        >
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600/20">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <CardTitle className="text-lg text-green-800 dark:text-green-200">
-                  Recent Paid Payments
-                </CardTitle>
-                <CardDescription>
-                  {data.recentPaidPayments.length} payment
-                  {data.recentPaidPayments.length > 1 ? 's' : ''} received recently
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {data.recentPaidPayments.slice(0, 5).map((payment) => (
-                <Link key={payment.id} href={`/tenants/${payment.tenant?.id}`}>
-                  <div className="group flex items-center justify-between rounded-lg border border-green-200 bg-white p-4 transition-all hover:bg-green-100 dark:border-green-800 dark:bg-green-950/50 dark:hover:bg-green-950/70">
+                          return (
+                            <Link key={payment.id} href={`/tenants/${payment.tenant?.id || ''}`}>
+                              <div className="bg-background/80 rounded-lg border border-yellow-200 p-3 transition-all hover:shadow-sm dark:border-yellow-900">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {payment.tenant
+                                        ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
+                                        : 'Unknown tenant'}
+                                    </p>
+                                    <p className="text-muted-foreground text-xs">
+                                      {payment.property?.name || 'No property'}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs font-semibold">
+                                    {formatCurrency(Number(payment.amount))}
+                                  </p>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+                                  <Badge variant={isOverdue ? 'destructive' : 'secondary'}>
+                                    {isOverdue
+                                      ? `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`
+                                      : 'Needs review'}
+                                  </Badge>
+                                  <span className="text-muted-foreground">
+                                    {payment.dueDate ? formatDate(payment.dueDate) : 'No due date'}
+                                  </span>
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex h-36 items-center justify-center rounded-lg border border-dashed border-yellow-300 text-center text-sm text-yellow-900/80 dark:border-yellow-900 dark:text-yellow-100/80">
+                        No payment issues right now.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-red-200 bg-red-50/70 p-3.5 dark:border-red-900 dark:bg-red-950/30">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-red-900 dark:text-red-100">
+                          Aged maintenance
+                        </p>
+                        <p className="text-xs text-red-800/80 dark:text-red-200/80">
+                          Keep old requests visible until they are closed.
+                        </p>
+                      </div>
+                      <Badge variant="secondary">{data?.staleMaintenance?.length || 0}</Badge>
+                    </div>
+                    {data?.staleMaintenance && data.staleMaintenance.length > 0 ? (
+                      <div className="space-y-3">
+                        {data.staleMaintenance.slice(0, 3).map((request) => (
+                          <Link key={request.id} href={`/maintenance/${request.id}`}>
+                            <div className="bg-background/80 rounded-lg border border-red-200 p-3 transition-all hover:shadow-sm dark:border-red-900">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-medium">{request.title}</p>
+                                  <p className="text-muted-foreground text-xs">
+                                    {request.property.name}
+                                  </p>
+                                </div>
+                                <Badge variant="destructive">{request.daysStale}d</Badge>
+                              </div>
+                              <p className="text-muted-foreground mt-3 text-xs">
+                                {request.priority} priority · {request.status}
+                              </p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex h-36 items-center justify-center rounded-lg border border-dashed border-red-300 text-center text-sm text-red-900/80 dark:border-red-900 dark:text-red-100/80">
+                        No stale maintenance requests.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Card variant="elevated">
+                  <CardHeader className="flex flex-row items-center justify-between p-5">
                     <div>
-                      <p className="font-semibold">
-                        {payment.tenant
-                          ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
-                          : 'Unknown'}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        {payment.property?.name || 'No property'}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        Ref: {payment.paymentReference}
-                      </p>
+                      <CardTitle className="text-base">Upcoming move-ins</CardTitle>
+                      <CardDescription className="text-xs">
+                        Prepare keys, deposits, and handover.
+                      </CardDescription>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-green-600">
-                        {formatCurrency(Number(payment.amount))}
+                    <Link href="/tenants">
+                      <Button variant="ghost" size="sm">
+                        View all
+                      </Button>
+                    </Link>
+                  </CardHeader>
+                  <CardContent className="px-5 pt-0 pb-5">
+                    {longTerm?.upcomingMoveIns && longTerm.upcomingMoveIns.length > 0 ? (
+                      <div className="space-y-3">
+                        {longTerm.upcomingMoveIns.slice(0, 4).map((lease) => (
+                          <Link key={lease.id} href={`/properties/${lease.property.id}`}>
+                            <div className="hover:bg-muted/40 flex items-center justify-between rounded-xl border p-3 transition-all hover:shadow-sm">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-full">
+                                  <Users className="text-primary h-4.5 w-4.5" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    {lease.tenantName || 'Tenant'}
+                                  </p>
+                                  <p className="text-muted-foreground text-xs">
+                                    {lease.property.name}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-semibold">
+                                  {formatDate(lease.moveInDate)}
+                                </p>
+                                <p className="text-muted-foreground text-xs">Move-in date</p>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground flex h-44 flex-col items-center justify-center text-center">
+                        <Calendar className="mb-3 h-8 w-8 opacity-30" />
+                        <p>No upcoming move-ins</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card variant="elevated">
+                  <CardHeader className="flex flex-row items-center justify-between p-5">
+                    <div>
+                      <CardTitle className="text-base">Upcoming tasks</CardTitle>
+                      <CardDescription className="text-xs">
+                        Keep the next few due items visible.
+                      </CardDescription>
+                    </div>
+                    <Link href="/tasks">
+                      <Button variant="ghost" size="sm">
+                        View all
+                      </Button>
+                    </Link>
+                  </CardHeader>
+                  <CardContent className="px-5 pt-0 pb-5">
+                    {data?.upcomingTasks && data.upcomingTasks.length > 0 ? (
+                      <div className="space-y-3">
+                        {data.upcomingTasks.slice(0, 4).map((task) => (
+                          <Link key={task.id} href={`/tasks/${task.id}`}>
+                            <div className="hover:bg-muted/40 flex items-center justify-between rounded-xl border p-3 transition-all hover:shadow-sm">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                                    task.priority === 'URGENT'
+                                      ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-300'
+                                      : 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'
+                                  }`}
+                                >
+                                  <Clock className="h-4.5 w-4.5" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{task.title}</p>
+                                  <p className="text-muted-foreground text-xs">
+                                    Due {formatDate(task.dueDate)}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge
+                                variant={
+                                  task.priority === 'URGENT'
+                                    ? 'destructive'
+                                    : task.priority === 'HIGH'
+                                      ? 'default'
+                                      : 'outline'
+                                }
+                              >
+                                {task.priority}
+                              </Badge>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground flex h-44 flex-col items-center justify-center text-center">
+                        <CheckCircle className="mb-3 h-8 w-8 opacity-30" />
+                        <p>No upcoming tasks</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <Card variant="elevated">
+                <CardHeader className="p-5 pb-3">
+                  <CardTitle className="text-base">Quick actions</CardTitle>
+                  <CardDescription className="text-xs">
+                    Shortcuts for the workflows landlords use most often.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-2.5 px-5 pt-0 pb-5">
+                  <Link href="/financials/income">
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start px-3.5 py-3 text-left"
+                    >
+                      <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/40">
+                        <DollarSign className="h-4.5 w-4.5 text-emerald-700 dark:text-emerald-300" />
+                      </div>
+                      <div>
+                        <span className="block text-sm font-semibold">Record payment</span>
+                        <span className="text-muted-foreground text-xs">
+                          Capture or review collections
+                        </span>
+                      </div>
+                    </Button>
+                  </Link>
+                  <Link href="/maintenance/new">
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start px-3.5 py-3 text-left"
+                    >
+                      <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-950/40">
+                        <Wrench className="h-4.5 w-4.5 text-orange-700 dark:text-orange-300" />
+                      </div>
+                      <div>
+                        <span className="block text-sm font-semibold">Log maintenance</span>
+                        <span className="text-muted-foreground text-xs">
+                          Create a new maintenance case
+                        </span>
+                      </div>
+                    </Button>
+                  </Link>
+                  <Link href="/tenants/new">
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start px-3.5 py-3 text-left"
+                    >
+                      <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-950/40">
+                        <Users className="h-4.5 w-4.5 text-sky-700 dark:text-sky-300" />
+                      </div>
+                      <div>
+                        <span className="block text-sm font-semibold">Add tenant</span>
+                        <span className="text-muted-foreground text-xs">
+                          Start a new long-term tenancy record
+                        </span>
+                      </div>
+                    </Button>
+                  </Link>
+                  <Link href="/properties/new">
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start px-3.5 py-3 text-left"
+                    >
+                      <div className="bg-primary/10 mr-3 flex h-9 w-9 items-center justify-center rounded-lg">
+                        <Building2 className="text-primary h-4.5 w-4.5" />
+                      </div>
+                      <div>
+                        <span className="block text-sm font-semibold">Add property</span>
+                        <span className="text-muted-foreground text-xs">
+                          Expand the managed portfolio
+                        </span>
+                      </div>
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <Card variant="elevated">
+                <CardHeader className="p-5 pb-3">
+                  <CardTitle className="text-base">Lease snapshot</CardTitle>
+                  <CardDescription className="text-xs">
+                    Tight lease status view for occupancy and upcoming handovers.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 px-5 pt-0 pb-5">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border p-3">
+                      <p className="text-muted-foreground text-[11px] font-medium tracking-[0.14em] uppercase">
+                        Active leases
                       </p>
-                      <Badge variant="default" className="mb-1 bg-green-600">
-                        PAID
-                      </Badge>
-                      <p className="text-muted-foreground text-xs">
-                        {payment.paymentDate ? formatDate(payment.paymentDate) : 'N/A'}
+                      <p className="mt-1 text-lg font-semibold">{stats?.activeLeases || 0}</p>
+                    </div>
+                    <div className="rounded-xl border p-3">
+                      <p className="text-muted-foreground text-[11px] font-medium tracking-[0.14em] uppercase">
+                        Occupied properties
+                      </p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {stats?.propertiesWithTenants || 0}
                       </p>
                     </div>
                   </div>
-                </Link>
-              ))}
-            </div>
-            {data.recentPaidPayments.length > 5 && (
-              <p className="text-muted-foreground mt-3 text-xs">
-                Showing 5 of {data.recentPaidPayments.length} recent payments
-              </p>
-            )}
-            <div className="mt-6">
-              <Link href="/financials/income">
-                <Button variant="outline" className="w-full">
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  View All Payments
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Content Grid */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Upcoming Move-ins */}
-        <Card variant="elevated" className="hover-lift h-full">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-xl">Upcoming Move-ins</CardTitle>
-              <CardDescription>Tenants moving in within 30 days</CardDescription>
-            </div>
-            <Link href="/tenants">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-primary"
-              >
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {longTerm?.upcomingMoveIns && longTerm.upcomingMoveIns.length > 0 ? (
-              <div className="space-y-4">
-                {longTerm.upcomingMoveIns.map((lease) => (
-                  <Link key={lease.id} href={`/properties/${lease.property.id}`}>
-                    <div className="hover:bg-muted/50 group hover:border-primary/20 flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full">
-                          <Users className="text-primary h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{lease.tenantName || 'Tenant'}</p>
-                          <p className="text-muted-foreground text-sm">{lease.property.name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{formatDate(lease.moveInDate)}</p>
-                        <p className="text-muted-foreground text-xs">Scheduled move-in</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-48 flex-col items-center justify-center text-center">
-                <Calendar className="mb-4 h-10 w-10 opacity-20" />
-                <p>No upcoming move-ins</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Bookings */}
-        <Card variant="elevated" className="hover-lift h-full">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-xl">Recent Bookings</CardTitle>
-              <CardDescription>Latest booking activity</CardDescription>
-            </div>
-            <Link href="/bookings">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-primary"
-              >
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {data?.recentBookings && data.recentBookings.length > 0 ? (
-              <div className="space-y-4">
-                {data.recentBookings.map((booking) => (
-                  <Link key={booking.id} href={`/bookings/${booking.id}`}>
-                    <div className="hover:bg-muted/50 group hover:border-primary/20 flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-secondary flex h-10 w-10 items-center justify-center rounded-full">
-                          <Calendar className="text-foreground h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{booking.property.name}</p>
-                          <p className="text-muted-foreground text-sm">
-                            {formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge
-                          variant={
-                            booking.status === 'CONFIRMED'
-                              ? 'default'
-                              : booking.status === 'CHECKED_IN'
-                                ? 'secondary'
-                                : 'outline'
-                          }
-                          className="mb-1"
-                        >
-                          {booking.status}
-                        </Badge>
-                        <p className="text-sm font-semibold">
-                          {formatCurrency(parseFloat(booking.totalAmount))}
+                  <div className="rounded-xl border">
+                    <div className="flex items-center justify-between border-b px-3 py-2.5">
+                      <div>
+                        <p className="text-sm font-semibold">Lease flow</p>
+                        <p className="text-muted-foreground text-xs">
+                          What is occupied now and what is landing next.
                         </p>
                       </div>
+                      <Link href="/tenants">
+                        <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs">
+                          View tenants
+                        </Button>
+                      </Link>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-48 flex-col items-center justify-center text-center">
-                <CheckCircle className="mb-4 h-10 w-10 opacity-20" />
-                <p>No recent bookings</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Tasks */}
-        <Card variant="elevated" className="hover-lift h-full">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-xl">Upcoming Tasks</CardTitle>
-              <CardDescription>Tasks due soon</CardDescription>
-            </div>
-            <Link href="/tasks">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-primary"
-              >
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {data?.upcomingTasks && data.upcomingTasks.length > 0 ? (
-              <div className="space-y-4">
-                {data.upcomingTasks.map((task) => (
-                  <Link key={task.id} href={`/tasks/${task.id}`}>
-                    <div className="hover:bg-muted/50 group hover:border-primary/20 flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full ${task.priority === 'URGENT' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}
-                        >
-                          <Clock className="h-5 w-5" />
-                        </div>
+                    <div className="divide-y">
+                      <div className="flex items-center justify-between px-3 py-2.5">
                         <div>
-                          <p className="font-semibold">{task.title}</p>
-                          <p className="text-muted-foreground text-sm">
-                            Due: {formatDate(task.dueDate)}
-                          </p>
+                          <p className="text-sm font-medium">Tenants moved in</p>
+                          <p className="text-muted-foreground text-xs">Currently occupying units</p>
                         </div>
+                        <span className="text-sm font-semibold">{stats?.tenantsMovedIn || 0}</span>
                       </div>
-                      <Badge
-                        variant={
-                          task.priority === 'URGENT'
-                            ? 'destructive'
-                            : task.priority === 'HIGH'
-                              ? 'default'
-                              : 'outline'
-                        }
-                      >
-                        {task.priority}
-                      </Badge>
+                      <div className="flex items-center justify-between px-3 py-2.5">
+                        <div>
+                          <p className="text-sm font-medium">Scheduled move-ins</p>
+                          <p className="text-muted-foreground text-xs">Upcoming lease starts</p>
+                        </div>
+                        <span className="text-sm font-semibold">
+                          {stats?.tenantsScheduledMoveIn || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between px-3 py-2.5">
+                        <div>
+                          <p className="text-sm font-medium">Properties with tenants</p>
+                          <p className="text-muted-foreground text-xs">Occupied long-term stock</p>
+                        </div>
+                        <span className="text-sm font-semibold">
+                          {stats?.propertiesWithTenants || 0}
+                        </span>
+                      </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-48 flex-col items-center justify-center text-center">
-                <CheckCircle className="mb-4 h-10 w-10 opacity-20" />
-                <p>No upcoming tasks</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card variant="elevated" className="hover-lift h-full">
-          <CardHeader>
-            <CardTitle className="text-xl">Quick Actions</CardTitle>
-            <CardDescription>Common tasks and shortcuts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Link href="/bookings/new">
-                <Button variant="outline" className="h-auto w-full justify-start py-4 text-left">
-                  <div className="bg-primary/10 mr-3 flex h-10 w-10 items-center justify-center rounded-lg">
-                    <Calendar className="text-primary h-5 w-5" />
                   </div>
-                  <div>
-                    <span className="block font-semibold">New Booking</span>
-                    <span className="text-muted-foreground text-xs">Register a guest</span>
-                  </div>
-                </Button>
-              </Link>
-              <Link href="/inquiries">
-                <Button variant="outline" className="h-auto w-full justify-start py-4 text-left">
-                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20">
-                    <MessageSquare className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <span className="block font-semibold">View Inquiries</span>
-                    <span className="text-muted-foreground text-xs">Check messages</span>
-                  </div>
-                </Button>
-              </Link>
-              <Link href="/maintenance/new">
-                <Button variant="outline" className="h-auto w-full justify-start py-4 text-left">
-                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/20">
-                    <Wrench className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <span className="block font-semibold">Log Maintenance</span>
-                    <span className="text-muted-foreground text-xs">Report an issue</span>
-                  </div>
-                </Button>
-              </Link>
-              <Link href="/financials/income">
-                <Button variant="outline" className="h-auto w-full justify-start py-4 text-left">
-                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/20">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <span className="block font-semibold">Record Payment</span>
-                    <span className="text-muted-foreground text-xs">Add income</span>
-                  </div>
-                </Button>
-              </Link>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-5">
+          <div className="grid gap-5 xl:grid-cols-2">
+            <Card
+              variant="elevated"
+              className="border-emerald-200 bg-emerald-50/40 dark:border-emerald-900 dark:bg-emerald-950/20"
+            >
+              <CardHeader className="flex flex-row items-center justify-between p-5">
+                <div>
+                  <CardTitle className="text-base text-emerald-900 dark:text-emerald-100">
+                    Recent paid payments
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Keep successful collections visible without mixing them into the action view.
+                  </CardDescription>
+                </div>
+                <Link href="/financials/income">
+                  <Button variant="ghost" size="sm">
+                    View all
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="px-5 pt-0 pb-5">
+                {data?.recentPaidPayments && data.recentPaidPayments.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.recentPaidPayments.slice(0, 4).map((payment) => (
+                      <Link key={payment.id} href={`/tenants/${payment.tenant?.id || ''}`}>
+                        <div className="bg-background/80 flex items-start justify-between rounded-xl border border-emerald-200 p-3 transition-all hover:shadow-sm dark:border-emerald-900">
+                          <div>
+                            <p className="text-sm font-medium">
+                              {payment.tenant
+                                ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
+                                : 'Unknown tenant'}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {payment.property?.name || 'No property'}
+                            </p>
+                            <p className="text-muted-foreground mt-2 text-xs">
+                              Ref: {payment.paymentReference}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                              {formatCurrency(Number(payment.amount))}
+                            </p>
+                            <Badge className="mt-2 bg-emerald-600">Paid</Badge>
+                            <p className="text-muted-foreground mt-2 text-xs">
+                              {payment.paymentDate
+                                ? formatDate(payment.paymentDate)
+                                : 'No payment date'}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground flex h-56 flex-col items-center justify-center text-center">
+                    <CheckCircle className="mb-3 h-8 w-8 opacity-30" />
+                    <p>No recent paid payments</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card variant="elevated">
+              <CardHeader className="flex flex-row items-center justify-between p-5">
+                <div>
+                  <CardTitle className="text-base">Recent bookings</CardTitle>
+                  <CardDescription className="text-xs">
+                    Available as a separate activity stream so it does not dominate the landing
+                    view.
+                  </CardDescription>
+                </div>
+                <Link href="/bookings">
+                  <Button variant="ghost" size="sm">
+                    View all
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="px-5 pt-0 pb-5">
+                {data?.recentBookings && data.recentBookings.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.recentBookings.slice(0, 4).map((booking) => (
+                      <Link key={booking.id} href={`/bookings/${booking.id}`}>
+                        <div className="hover:bg-muted/40 flex items-start justify-between rounded-xl border p-3 transition-all hover:shadow-sm">
+                          <div>
+                            <p className="text-sm font-medium">{booking.property.name}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {formatDate(booking.checkInDate)} to{' '}
+                              {formatDate(booking.checkOutDate)}
+                            </p>
+                            <p className="text-muted-foreground mt-2 text-xs">
+                              Guest: {booking.guestName}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge
+                              variant={
+                                booking.status === 'CONFIRMED'
+                                  ? 'default'
+                                  : booking.status === 'CHECKED_IN'
+                                    ? 'secondary'
+                                    : 'outline'
+                              }
+                            >
+                              {booking.status}
+                            </Badge>
+                            <p className="mt-2 text-xs font-semibold">
+                              {formatCurrency(parseFloat(booking.totalAmount))}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground flex h-56 flex-col items-center justify-center text-center">
+                    <Calendar className="mb-3 h-8 w-8 opacity-30" />
+                    <p>No recent bookings</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-5">
+          {data?.charts && <DashboardCharts data={data.charts} />}
+
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)]">
+            <Card variant="elevated">
+              <CardHeader className="flex flex-row items-center justify-between p-5">
+                <div>
+                  <CardTitle className="text-base">Properties with tenants</CardTitle>
+                  <CardDescription className="text-xs">
+                    Compact occupancy list for quick scanning.
+                  </CardDescription>
+                </div>
+                <Link href="/properties">
+                  <Button variant="ghost" size="sm">
+                    View properties
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="px-5 pt-0 pb-5">
+                {longTerm?.properties && longTerm.properties.length > 0 ? (
+                  <div className="space-y-3">
+                    {longTerm.properties.slice(0, 4).map((property) => (
+                      <Link key={property.id} href={`/properties/${property.id}`}>
+                        <div className="hover:bg-muted/40 flex items-center justify-between rounded-xl border p-3 transition-all hover:shadow-sm">
+                          <div>
+                            <p className="text-sm font-medium">{property.name}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {property.movedInCount} moved in · {property.scheduledMoveInCount}{' '}
+                              scheduled
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="secondary">{property.tenantCount} tenant(s)</Badge>
+                            {property.nextMoveInDate && (
+                              <p className="text-muted-foreground mt-2 text-xs">
+                                Next move-in {formatDate(property.nextMoveInDate)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground flex h-48 items-center justify-center rounded-xl border border-dashed text-sm">
+                    No active long-term tenants yet
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card variant="elevated">
+              <CardHeader className="p-5 pb-3">
+                <CardTitle className="text-base">Portfolio health</CardTitle>
+                <CardDescription className="text-xs">
+                  Analytics stay here so the landing screen remains focused.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 px-5 pt-0 pb-5">
+                <div className="rounded-xl border p-3.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                      Occupancy rate
+                    </p>
+                    <Building2 className="text-primary h-4 w-4" />
+                  </div>
+                  <p className="mt-1.5 text-2xl font-semibold">{stats?.occupancyRate || 0}%</p>
+                </div>
+                <div className="rounded-xl border p-3.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                      Monthly revenue
+                    </p>
+                    <DollarSign className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <p className="mt-1.5 text-2xl font-semibold">
+                    {formatCurrency(stats?.monthlyRevenue || 0)}
+                  </p>
+                </div>
+                <div className="rounded-xl border p-3.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-muted-foreground text-xs font-medium tracking-[0.14em] uppercase">
+                      Outstanding payments
+                    </p>
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                  </div>
+                  <p className="mt-1.5 text-2xl font-semibold">
+                    {formatCurrency(stats?.outstandingPayments || 0)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

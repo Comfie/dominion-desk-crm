@@ -7,6 +7,7 @@ import {
   createMaintenanceSchema,
   listMaintenanceSchema,
 } from '@/lib/features/maintenance';
+import { getMaintenanceWorkflow } from '@/lib/features/maintenance/utils/maintenance-workflows';
 import { notifyMaintenanceRequest } from '@/lib/notifications';
 import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
 
@@ -36,14 +37,128 @@ export async function GET(request: Request) {
 
     // Use service layer
     const maintenanceRequests = await maintenanceService.list(session.user.id, filters);
+    const enrichedRequests = maintenanceRequests.map((request) => {
+      const workflow = getMaintenanceWorkflow(request);
+      const workflowTask =
+        workflow && request.tasks.length > 0
+          ? request.tasks.find((task) =>
+              workflow.taskType === 'FOLLOW_UP'
+                ? task.taskType === 'FOLLOW_UP'
+                : task.taskType === 'MAINTENANCE'
+            ) || request.tasks[0]
+          : null;
+
+      return {
+        ...request,
+        workflow: workflow
+          ? {
+              ...workflow,
+              task: workflowTask
+                ? {
+                    id: workflowTask.id,
+                    title: workflowTask.title,
+                    taskType: workflowTask.taskType,
+                    priority: workflowTask.priority,
+                    status: workflowTask.status,
+                    dueDate: workflowTask.dueDate,
+                  }
+                : null,
+            }
+          : null,
+      };
+    });
 
     // Apply pagination
-    const total = maintenanceRequests.length;
+    const total = enrichedRequests.length;
     const startIndex = (page - 1) * limit;
-    const paginatedData = maintenanceRequests.slice(startIndex, startIndex + limit);
+    const paginatedData = enrichedRequests.slice(startIndex, startIndex + limit);
+
+    const summary = enrichedRequests.reduce(
+      (acc, request) => {
+        acc.total++;
+
+        switch (request.status) {
+          case 'PENDING':
+            acc.pending++;
+            break;
+          case 'SCHEDULED':
+            acc.scheduled++;
+            break;
+          case 'IN_PROGRESS':
+            acc.inProgress++;
+            break;
+          case 'COMPLETED':
+            acc.completed++;
+            break;
+          case 'CANCELLED':
+            acc.cancelled++;
+            break;
+        }
+
+        if (!request.workflow) {
+          return acc;
+        }
+
+        acc.activeQueue++;
+        acc.openWorkflowTasks += request.workflow.task ? 1 : 0;
+        acc.requestsWithoutWorkflowTask += request.workflow.task ? 0 : 1;
+
+        switch (request.workflow.stage) {
+          case 'needs-assignment':
+            acc.unassigned++;
+            break;
+          case 'needs-scheduling':
+            acc.unscheduled++;
+            break;
+          case 'visit-overdue':
+            acc.overdueVisits++;
+            break;
+          case 'work-stalled':
+            acc.stalled++;
+            break;
+          case 'closeout-required':
+            acc.closeoutRequired++;
+            break;
+        }
+
+        return acc;
+      },
+      {
+        total: 0,
+        pending: 0,
+        scheduled: 0,
+        inProgress: 0,
+        completed: 0,
+        cancelled: 0,
+        activeQueue: 0,
+        unassigned: 0,
+        unscheduled: 0,
+        overdueVisits: 0,
+        stalled: 0,
+        closeoutRequired: 0,
+        openWorkflowTasks: 0,
+        requestsWithoutWorkflowTask: 0,
+      }
+    );
 
     return NextResponse.json({
       data: paginatedData,
+      summary: {
+        total: summary.total,
+        pending: summary.pending,
+        scheduled: summary.scheduled,
+        inProgress: summary.inProgress,
+        completed: summary.completed,
+        cancelled: summary.cancelled,
+        activeQueue: summary.activeQueue,
+        unassigned: summary.unassigned,
+        unscheduled: summary.unscheduled,
+        overdueVisits: summary.overdueVisits,
+        stalled: summary.stalled,
+        closeoutRequired: summary.closeoutRequired,
+        openWorkflowTasks: summary.openWorkflowTasks,
+        requestsWithoutWorkflowTask: summary.requestsWithoutWorkflowTask,
+      },
       pagination: {
         page,
         limit,

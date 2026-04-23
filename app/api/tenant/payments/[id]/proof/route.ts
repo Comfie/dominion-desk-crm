@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
+import { getTenantBySessionEmail } from '@/lib/tenant-session';
 
 /**
  * POST /api/tenant/payments/[id]/proof
@@ -18,9 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Find tenant record for this user
-    const tenant = await prisma.tenant.findFirst({
-      where: { email: session.user.email || '' },
-    });
+    const tenant = await getTenantBySessionEmail(session.user.email);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });
@@ -132,9 +131,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Find tenant record for this user
-    const tenant = await prisma.tenant.findFirst({
-      where: { email: session.user.email || '' },
-    });
+    const tenant = await getTenantBySessionEmail(session.user.email);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });

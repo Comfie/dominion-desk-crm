@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 import { differenceInDays, addDays } from 'date-fns';
+import { getLeaseRenewalWorkflow } from '@/lib/features/tasks/utils/landlord-workflows';
 
 /**
  * GET /api/reports/lease-expiration
@@ -114,8 +115,32 @@ export async function GET(request: NextRequest) {
         depositPaid: Number(lease.depositPaid),
         daysUntilExpiry,
         expiryWindow,
+        renewalWorkflow: daysUntilExpiry !== null ? getLeaseRenewalWorkflow(daysUntilExpiry) : null,
       };
     });
+
+    const existingRenewalTasks = await prisma.task.findMany({
+      where: {
+        userId: session.user.id,
+        taskType: 'LEASE_RENEWAL',
+        relatedType: 'lease',
+        relatedId: { in: leasesWithExpiry.map((lease) => lease.id) },
+        status: { in: ['TODO', 'IN_PROGRESS'] },
+      },
+      select: {
+        id: true,
+        relatedId: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+      },
+    });
+
+    const renewalTaskMap = new Map(existingRenewalTasks.map((task) => [task.relatedId, task]));
+    const leasesWithWorkflow = leasesWithExpiry.map((lease) => ({
+      ...lease,
+      renewalTask: renewalTaskMap.get(lease.id) || null,
+    }));
 
     // Group by window for summary
     const byWindow = {
@@ -162,10 +187,13 @@ export async function GET(request: NextRequest) {
       expiredLeases: expiredLeases.length,
       totalMonthlyRent: leasesWithExpiry.reduce((sum, l) => sum + l.monthlyRent, 0),
       atRiskRent: byWindow['0-30'].reduce((sum, l) => sum + l.monthlyRent, 0),
+      openRenewalTasks: existingRenewalTasks.length,
+      leasesWithoutRenewalTask: leasesWithExpiry.filter((lease) => !renewalTaskMap.has(lease.id))
+        .length,
     };
 
     return NextResponse.json({
-      leases: leasesWithExpiry,
+      leases: leasesWithWorkflow,
       byWindow: {
         '0-30': {
           count: byWindow['0-30'].length,

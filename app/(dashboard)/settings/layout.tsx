@@ -51,8 +51,8 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <div className="space-y-6">
       {/* Settings Navigation */}
-      <div className="border-b">
-        <nav className="-mb-px flex space-x-8 overflow-x-auto">
+      <div className="shell-surface scrollbar-thin overflow-x-auto rounded-3xl border p-1">
+        <nav className="flex min-w-max gap-1">
           {settingsNav.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -60,10 +60,10 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-2 border-b-2 px-1 py-4 text-sm font-medium whitespace-nowrap transition-colors',
+                  'shell-action flex min-h-11 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium whitespace-nowrap',
                   isActive
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'bg-primary text-primary-foreground shadow-[var(--10x-elev-shell-1)]'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 )}
               >
                 <item.icon className="h-4 w-4" />

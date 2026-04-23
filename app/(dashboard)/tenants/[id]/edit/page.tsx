@@ -11,10 +11,16 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  getLatestAllowedTenantDateOfBirthInputValue,
+  isAllowedTenantDateOfBirth,
+  TENANT_DATE_OF_BIRTH_ERROR,
+} from '@/lib/features/tenants/date-of-birth';
 
 const tenantSchema = z
   .object({
@@ -42,6 +48,16 @@ const tenantSchema = z
     notes: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    const dateOfBirth = data.dateOfBirth?.trim();
+
+    if (dateOfBirth && !isAllowedTenantDateOfBirth(dateOfBirth)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: TENANT_DATE_OF_BIRTH_ERROR,
+        path: ['dateOfBirth'],
+      });
+    }
+
     if (data.tenantType === 'TENANT') {
       if (!data.idNumber?.trim()) {
         ctx.addIssue({
@@ -50,7 +66,7 @@ const tenantSchema = z
           path: ['idNumber'],
         });
       }
-      if (!data.dateOfBirth?.trim()) {
+      if (!dateOfBirth) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Date of birth is required',
@@ -106,6 +122,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const latestAllowedDateOfBirth = getLatestAllowedTenantDateOfBirthInputValue();
 
   const { data: tenant, isLoading: isLoadingTenant } = useQuery({
     queryKey: ['tenant', id],
@@ -117,12 +134,14 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<TenantFormData>({
     resolver: zodResolver(tenantSchema),
   });
 
   const tenantType = watch('tenantType');
+  const dateOfBirth = watch('dateOfBirth');
 
   // Reset form when tenant data is loaded
   useEffect(() => {
@@ -299,7 +318,19 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                   Date of Birth{' '}
                   {tenantType === 'TENANT' && <span className="text-destructive">*</span>}
                 </Label>
-                <Input id="dateOfBirth" type="date" {...register('dateOfBirth')} />
+                <DatePicker
+                  id="dateOfBirth"
+                  value={dateOfBirth}
+                  max={latestAllowedDateOfBirth}
+                  placeholder="Choose a birth date"
+                  onChange={(value) =>
+                    setValue('dateOfBirth', value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })
+                  }
+                />
                 {errors.dateOfBirth && (
                   <p className="text-destructive text-sm">{errors.dateOfBirth.message}</p>
                 )}
