@@ -38,6 +38,44 @@
   --10x-motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
   --10x-bp-shell-content-max: 90rem;
+
+  --10x-color-portal-canvas: #0b1220;
+  --10x-color-portal-canvas-end: #111a27;
+  --10x-color-portal-panel: rgb(15 23 36 / 0.82);
+  --10x-color-portal-panel-strong: rgb(20 29 43 / 0.94);
+  --10x-color-portal-panel-muted: rgb(255 255 255 / 0.035);
+  --10x-color-portal-border: rgb(148 163 184 / 0.14);
+  --10x-color-portal-border-strong: rgb(96 165 250 / 0.28);
+  --10x-color-portal-text: rgb(248 250 252 / 0.96);
+  --10x-color-portal-text-muted: rgb(226 232 240 / 0.76);
+  --10x-color-portal-text-soft: rgb(148 163 184 / 0.9);
+  --10x-color-portal-accent: #79b8ff;
+  --10x-color-portal-accent-soft: rgb(121 184 255 / 0.16);
+  --10x-color-portal-success: rgb(52 211 153 / 0.16);
+  --10x-color-portal-warning: rgb(245 158 11 / 0.16);
+  --10x-color-portal-danger: rgb(248 113 113 / 0.16);
+
+  --10x-color-admin-canvas: #0a1220;
+  --10x-color-admin-canvas-end: #101a29;
+  --10x-color-admin-surface: rgb(16 24 38 / 0.88);
+  --10x-color-admin-surface-strong: rgb(12 20 32 / 0.96);
+  --10x-color-admin-surface-muted: rgb(255 255 255 / 0.035);
+  --10x-color-admin-border: rgb(148 163 184 / 0.14);
+  --10x-color-admin-border-strong: rgb(96 165 250 / 0.24);
+  --10x-color-admin-text: rgb(241 245 249 / 0.96);
+  --10x-color-admin-text-muted: rgb(203 213 225 / 0.76);
+  --10x-color-admin-text-soft: rgb(148 163 184 / 0.9);
+  --10x-color-admin-accent: rgb(96 165 250 / 0.14);
+  --10x-color-admin-accent-strong: #7cc6ff;
+
+  --10x-space-portal-section: clamp(1rem, 0.75rem + 1.2vw, 1.75rem);
+  --10x-space-portal-card: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  --10x-space-portal-hero: clamp(1.25rem, 0.95rem + 1.6vw, 2rem);
+  --10x-space-admin-section: clamp(1rem, 0.72rem + 1.15vw, 1.7rem);
+  --10x-space-admin-hero: clamp(1.1rem, 0.85rem + 1.4vw, 1.8rem);
+  --10x-radius-portal-panel: 1.5rem;
+  --10x-radius-portal-pill: 999px;
+  --10x-radius-admin-panel: 1.5rem;
 }
 
 .dark {
@@ -52,4 +90,501 @@
   --10x-elev-shell-1: 0 1px 2px rgb(2 6 23 / 0.3), 0 1px 1px rgb(2 6 23 / 0.22);
   --10x-elev-shell-2: 0 10px 26px -12px rgb(2 6 23 / 0.48), 0 8px 16px -14px rgb(2 6 23 / 0.34);
   --10x-elev-shell-3: 0 24px 52px -24px rgb(2 6 23 / 0.6), 0 14px 28px -20px rgb(2 6 23 / 0.42);
+}
+
+@layer components {
+  .portal-shell {
+    min-height: 100vh;
+    color: var(--10x-color-portal-text);
+    background:
+      radial-gradient(circle at top left, rgb(59 130 246 / 0.16), transparent 26rem),
+      radial-gradient(circle at top right, rgb(14 165 233 / 0.09), transparent 22rem),
+      linear-gradient(
+        180deg,
+        var(--10x-color-portal-canvas) 0%,
+        var(--10x-color-portal-canvas-end) 100%
+      );
+  }
+
+  .admin-shell {
+    min-height: 100vh;
+    color: var(--10x-color-admin-text);
+    background:
+      radial-gradient(circle at top left, rgb(59 130 246 / 0.14), transparent 28rem),
+      radial-gradient(circle at top right, rgb(14 165 233 / 0.08), transparent 24rem),
+      linear-gradient(
+        180deg,
+        var(--10x-color-admin-canvas) 0%,
+        var(--10x-color-admin-canvas-end) 100%
+      );
+  }
+
+  .admin-shell .shell-surface {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.018)),
+      var(--10x-color-admin-surface);
+    border-color: var(--10x-color-admin-border);
+    box-shadow: var(--10x-elev-shell-1);
+  }
+
+  .admin-shell .shell-surface-strong {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.02), rgb(255 255 255 / 0.012)),
+      var(--10x-color-admin-surface-strong);
+    border-color: var(--10x-color-admin-border-strong);
+    box-shadow: var(--10x-elev-shell-2);
+  }
+
+  .admin-shell .shell-label,
+  .admin-shell .shell-support {
+    color: var(--10x-color-admin-text-soft);
+  }
+
+  .admin-shell .shell-nav-item {
+    color: var(--10x-color-admin-text-muted);
+  }
+
+  .admin-shell .shell-nav-item:hover {
+    background: rgb(255 255 255 / 0.055);
+    color: var(--10x-color-admin-text);
+  }
+
+  .admin-shell .shell-main {
+    position: relative;
+  }
+
+  .admin-shell .shell-main::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: min(38rem, 58vw);
+    height: 16rem;
+    pointer-events: none;
+    background: radial-gradient(circle, rgb(59 130 246 / 0.1), transparent 72%);
+    filter: blur(12px);
+  }
+
+  .admin-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--10x-space-admin-section);
+  }
+
+  .admin-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .admin-page-title {
+    font-size: clamp(1.9rem, 1.3rem + 1.75vw, 3rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    color: var(--10x-color-admin-text);
+  }
+
+  .admin-page-description {
+    max-width: 44rem;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: var(--10x-color-admin-text-muted);
+  }
+
+  .admin-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.035);
+    padding: 0.45rem 0.75rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--10x-color-admin-text-soft);
+  }
+
+  .admin-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(var(--10x-radius-admin-panel) + 0.3rem);
+    border: 1px solid var(--10x-color-admin-border);
+    background:
+      linear-gradient(135deg, rgb(15 23 37 / 0.96), rgb(15 24 40 / 0.84)),
+      var(--10x-color-admin-surface-strong);
+    padding: var(--10x-space-admin-hero);
+    box-shadow: var(--10x-elev-shell-3);
+  }
+
+  .admin-hero::after {
+    content: '';
+    position: absolute;
+    right: -3rem;
+    top: -4rem;
+    width: 14rem;
+    height: 14rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgb(125 211 252 / 0.16), transparent 70%);
+    pointer-events: none;
+  }
+
+  .admin-panel {
+    border-radius: var(--10x-radius-admin-panel);
+    border: 1px solid var(--10x-color-admin-border);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.015)),
+      var(--10x-color-admin-surface);
+    box-shadow: var(--10x-elev-shell-2);
+  }
+
+  .admin-panel-muted {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02)),
+      var(--10x-color-admin-surface);
+  }
+
+  .admin-stat-card {
+    border-radius: 1.35rem;
+    border: 1px solid var(--10x-color-admin-border);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.02)),
+      var(--10x-color-admin-surface);
+    box-shadow: var(--10x-elev-shell-1);
+  }
+
+  .admin-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    border-radius: var(--10x-radius-admin-panel);
+    border: 1px solid var(--10x-color-admin-border);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.015)),
+      var(--10x-color-admin-surface);
+    padding: 1rem;
+  }
+
+  .admin-input {
+    border-color: rgb(148 163 184 / 0.14) !important;
+    background: rgb(255 255 255 / 0.05) !important;
+    color: var(--10x-color-admin-text) !important;
+  }
+
+  .admin-input::placeholder {
+    color: rgb(203 213 225 / 0.35);
+  }
+
+  .admin-subtle {
+    color: var(--10x-color-admin-text-muted);
+  }
+
+  .admin-faint {
+    color: var(--10x-color-admin-text-soft);
+  }
+
+  .admin-table-shell {
+    overflow: hidden;
+    border-radius: 1.25rem;
+    border: 1px solid var(--10x-color-admin-border);
+    background: rgb(255 255 255 / 0.02);
+  }
+
+  .admin-dialog {
+    border-color: var(--10x-color-admin-border) !important;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.015)),
+      var(--10x-color-admin-surface-strong) !important;
+    color: var(--10x-color-admin-text) !important;
+  }
+
+  .admin-dialog [data-slot='dialog-description'] {
+    color: var(--10x-color-admin-text-muted) !important;
+  }
+
+  @media (min-width: 48rem) {
+    .admin-toolbar {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .portal-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    border-bottom: 1px solid var(--10x-color-portal-border);
+    background: linear-gradient(180deg, rgb(10 15 25 / 0.94), rgb(10 15 25 / 0.82));
+    backdrop-filter: blur(18px);
+  }
+
+  .portal-header-inner {
+    padding-block: 1rem;
+  }
+
+  .portal-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+
+  .portal-brand-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--10x-color-portal-text-soft);
+  }
+
+  .portal-brand-title {
+    margin-top: 0.3rem;
+    font-size: 1.65rem;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--10x-color-portal-text);
+  }
+
+  .portal-nav {
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+    scrollbar-width: none;
+  }
+
+  .portal-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .portal-nav-link {
+    display: inline-flex;
+    min-width: fit-content;
+    align-items: center;
+    gap: 0.55rem;
+    white-space: nowrap;
+    border-radius: var(--10x-radius-portal-pill);
+    border: 1px solid var(--10x-color-portal-border);
+    background: rgb(255 255 255 / 0.04);
+    padding: 0.8rem 1.05rem;
+    font-size: 0.98rem;
+    font-weight: 500;
+    color: var(--10x-color-portal-text-muted);
+    transition:
+      background-color var(--10x-motion-base) var(--10x-motion-ease-standard),
+      border-color var(--10x-motion-base) var(--10x-motion-ease-standard),
+      color var(--10x-motion-base) var(--10x-motion-ease-standard),
+      transform var(--10x-motion-fast) var(--10x-motion-ease-standard);
+  }
+
+  .portal-nav-link:hover {
+    transform: translateY(-1px);
+    color: var(--10x-color-portal-text);
+    border-color: rgb(148 163 184 / 0.24);
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .portal-nav-link-active {
+    color: var(--10x-color-portal-text);
+    border-color: var(--10x-color-portal-border-strong);
+    background:
+      linear-gradient(180deg, rgb(59 130 246 / 0.14), rgb(125 211 252 / 0.08)),
+      rgb(255 255 255 / 0.05);
+    box-shadow: inset 0 0 0 1px rgb(121 184 255 / 0.12);
+  }
+
+  .portal-signout {
+    border-color: var(--10x-color-portal-border) !important;
+    background: rgb(255 255 255 / 0.04) !important;
+    color: var(--10x-color-portal-text) !important;
+  }
+
+  .portal-signout:hover {
+    background: rgb(255 255 255 / 0.08) !important;
+  }
+
+  .portal-main {
+    position: relative;
+    padding-block: clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+  }
+
+  .portal-main::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: min(42rem, 65vw);
+    height: 18rem;
+    pointer-events: none;
+    background: radial-gradient(circle, rgb(59 130 246 / 0.12), transparent 70%);
+    filter: blur(10px);
+    opacity: 0.8;
+  }
+
+  .portal-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--10x-space-portal-section);
+  }
+
+  .portal-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .portal-page-title {
+    font-size: clamp(1.9rem, 1.35rem + 1.8vw, 3.2rem);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+    color: var(--10x-color-portal-text);
+  }
+
+  .portal-page-description {
+    max-width: 42rem;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: var(--10x-color-portal-text-muted);
+  }
+
+  .portal-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(var(--10x-radius-portal-panel) + 0.25rem);
+    border: 1px solid var(--10x-color-portal-border);
+    background:
+      linear-gradient(135deg, rgb(17 24 39 / 0.92), rgb(15 23 36 / 0.86)),
+      var(--10x-color-portal-panel);
+    padding: var(--10x-space-portal-hero);
+    box-shadow: var(--10x-elev-shell-3);
+  }
+
+  .portal-hero::after {
+    content: '';
+    position: absolute;
+    right: -3rem;
+    top: -4rem;
+    width: 14rem;
+    height: 14rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgb(96 165 250 / 0.16), transparent 70%);
+    pointer-events: none;
+  }
+
+  .portal-panel {
+    border-radius: var(--10x-radius-portal-panel);
+    border: 1px solid var(--10x-color-portal-border);
+    background: linear-gradient(
+      180deg,
+      var(--10x-color-portal-panel-strong),
+      var(--10x-color-portal-panel)
+    );
+    box-shadow: var(--10x-elev-shell-2);
+    backdrop-filter: blur(12px);
+  }
+
+  .portal-panel-muted {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02));
+  }
+
+  .portal-stat-card {
+    border-radius: 1.35rem;
+    border: 1px solid var(--10x-color-portal-border);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.025)),
+      var(--10x-color-portal-panel);
+    box-shadow: var(--10x-elev-shell-1);
+  }
+
+  .portal-eyebrow {
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--10x-color-portal-text-soft);
+  }
+
+  .portal-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    border-radius: var(--10x-radius-portal-panel);
+    border: 1px solid var(--10x-color-portal-border);
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02));
+    padding: 1rem;
+  }
+
+  .portal-empty-state {
+    border-radius: var(--10x-radius-portal-panel);
+    border: 1px dashed rgb(148 163 184 / 0.24);
+    background: rgb(255 255 255 / 0.025);
+  }
+
+  .portal-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--10x-radius-portal-pill);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.035);
+    padding: 0.45rem 0.75rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--10x-color-portal-text-soft);
+  }
+
+  .portal-subtle-text {
+    color: var(--10x-color-portal-text-muted);
+  }
+
+  .portal-faint-text {
+    color: var(--10x-color-portal-text-soft);
+  }
+
+  .portal-status-success {
+    border-color: rgb(52 211 153 / 0.24);
+    background: var(--10x-color-portal-success);
+  }
+
+  .portal-status-warning {
+    border-color: rgb(245 158 11 / 0.24);
+    background: var(--10x-color-portal-warning);
+  }
+
+  .portal-status-danger {
+    border-color: rgb(248 113 113 / 0.24);
+    background: var(--10x-color-portal-danger);
+  }
+
+  @media (min-width: 48rem) {
+    .portal-toolbar {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  @media (max-width: 63.9375rem) {
+    .portal-header-inner {
+      padding-inline: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .portal-nav-link {
+      transition: none;
+    }
+
+    .portal-nav-link:hover {
+      transform: none;
+    }
+  }
 }

@@ -2,37 +2,24 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   Wrench,
   DollarSign,
   FileText,
-  Plus,
   Calendar,
   AlertCircle,
   CheckCircle,
   Clock,
-  LogOut,
-  Loader2,
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/ui/logo';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { PortalShell } from '@/components/portal/portal-shell';
+import { MaintenanceRequestDialog } from '@/components/portal/maintenance-request-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface PaymentData {
@@ -91,110 +78,140 @@ export default function TenantDashboardPage() {
     },
   });
 
-  const maintenanceMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const response = await fetch('/api/portal/maintenance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.get('title'),
-          description: formData.get('description'),
-          category: formData.get('category'),
-          priority: formData.get('priority'),
-        }),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to submit request');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tenant-portal'] });
-      setMaintenanceDialogOpen(false);
-    },
-  });
-
-  const handleMaintenanceSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    maintenanceMutation.mutate(formData);
-  };
-
   if (isLoading) {
     return (
-      <div className="bg-background min-h-screen">
-        <div className="mx-auto max-w-4xl px-4 py-8">
-          <Skeleton className="mb-6 h-8 w-48" />
-          <div className="grid gap-6 md:grid-cols-2">
-            <Skeleton className="h-48" />
-            <Skeleton className="h-48" />
+      <PortalShell>
+        <div className="portal-page">
+          <Skeleton className="h-10 w-56 rounded-full bg-white/10" />
+          <Skeleton className="h-64 rounded-[2rem] bg-white/10" />
+          <div className="grid gap-5 lg:grid-cols-3">
+            <Skeleton className="h-80 rounded-[1.5rem] bg-white/10" />
+            <Skeleton className="h-80 rounded-[1.5rem] bg-white/10" />
+            <Skeleton className="h-80 rounded-[1.5rem] bg-white/10" />
           </div>
         </div>
-      </div>
+      </PortalShell>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <Card className="max-w-md">
+      <PortalShell>
+        <Card className="portal-panel max-w-md">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="text-destructive mx-auto mb-4 h-12 w-12" />
             <h2 className="mb-2 text-xl font-semibold">Unable to Load Dashboard</h2>
-            <p className="text-muted-foreground mb-4">
+            <p className="mb-4 text-sm text-white/65">
               {error instanceof Error ? error.message : 'No tenant record found for this account'}
             </p>
-            <Button onClick={() => signOut({ callbackUrl: '/' })}>Sign Out</Button>
+            <Link href="/portal/dashboard">
+              <Button>Retry</Button>
+            </Link>
           </CardContent>
         </Card>
-      </div>
+      </PortalShell>
     );
   }
 
   const { tenant, maintenanceRequests, recentPayments, duePayments, overduePayments } = data;
 
   return (
-    <div className="bg-background flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="bg-gradient-header border-b border-white/10 shadow-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-4">
-          <Link href="/portal/dashboard" className="flex items-center gap-2">
-            <Logo variant="icon" width={28} height={28} />
-            <span className="hidden text-lg font-semibold text-white sm:inline">Tenant Portal</span>
-            <span className="text-lg font-semibold text-white sm:hidden">Portal</span>
-          </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden max-w-[150px] truncate text-sm text-white/80 md:inline">
-              {tenant.firstName} {tenant.lastName}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-shrink-0 border-white/20 bg-white/10 text-white hover:bg-white/20"
-              onClick={() => signOut({ callbackUrl: '/' })}
-            >
-              <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+    <PortalShell>
+      <div className="portal-page">
+        <section className="portal-hero">
+          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
+            <div className="space-y-4">
+              <span className="portal-kicker">Tenant dashboard</span>
+              <div className="space-y-3">
+                <h1 className="portal-page-title">Welcome, {tenant.firstName}.</h1>
+                <p className="portal-page-description">
+                  Stay on top of rent, maintenance, and shared documents from one place built around
+                  your active tenancy.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="portal-stat-card px-4 py-4">
+                  <p className="portal-eyebrow">Open requests</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {maintenanceRequests.filter((request) => request.status !== 'COMPLETED').length}
+                  </p>
+                </div>
+                <div className="portal-stat-card px-4 py-4">
+                  <p className="portal-eyebrow">Recent payments</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{recentPayments.length}</p>
+                </div>
+                <div className="portal-stat-card px-4 py-4">
+                  <p className="portal-eyebrow">Due soon</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {overduePayments.length + duePayments.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {tenant.property ? (
+              <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                <div className="flex items-center gap-2 text-sm font-medium text-white/75">
+                  <Building2 className="h-4 w-4" />
+                  Your Rental Property
+                </div>
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <p className="text-2xl font-semibold text-white">{tenant.property.name}</p>
+                    <p className="mt-1 text-sm text-white/60">
+                      {tenant.property.address}, {tenant.property.city}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
+                      <p className="portal-eyebrow">Lease term</p>
+                      <p className="mt-2 text-sm text-white/80">
+                        {tenant.leaseStart && tenant.leaseEnd
+                          ? `${formatDate(tenant.leaseStart)} - ${formatDate(tenant.leaseEnd)}`
+                          : 'Not available'}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
+                      <p className="portal-eyebrow">Monthly rent</p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {tenant.rentAmount
+                          ? `${formatCurrency(Number(tenant.rentAmount))}/month`
+                          : 'Not available'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {tenant.nextPaymentDue ? (
+                    <div className="portal-status-warning rounded-2xl border px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <Calendar className="mt-0.5 h-4 w-4 text-amber-300" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-50">Next payment due</p>
+                          <p className="mt-1 text-sm text-amber-100/85">
+                            {formatDate(tenant.nextPaymentDue)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
-        </div>
-      </header>
+        </section>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
-        <h1 className="mb-6 text-2xl font-bold">Welcome, {tenant.firstName}!</h1>
-
-        {/* Overdue Payment Alert */}
         {overduePayments && overduePayments.length > 0 && (
-          <Card className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <Card className="portal-panel portal-status-danger">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-6 w-6 flex-shrink-0 text-red-600" />
+                <AlertCircle className="h-6 w-6 flex-shrink-0 text-red-300" />
                 <div className="flex-1">
-                  <h3 className="mb-2 text-lg font-semibold text-red-800 dark:text-red-200">
-                    ⚠️ Overdue Payment{overduePayments.length > 1 ? 's' : ''}
+                  <h3 className="mb-2 text-lg font-semibold text-white">
+                    Overdue Payment{overduePayments.length > 1 ? 's' : ''}
                   </h3>
-                  <p className="mb-4 text-sm text-red-700 dark:text-red-300">
+                  <p className="mb-4 max-w-2xl text-sm text-red-100/80">
                     You have {overduePayments.length} overdue payment
                     {overduePayments.length > 1 ? 's' : ''}. Please make payment immediately to
                     avoid additional charges.
@@ -210,22 +227,25 @@ export default function TenantDashboardPage() {
                       return (
                         <div
                           key={payment.id}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-white p-3 dark:border-red-800 dark:bg-red-950/50"
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-300/20 bg-black/10 p-4"
                         >
                           <div>
-                            <p className="font-semibold text-red-900 dark:text-red-100">
+                            <p className="font-semibold text-white">
                               {formatCurrency(Number(payment.amount))}
                             </p>
-                            <p className="text-xs text-red-700 dark:text-red-300">
+                            <p className="text-xs text-red-100/75">
                               Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'} (
                               {daysOverdue} day{daysOverdue !== 1 ? 's' : ''} overdue)
                             </p>
-                            <p className="text-xs text-red-600 dark:text-red-400">
+                            <p className="text-xs text-red-200/65">
                               Ref: {payment.paymentReference}
                             </p>
                           </div>
                           <Link href={`/portal/payments/${payment.id}/pay`}>
-                            <Button size="sm" className="bg-red-600 text-white hover:bg-red-700">
+                            <Button
+                              size="sm"
+                              className="bg-red-300 text-slate-950 hover:bg-red-200"
+                            >
                               <DollarSign className="mr-1 h-4 w-4" />
                               Pay Now
                             </Button>
@@ -240,17 +260,16 @@ export default function TenantDashboardPage() {
           </Card>
         )}
 
-        {/* Due Payment Alert */}
         {duePayments && duePayments.length > 0 && overduePayments.length === 0 && (
-          <Card className="mb-6 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30">
+          <Card className="portal-panel portal-status-warning">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
-                <Clock className="h-6 w-6 flex-shrink-0 text-yellow-600" />
+                <Clock className="h-6 w-6 flex-shrink-0 text-amber-300" />
                 <div className="flex-1">
-                  <h3 className="mb-2 text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                  <h3 className="mb-2 text-lg font-semibold text-white">
                     Payment{duePayments.length > 1 ? 's' : ''} Due Soon
                   </h3>
-                  <p className="mb-4 text-sm text-yellow-700 dark:text-yellow-300">
+                  <p className="mb-4 max-w-2xl text-sm text-amber-100/80">
                     You have {duePayments.length} payment{duePayments.length > 1 ? 's' : ''} due
                     within the next 7 days.
                   </p>
@@ -258,23 +277,23 @@ export default function TenantDashboardPage() {
                     {duePayments.map((payment) => (
                       <div
                         key={payment.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-yellow-200 bg-white p-3 dark:border-yellow-800 dark:bg-yellow-950/50"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/20 bg-black/10 p-4"
                       >
                         <div>
-                          <p className="font-semibold text-yellow-900 dark:text-yellow-100">
+                          <p className="font-semibold text-white">
                             {formatCurrency(Number(payment.amount))}
                           </p>
-                          <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                          <p className="text-xs text-amber-100/75">
                             Due: {payment.dueDate ? formatDate(payment.dueDate) : 'N/A'}
                           </p>
-                          <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                          <p className="text-xs text-amber-200/65">
                             Ref: {payment.paymentReference}
                           </p>
                         </div>
                         <Link href={`/portal/payments/${payment.id}/pay`}>
                           <Button
                             size="sm"
-                            className="bg-yellow-600 text-white hover:bg-yellow-700"
+                            className="bg-amber-300 text-slate-950 hover:bg-amber-200"
                           >
                             <DollarSign className="mr-1 h-4 w-4" />
                             Pay Now
@@ -289,169 +308,43 @@ export default function TenantDashboardPage() {
           </Card>
         )}
 
-        {/* Property Info */}
-        {tenant.property && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Your Rental Property
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-lg font-semibold">{tenant.property.name}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {tenant.property.address}, {tenant.property.city}
-                  </p>
-                </div>
-                <div className="text-sm">
-                  {tenant.leaseStart && tenant.leaseEnd && (
-                    <p className="mb-1">
-                      <span className="text-muted-foreground">Lease: </span>
-                      {formatDate(tenant.leaseStart)} - {formatDate(tenant.leaseEnd)}
-                    </p>
-                  )}
-                  {tenant.rentAmount && (
-                    <p className="mb-1">
-                      <span className="text-muted-foreground">Rent: </span>
-                      <span className="font-semibold">
-                        {formatCurrency(Number(tenant.rentAmount))}/month
-                      </span>
-                    </p>
-                  )}
-                  {tenant.nextPaymentDue && (
-                    <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 flex-shrink-0 text-yellow-600" />
-                        <div>
-                          <p className="text-xs font-medium text-yellow-800">Next Payment Due</p>
-                          <p className="text-xs font-semibold text-yellow-700">
-                            {formatDate(tenant.nextPaymentDue)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-          {/* Maintenance Requests */}
-          <Card>
-            <CardHeader>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <Card className="portal-panel h-full">
+            <CardHeader className="pb-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="flex items-center gap-2">
+                  <div className="portal-eyebrow mb-3">Service</div>
+                  <CardTitle className="flex items-center gap-2 text-white">
                     <Wrench className="h-5 w-5 flex-shrink-0" />
                     <span className="truncate">Maintenance</span>
                   </CardTitle>
-                  <CardDescription className="mt-1">Your maintenance requests</CardDescription>
+                  <CardDescription className="mt-2 text-white/60">
+                    Your maintenance requests and reported issues.
+                  </CardDescription>
                 </div>
-                <Dialog open={maintenanceDialogOpen} onOpenChange={setMaintenanceDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="flex-shrink-0">
-                      <Plus className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">New</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Submit Maintenance Request</DialogTitle>
-                      <DialogDescription>
-                        Describe the issue and we'll address it as soon as possible
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Issue Title *</Label>
-                        <Input
-                          id="title"
-                          name="title"
-                          required
-                          placeholder="e.g., Leaking faucet in bathroom"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="category">Category *</Label>
-                        <select
-                          id="category"
-                          name="category"
-                          required
-                          className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                        >
-                          <option value="PLUMBING">Plumbing</option>
-                          <option value="ELECTRICAL">Electrical</option>
-                          <option value="APPLIANCE">Appliance</option>
-                          <option value="HVAC">HVAC</option>
-                          <option value="STRUCTURAL">Structural</option>
-                          <option value="OTHER">Other</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="priority">Priority *</Label>
-                        <select
-                          id="priority"
-                          name="priority"
-                          required
-                          className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                        >
-                          <option value="LOW">Low - Not urgent</option>
-                          <option value="MEDIUM">Medium - Needs attention soon</option>
-                          <option value="HIGH">High - Urgent</option>
-                          <option value="URGENT">Emergency</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="description">Description *</Label>
-                        <textarea
-                          id="description"
-                          name="description"
-                          required
-                          rows={4}
-                          className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                          placeholder="Please describe the issue in detail..."
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setMaintenanceDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" disabled={maintenanceMutation.isPending}>
-                          {maintenanceMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Submitting...
-                            </>
-                          ) : (
-                            'Submit Request'
-                          )}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                <MaintenanceRequestDialog
+                  open={maintenanceDialogOpen}
+                  onOpenChange={setMaintenanceDialogOpen}
+                  onSubmitted={() => {
+                    queryClient.invalidateQueries({ queryKey: ['tenant-portal'] });
+                    queryClient.invalidateQueries({ queryKey: ['tenant-maintenance'] });
+                  }}
+                  triggerLabel="New"
+                  triggerClassName="bg-sky-400 text-slate-950 hover:bg-sky-300"
+                />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-1 flex-col">
               {maintenanceRequests.length > 0 ? (
-                <div className="space-y-3">
+                <div className="flex flex-1 flex-col gap-4">
                   {maintenanceRequests.map((request) => (
                     <div
                       key={request.id}
-                      className="flex items-center justify-between border-b pb-3"
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4"
                     >
                       <div>
-                        <p className="font-medium">{request.title}</p>
-                        <p className="text-muted-foreground text-xs">
+                        <p className="font-medium text-white">{request.title}</p>
+                        <p className="mt-1 text-xs text-white/55">
                           {formatDate(request.createdAt)}
                         </p>
                       </div>
@@ -463,61 +356,95 @@ export default function TenantDashboardPage() {
                               ? 'secondary'
                               : 'outline'
                         }
+                        className="border-white/10 bg-white/[0.06] text-white"
                       >
-                        {request.status}
+                        {request.status.replace('_', ' ')}
                       </Badge>
                     </div>
                   ))}
+                  <Link href="/portal/maintenance" className="mt-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    >
+                      View All Requests
+                    </Button>
+                  </Link>
                 </div>
               ) : (
-                <div className="text-muted-foreground py-6 text-center">
-                  <CheckCircle className="mx-auto mb-2 h-8 w-8" />
-                  <p>No maintenance requests</p>
+                <div className="portal-empty-state flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+                  <CheckCircle className="mx-auto mb-3 h-8 w-8 text-white/45" />
+                  <p className="text-white/70">No maintenance requests</p>
+                  <Link href="/portal/maintenance">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    >
+                      View Requests
+                    </Button>
+                  </Link>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Payment History */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="portal-panel h-full">
+            <CardHeader className="pb-4">
+              <div className="portal-eyebrow mb-3">Money</div>
+              <CardTitle className="flex items-center gap-2 text-white">
                 <DollarSign className="h-5 w-5" />
                 Recent Payments
               </CardTitle>
-              <CardDescription>Your payment history</CardDescription>
+              <CardDescription className="mt-2 text-white/60">
+                Your latest recorded rent payments.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-1 flex-col">
               {recentPayments.length > 0 ? (
-                <div className="space-y-3">
+                <div className="flex flex-1 flex-col gap-4">
                   {recentPayments.slice(0, 3).map((payment) => (
                     <div
                       key={payment.id}
-                      className="flex items-center justify-between border-b pb-3"
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4"
                     >
                       <div>
-                        <p className="font-medium">{formatCurrency(Number(payment.amount))}</p>
-                        <p className="text-muted-foreground text-xs">
+                        <p className="font-medium text-white">
+                          {formatCurrency(Number(payment.amount))}
+                        </p>
+                        <p className="mt-1 text-xs text-white/55">
                           {payment.paymentDate ? formatDate(payment.paymentDate) : 'N/A'}
                         </p>
                       </div>
-                      <Badge variant={payment.status === 'PAID' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={payment.status === 'PAID' ? 'default' : 'secondary'}
+                        className="border-white/10 bg-white/[0.06] text-white"
+                      >
                         {payment.status}
                       </Badge>
                     </div>
                   ))}
-                  <Link href="/portal/payments">
-                    <Button variant="outline" size="sm" className="w-full">
+                  <Link href="/portal/payments" className="mt-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    >
                       View All Payments
                     </Button>
                   </Link>
                 </div>
               ) : (
-                <div className="text-muted-foreground space-y-4 py-6 text-center">
-                  <Clock className="mx-auto mb-2 h-8 w-8" />
-                  <p>No payment history</p>
+                <div className="portal-empty-state flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+                  <Clock className="mx-auto mb-3 h-8 w-8 text-white/45" />
+                  <p className="text-white/70">No payment history</p>
                   <Link href="/portal/payments">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    >
                       View Payments
                     </Button>
                   </Link>
@@ -526,23 +453,31 @@ export default function TenantDashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Documents */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="portal-panel h-full">
+            <CardHeader className="pb-4">
+              <div className="portal-eyebrow mb-3">Records</div>
+              <CardTitle className="flex items-center gap-2 text-white">
                 <FileText className="h-5 w-5" />
                 Documents
               </CardTitle>
-              <CardDescription>View your documents</CardDescription>
+              <CardDescription className="mt-2 text-white/60">
+                Access lease files, identification, and shared records.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-muted-foreground space-y-4 py-6 text-center">
-                <FileText className="mx-auto mb-2 h-8 w-8" />
-                <p className="text-sm">
-                  Access your lease agreements, identification, and other important documents
-                </p>
+            <CardContent className="flex flex-1 flex-col">
+              <div className="portal-empty-state flex flex-1 flex-col justify-between gap-5 px-6 py-10 text-center">
+                <div>
+                  <FileText className="mx-auto mb-3 h-8 w-8 text-white/45" />
+                  <p className="mx-auto max-w-xs text-sm text-white/65">
+                    Access your lease agreements, identification, and other important documents
+                  </p>
+                </div>
                 <Link href="/portal/documents">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  >
                     View All Documents
                   </Button>
                 </Link>
@@ -550,16 +485,7 @@ export default function TenantDashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-border bg-background border-t py-6">
-        <div className="mx-auto max-w-4xl px-4 text-center">
-          <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} DominionDesk. All rights reserved.
-          </p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </PortalShell>
   );
 }

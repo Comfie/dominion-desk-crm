@@ -1,30 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar,
-  Download,
   AlertCircle,
-  LogOut,
   DollarSign,
-  ArrowLeft,
   Upload,
   FileCheck,
   CheckCircle2,
   Clock,
   Eye,
   CreditCard,
+  Home,
+  ChevronRight,
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Logo } from '@/components/ui/logo';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { PaymentDetailModal } from '@/components/portal/payment-detail-modal';
+import { PortalShell } from '@/components/portal/portal-shell';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface Payment {
@@ -65,6 +70,30 @@ interface TenantPaymentsData {
   };
 }
 
+function SummaryCard({
+  label,
+  value,
+  description,
+  toneClassName,
+}: {
+  label: string;
+  value: string | number;
+  description: string;
+  toneClassName?: string;
+}) {
+  return (
+    <Card className="portal-stat-card">
+      <CardHeader className="pb-3">
+        <CardDescription className="text-white/55">{label}</CardDescription>
+        <CardTitle className={`text-2xl text-white ${toneClassName || ''}`}>{value}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-white/60">{description}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function TenantPaymentsPage() {
   const queryClient = useQueryClient();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -79,7 +108,7 @@ export default function TenantPaymentsPage() {
     },
   });
 
-  const getStatusBadge = (status: string, hasProof?: boolean) => {
+  const getStatusBadge = (status: string) => {
     const config: Record<
       string,
       {
@@ -90,22 +119,31 @@ export default function TenantPaymentsPage() {
     > = {
       PAID: {
         variant: 'default',
-        className: 'bg-green-600',
+        className: 'border-emerald-400/20 bg-emerald-500/15 text-emerald-200',
         icon: <CheckCircle2 className="mr-1 h-3 w-3" />,
       },
       PENDING: {
         variant: 'secondary',
-        className: 'bg-yellow-600',
+        className: 'border-amber-400/20 bg-amber-500/15 text-amber-200',
         icon: <Clock className="mr-1 h-3 w-3" />,
       },
       PENDING_VERIFICATION: {
         variant: 'secondary',
-        className: 'bg-blue-600',
+        className: 'border-blue-400/20 bg-blue-500/15 text-blue-200',
         icon: <FileCheck className="mr-1 h-3 w-3" />,
       },
-      OVERDUE: { variant: 'destructive', className: 'bg-red-600' },
-      PARTIALLY_PAID: { variant: 'secondary', className: 'bg-orange-600' },
-      FAILED: { variant: 'destructive', className: 'bg-red-700' },
+      OVERDUE: {
+        variant: 'destructive',
+        className: 'border-red-400/20 bg-red-500/15 text-red-200',
+      },
+      PARTIALLY_PAID: {
+        variant: 'secondary',
+        className: 'border-orange-400/20 bg-orange-500/15 text-orange-200',
+      },
+      FAILED: {
+        variant: 'destructive',
+        className: 'border-red-400/20 bg-red-600/20 text-red-200',
+      },
     };
 
     const statusConfig = config[status] || config.PENDING;
@@ -115,7 +153,7 @@ export default function TenantPaymentsPage() {
     return (
       <Badge
         variant={statusConfig.variant}
-        className={`${statusConfig.className} flex items-center`}
+        className={`${statusConfig.className} flex items-center border`}
       >
         {statusConfig.icon}
         {displayStatus}
@@ -132,219 +170,189 @@ export default function TenantPaymentsPage() {
     queryClient.invalidateQueries({ queryKey: ['tenant-payments'] });
   };
 
-  const overduePayments = data?.payments?.filter((p: Payment) => p.status === 'OVERDUE') || [];
-  const pendingPayments = data?.payments?.filter((p: Payment) => p.status === 'PENDING') || [];
+  const overduePayments = data?.payments?.filter((payment) => payment.status === 'OVERDUE') || [];
+  const pendingPayments = data?.payments?.filter((payment) => payment.status === 'PENDING') || [];
   const pendingVerificationPayments =
-    data?.payments?.filter((p: Payment) => p.status === 'PENDING_VERIFICATION') || [];
+    data?.payments?.filter((payment) => payment.status === 'PENDING_VERIFICATION') || [];
 
-  const totalOverdue = overduePayments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const totalPending = pendingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalOverdue = overduePayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const totalPending = pendingPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
   return (
-    <div className="bg-background flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="bg-gradient-header border-b border-white/10 shadow-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-4">
-          <Link href="/portal/dashboard" className="flex items-center gap-2">
-            <Logo variant="icon" width={28} height={28} />
-            <span className="hidden text-lg font-semibold text-white sm:inline">Tenant Portal</span>
-            <span className="text-lg font-semibold text-white sm:hidden">Portal</span>
-          </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden max-w-[150px] truncate text-sm text-white/80 md:inline">
-              {data?.tenant.name}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-shrink-0 border-white/20 bg-white/10 text-white hover:bg-white/20"
-              onClick={() => signOut({ callbackUrl: '/' })}
-            >
-              <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+    <PortalShell>
+      <div className="portal-page">
+        <div className="portal-page-header">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/portal/dashboard">
+                  <Home className="h-4 w-4" />
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbPage>My Payments</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          <div className="portal-hero">
+            <div className="space-y-4">
+              <span className="portal-kicker">Payment center</span>
+              <div className="space-y-2">
+                <h1 className="portal-page-title">My Payments</h1>
+                <p className="portal-page-description">
+                  Review rent history, upload proof of payment, and follow verification updates in
+                  one place.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <SummaryCard
+                  label="Total Overdue"
+                  value={formatCurrency(totalOverdue)}
+                  description={`${overduePayments.length} payment${overduePayments.length !== 1 ? 's' : ''}`}
+                  toneClassName="text-red-200"
+                />
+                <SummaryCard
+                  label="Pending Payments"
+                  value={formatCurrency(totalPending)}
+                  description={`${pendingPayments.length} payment${pendingPayments.length !== 1 ? 's' : ''}`}
+                  toneClassName="text-amber-200"
+                />
+                <SummaryCard
+                  label="Awaiting Verification"
+                  value={pendingVerificationPayments.length}
+                  description={`Proof${pendingVerificationPayments.length !== 1 ? 's' : ''} submitted`}
+                  toneClassName="text-blue-200"
+                />
+                <SummaryCard
+                  label="Total Payments"
+                  value={data?.payments?.length || 0}
+                  description="All time"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        <div className="mb-6">
-          <Link href="/portal/dashboard">
-            <Button variant="ghost" size="sm" className="mb-4 -ml-2">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">My Payments</h1>
-          <p className="text-muted-foreground">
-            View your rent payments, upload proof of payment, and download invoices
-          </p>
-        </div>
-
-        {/* Alert for overdue payments */}
         {overduePayments.length > 0 && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You have {overduePayments.length} overdue payment
-              {overduePayments.length > 1 ? 's' : ''} totaling{' '}
-              <strong>{formatCurrency(totalOverdue)}</strong>. Please make payment as soon as
-              possible.
-            </AlertDescription>
-          </Alert>
+          <Card className="portal-panel portal-status-danger">
+            <CardContent className="flex gap-3 p-5">
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
+              <div className="text-sm text-red-100/85">
+                You have {overduePayments.length} overdue payment
+                {overduePayments.length > 1 ? 's' : ''} totaling{' '}
+                <span className="font-semibold text-white">{formatCurrency(totalOverdue)}</span>.
+                Please make payment as soon as possible.
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Alert for pending verification */}
         {pendingVerificationPayments.length > 0 && (
-          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
-            <FileCheck className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800 dark:text-blue-200">
-              You have {pendingVerificationPayments.length} payment
-              {pendingVerificationPayments.length > 1 ? 's' : ''} awaiting verification by your
-              landlord.
-            </AlertDescription>
-          </Alert>
+          <Card className="portal-panel border-blue-400/20 bg-blue-500/10">
+            <CardContent className="flex gap-3 p-5">
+              <FileCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-300" />
+              <div className="text-sm text-blue-100/85">
+                You have {pendingVerificationPayments.length} payment
+                {pendingVerificationPayments.length > 1 ? 's' : ''} awaiting verification by your
+                landlord.
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Summary Cards */}
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Total Overdue</CardDescription>
-              <CardTitle className="text-2xl text-red-600">
-                {formatCurrency(totalOverdue)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                {overduePayments.length} payment{overduePayments.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Pending Payments</CardDescription>
-              <CardTitle className="text-2xl text-yellow-600">
-                {formatCurrency(totalPending)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                {pendingPayments.length} payment{pendingPayments.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Awaiting Verification</CardDescription>
-              <CardTitle className="text-2xl text-blue-600">
-                {pendingVerificationPayments.length}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Proof{pendingVerificationPayments.length !== 1 ? 's' : ''} submitted
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Total Payments</CardDescription>
-              <CardTitle className="text-2xl">{data?.payments?.length || 0}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">All time</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Payments List */}
-        <Card>
+        <Card className="portal-panel">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-white">
               <DollarSign className="h-5 w-5" />
               Payment History
             </CardTitle>
-            <CardDescription>
-              Click on a payment to view details or upload proof of payment
+            <CardDescription className="text-white/60">
+              Open any payment to review details, pay online, or upload proof.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {isLoading ? (
-                [...Array(3)].map((_, i) => (
-                  <div key={i} className="rounded-lg border p-4">
-                    <Skeleton className="mb-2 h-6 w-48" />
-                    <Skeleton className="h-4 w-64" />
+                [...Array(3)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4"
+                  >
+                    <Skeleton className="mb-2 h-6 w-48 bg-white/10" />
+                    <Skeleton className="h-4 w-64 bg-white/10" />
                   </div>
                 ))
               ) : data?.payments?.length === 0 ? (
-                <div className="py-12 text-center">
-                  <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                  <p className="text-lg font-medium">No payments found</p>
-                  <p className="text-muted-foreground text-sm">
-                    Your payment history will appear here
-                  </p>
+                <div className="portal-empty-state py-12 text-center">
+                  <DollarSign className="mx-auto mb-4 h-12 w-12 text-white/35" />
+                  <p className="text-lg font-medium text-white">No payments found</p>
+                  <p className="text-sm text-white/60">Your payment history will appear here.</p>
                 </div>
               ) : (
-                data?.payments?.map((payment: Payment) => (
+                data?.payments?.map((payment) => (
                   <div
                     key={payment.id}
-                    className="hover:bg-muted/50 cursor-pointer rounded-lg border p-4 transition-colors"
+                    className="cursor-pointer rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.05]"
                     onClick={() => handleViewPayment(payment)}
                   >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      {/* Payment Info */}
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                       <div className="flex-1">
-                        <div className="mb-2 flex flex-wrap items-start gap-2">
-                          <h3 className="font-semibold">{payment.description || 'Rent Payment'}</h3>
-                          {getStatusBadge(payment.status, !!payment.proofOfPaymentUrl)}
+                        <div className="mb-3 flex flex-wrap items-start gap-2">
+                          <h3 className="font-semibold text-white">
+                            {payment.description || 'Rent Payment'}
+                          </h3>
+                          {getStatusBadge(payment.status)}
                           {payment.proofOfPaymentUrl &&
                             payment.status !== 'PENDING_VERIFICATION' &&
                             payment.status !== 'PAID' && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge
+                                variant="outline"
+                                className="border-white/10 bg-white/[0.04] text-xs text-white/75"
+                              >
                                 <Upload className="mr-1 h-3 w-3" />
                                 Proof Uploaded
                               </Badge>
                             )}
                         </div>
 
-                        <div className="text-muted-foreground space-y-1 text-sm">
+                        <div className="space-y-2 text-sm text-white/60">
                           {payment.property && (
                             <p>
-                              <strong>Property:</strong> {payment.property.name}
+                              <span className="font-medium text-white/80">Property:</span>{' '}
+                              {payment.property.name}
                               {payment.property.address && ` - ${payment.property.address}`}
                             </p>
                           )}
 
                           <div className="flex flex-wrap gap-4">
                             {payment.dueDate && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
+                              <div className="flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5" />
                                 <span>Due: {formatDate(payment.dueDate)}</span>
                               </div>
                             )}
                             {payment.paymentDate && payment.status === 'PAID' && (
-                              <div className="flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                              <div className="flex items-center gap-1.5 text-emerald-200">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
                                 <span>Paid: {formatDate(payment.paymentDate)}</span>
                               </div>
                             )}
                           </div>
 
                           <p>
-                            <strong>Reference:</strong> {payment.paymentReference}
+                            <span className="font-medium text-white/80">Reference:</span>{' '}
+                            {payment.paymentReference}
                           </p>
                         </div>
                       </div>
 
-                      {/* Amount and Actions */}
-                      <div className="flex items-center gap-4 sm:flex-col sm:items-end">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">
+                      <div className="flex flex-col gap-4 xl:items-end">
+                        <div className="text-left xl:text-right">
+                          <div className="text-2xl font-bold text-white">
                             {payment.currency} {Number(payment.amount).toFixed(2)}
                           </div>
                         </div>
@@ -354,9 +362,9 @@ export default function TenantPaymentsPage() {
                             <>
                               <Button
                                 size="sm"
-                                variant="default"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                                className="bg-sky-400 text-slate-950 hover:bg-sky-300"
+                                onClick={(event) => {
+                                  event.stopPropagation();
                                   window.location.href = `/portal/payments/${payment.id}/pay`;
                                 }}
                               >
@@ -366,8 +374,9 @@ export default function TenantPaymentsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                onClick={(event) => {
+                                  event.stopPropagation();
                                   handleViewPayment(payment);
                                 }}
                               >
@@ -379,8 +388,9 @@ export default function TenantPaymentsPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            className="text-white/75 hover:bg-white/[0.08] hover:text-white"
+                            onClick={(event) => {
+                              event.stopPropagation();
                               handleViewPayment(payment);
                             }}
                           >
@@ -397,27 +407,26 @@ export default function TenantPaymentsPage() {
           </CardContent>
         </Card>
 
-        {/* Help Section */}
         {data?.payments && data.payments.length > 0 && (
-          <Card className="mt-6">
+          <Card className="portal-panel-muted portal-panel">
             <CardHeader>
-              <CardTitle>Payment Information</CardTitle>
+              <CardTitle className="text-white">Payment Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+            <CardContent className="space-y-3 text-sm text-white/65">
               <p>
-                <strong>How to pay:</strong> Click "View Invoice" on any payment to see full banking
-                details and payment instructions.
+                <span className="font-semibold text-white">How to pay:</span> Open a payment to see
+                full banking details and invoice instructions.
               </p>
               <p>
-                <strong>After making a payment:</strong> Click "Upload Proof" to submit your proof
-                of payment (bank transfer confirmation, deposit slip, etc.). Your landlord will
-                verify it and mark the payment as complete.
+                <span className="font-semibold text-white">After making a payment:</span> Upload
+                proof so your landlord can verify it and mark the payment as complete.
               </p>
               <p>
-                <strong>Need help?</strong> Contact your landlord at{' '}
+                <span className="font-semibold text-white">Need help?</span> Contact your landlord
+                at{' '}
                 <a
                   href={`mailto:${data.payments[0]?.user.email}`}
-                  className="text-primary hover:underline"
+                  className="text-sky-300 hover:text-sky-200 hover:underline"
                 >
                   {data.payments[0]?.user.email}
                 </a>
@@ -427,7 +436,7 @@ export default function TenantPaymentsPage() {
                     or call{' '}
                     <a
                       href={`tel:${data.payments[0].user.phone}`}
-                      className="text-primary hover:underline"
+                      className="text-sky-300 hover:text-sky-200 hover:underline"
                     >
                       {data.payments[0].user.phone}
                     </a>
@@ -437,24 +446,14 @@ export default function TenantPaymentsPage() {
             </CardContent>
           </Card>
         )}
-      </main>
+      </div>
 
-      {/* Footer */}
-      <footer className="border-border bg-background border-t py-6">
-        <div className="mx-auto max-w-6xl px-4 text-center">
-          <p className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} DominionDesk. All rights reserved.
-          </p>
-        </div>
-      </footer>
-
-      {/* Payment Detail Modal */}
       <PaymentDetailModal
         payment={selectedPayment}
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
         onProofUploaded={handleProofUploaded}
       />
-    </div>
+    </PortalShell>
   );
 }

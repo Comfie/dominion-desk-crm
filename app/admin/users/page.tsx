@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { UserTable, CreateUserDialog } from '@/components/admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,45 +56,48 @@ export default function AdminUsersPage() {
   });
   const { toast } = useToast();
 
-  const fetchUsers = async (page: number = currentPage) => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('limit', ITEMS_PER_PAGE.toString());
-      if (search) params.append('search', search);
-      if (tierFilter !== 'all') params.append('tier', tierFilter);
-      if (statusFilter !== 'all') params.append('status', statusFilter);
+  const fetchUsers = useCallback(
+    async (page: number = currentPage) => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', ITEMS_PER_PAGE.toString());
+        if (search) params.append('search', search);
+        if (tierFilter !== 'all') params.append('tier', tierFilter);
+        if (statusFilter !== 'all') params.append('status', statusFilter);
 
-      const response = await fetch(`/api/admin/users?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        const response = await fetch(`/api/admin/users?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const data = await response.json();
+        setUsers(data.users);
+        setPagination(data.pagination);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load users. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
       }
-      const data = await response.json();
-      setUsers(data.users);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load users. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [currentPage, search, statusFilter, tierFilter, toast]
+  );
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
     fetchUsers(1);
-  }, [search, tierFilter, statusFilter]);
+  }, [fetchUsers, search, tierFilter, statusFilter]);
 
   // Fetch when page changes
   useEffect(() => {
     fetchUsers(currentPage);
-  }, [currentPage]);
+  }, [currentPage, fetchUsers]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -118,7 +121,7 @@ export default function AdminUsersPage() {
           description: `User ${action === 'activate' ? 'activated' : 'deactivated'} successfully.`,
         });
         fetchUsers(currentPage);
-      } catch (error) {
+      } catch {
         toast({
           title: 'Error',
           description: 'Failed to update user. Please try again.',
@@ -129,36 +132,42 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage landlords and their subscriptions</p>
+    <div className="admin-page">
+      <div className="admin-page-header">
+        <div className="admin-hero">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-4">
+              <span className="admin-kicker">Admin control</span>
+              <div className="space-y-2">
+                <h1 className="admin-page-title font-semibold">User Management</h1>
+                <p className="admin-page-description">
+                  Manage landlord accounts, subscription states, and account activity from one
+                  operational workspace.
+                </p>
+              </div>
+            </div>
+            <CreateUserDialog onUserCreated={() => fetchUsers(1)} />
+          </div>
         </div>
-        <CreateUserDialog onUserCreated={() => fetchUsers(1)} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter and search users</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row">
+      <Card className="admin-panel-muted admin-panel">
+        <CardContent className="p-4">
+          <div className="admin-toolbar">
             <div className="relative flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-white/35" />
               <Input
                 placeholder="Search by name or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
+                className="admin-input pl-10"
               />
             </div>
             <Select value={tierFilter} onValueChange={setTierFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="admin-input w-full md:w-[200px]">
                 <SelectValue placeholder="Subscription Tier" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="admin-dialog">
                 <SelectItem value="all">All Tiers</SelectItem>
                 <SelectItem value="FREE">Free</SelectItem>
                 <SelectItem value="STARTER">Starter</SelectItem>
@@ -167,10 +176,10 @@ export default function AdminUsersPage() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="admin-input w-full md:w-[200px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="admin-dialog">
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="TRIAL">Trial</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
@@ -179,22 +188,29 @@ export default function AdminUsersPage() {
                 <SelectItem value="EXPIRED">Expired</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={() => fetchUsers(currentPage)} variant="outline" size="icon">
+            <Button
+              onClick={() => fetchUsers(currentPage)}
+              variant="outline"
+              size="icon"
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+            >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="admin-panel">
         <CardHeader>
-          <CardTitle>Users ({pagination.total})</CardTitle>
-          <CardDescription>All landlord accounts on the platform</CardDescription>
+          <CardTitle className="text-white">Users ({pagination.total})</CardTitle>
+          <CardDescription className="text-white/60">
+            All landlord accounts on the platform
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <RefreshCw className="text-muted-foreground h-8 w-8 animate-spin" />
+              <RefreshCw className="h-8 w-8 animate-spin text-white/45" />
             </div>
           ) : (
             <>

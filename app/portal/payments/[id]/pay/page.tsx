@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { signOut } from 'next-auth/react';
@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   LogOut,
   CreditCard,
-  Building2,
   Landmark,
   Calendar,
   Shield,
@@ -25,7 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Logo } from '@/components/ui/logo';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 
 type PaymentMethod = 'card' | 'eft' | null;
 
@@ -60,7 +59,6 @@ interface PaymentDetails {
 
 export default function PaymentCheckoutPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   const paymentId = params.id as string;
 
@@ -103,7 +101,7 @@ export default function PaymentCheckoutPage() {
     onSuccess: (data) => {
       if (data.authorizationUrl) {
         // Redirect to Paystack checkout
-        window.location.href = data.authorizationUrl;
+        window.location.assign(data.authorizationUrl);
       } else {
         toast({
           title: 'Payment initiated',
@@ -158,7 +156,7 @@ export default function PaymentCheckoutPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-background min-h-screen">
+      <div className="bg-background dark min-h-screen" style={{ colorScheme: 'dark' }}>
         <header className="bg-gradient-header border-b border-white/10 shadow-md">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
             <Skeleton className="h-8 w-32" />
@@ -174,10 +172,15 @@ export default function PaymentCheckoutPage() {
 
   if (error || !payment) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
+      <div
+        className="bg-background dark flex min-h-screen items-center justify-center"
+        style={{ colorScheme: 'dark' }}
+      >
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
-            <p className="text-destructive mb-4">Payment not found or you don't have access.</p>
+            <p className="text-destructive mb-4">
+              Payment not found or you don&apos;t have access.
+            </p>
             <Button asChild>
               <Link href="/portal/payments">Back to Payments</Link>
             </Button>
@@ -188,7 +191,7 @@ export default function PaymentCheckoutPage() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen flex-col">
+    <div className="bg-background dark flex min-h-screen flex-col" style={{ colorScheme: 'dark' }}>
       {/* Header */}
       <header className="bg-gradient-header border-b border-white/10 shadow-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-4">
@@ -320,7 +323,7 @@ export default function PaymentCheckoutPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Select Payment Method</CardTitle>
-                    <CardDescription>Choose how you'd like to pay</CardDescription>
+                    <CardDescription>Choose how you&apos;d like to pay</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Card Payment Option */}

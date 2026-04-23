@@ -37,34 +37,36 @@ interface AdminTableProps {
 export function AdminTable({ admins, onAction }: AdminTableProps) {
   if (admins.length === 0) {
     return (
-      <div className="text-muted-foreground flex h-32 items-center justify-center text-center">
+      <div className="flex h-32 items-center justify-center text-center text-white/50">
         <p>No admin users found.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="admin-table-shell overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Last Login</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+          <TableRow className="border-white/8 hover:bg-transparent">
+            <TableHead className="text-white/55">Name</TableHead>
+            <TableHead className="text-white/55">Email</TableHead>
+            <TableHead className="text-white/55">Created</TableHead>
+            <TableHead className="text-white/55">Last Login</TableHead>
+            <TableHead className="text-white/55">Status</TableHead>
+            <TableHead className="text-right text-white/55">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {admins.map((admin) => (
-            <TableRow key={admin.id}>
-              <TableCell className="font-medium">
+            <TableRow key={admin.id} className="border-white/8 hover:bg-white/[0.025]">
+              <TableCell className="font-medium text-white">
                 {admin.firstName} {admin.lastName}
               </TableCell>
-              <TableCell>{admin.email}</TableCell>
-              <TableCell>{format(new Date(admin.createdAt), 'MMM d, yyyy')}</TableCell>
-              <TableCell>
+              <TableCell className="text-white/75">{admin.email}</TableCell>
+              <TableCell className="text-white/65">
+                {format(new Date(admin.createdAt), 'MMM d, yyyy')}
+              </TableCell>
+              <TableCell className="text-white/65">
                 {admin.lastLogin ? format(new Date(admin.lastLogin), 'MMM d, yyyy HH:mm') : 'Never'}
               </TableCell>
               <TableCell>
@@ -83,12 +85,16 @@ export function AdminTable({ admins, onAction }: AdminTableProps) {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-white/70 hover:bg-white/5 hover:text-white"
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                       <span className="sr-only">Open menu</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="admin-dialog">
                     {admin.isActive ? (
                       <DropdownMenuItem onClick={() => onAction(admin.id, 'deactivate')}>
                         Deactivate

@@ -1,4 +1,5 @@
-import { TenantStatus, Prisma, TenantType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { TenantStatus, TenantType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { tenantRepository } from '@/lib/features/tenants/repositories/tenant.repository';
@@ -7,7 +8,8 @@ import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/err
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { generateTenantPassword } from '@/lib/password-generator';
 import { createDefaultFoldersForTenant } from '@/lib/document-folders';
-import { CreateTenantDTO, UpdateTenantDTO, ListTenantsDTO } from '../dtos/tenant.dto';
+import type { CreateTenantDTO, UpdateTenantDTO, ListTenantsDTO } from '../dtos/tenant.dto';
+import { isValidLeaseDateRange, LEASE_END_DATE_ERROR } from '../lease-dates';
 
 /**
  * Tenant Service
@@ -176,6 +178,16 @@ export class TenantService {
       unitLabel?: string | null;
     }
   ): Promise<void> {
+    if (
+      assignment.leaseEndDate &&
+      !isValidLeaseDateRange(assignment.leaseStartDate, assignment.leaseEndDate)
+    ) {
+      throw new ValidationError(LEASE_END_DATE_ERROR, {
+        leaseStartDate: assignment.leaseStartDate,
+        leaseEndDate: assignment.leaseEndDate,
+      });
+    }
+
     // Verify property belongs to user and check multi-tenant support
     const property = await prisma.property.findFirst({
       where: { id: assignment.propertyId, userId },

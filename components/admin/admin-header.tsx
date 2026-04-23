@@ -25,14 +25,14 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="shell-action text-muted-foreground hover:text-foreground rounded-xl lg:hidden"
+          className="shell-action admin-subtle rounded-xl hover:text-white lg:hidden"
           onClick={onMenuClick}
         >
           <Menu className="h-6 w-6" />
         </Button>
         <div className="min-w-0">
           <p className="shell-label hidden sm:block">Operations Console</p>
-          <h1 className="shell-section-title text-foreground truncate font-semibold">
+          <h1 className="shell-section-title truncate font-semibold text-white">
             Super Admin Portal
           </h1>
         </div>
@@ -44,16 +44,16 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="shell-action text-muted-foreground hover:border-border/80 hover:text-foreground relative rounded-2xl border border-transparent"
+              className="shell-action admin-subtle relative rounded-2xl border border-transparent hover:border-white/15 hover:bg-white/5 hover:text-white"
             >
               <User className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60 rounded-2xl">
+          <DropdownMenuContent align="end" className="admin-dialog w-60 rounded-2xl">
             <DropdownMenuLabel>
               <div>
-                <p className="font-medium">{session?.user?.name}</p>
-                <p className="text-muted-foreground text-xs">{session?.user?.email}</p>
+                <p className="font-medium text-white">{session?.user?.name}</p>
+                <p className="text-xs text-white/55">{session?.user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

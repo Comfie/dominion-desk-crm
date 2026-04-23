@@ -68,13 +68,13 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               <Logo variant="icon" width={36} height={36} />
               <div className="space-y-1">
                 <p className="shell-label">Operations Console</p>
-                <span className="text-foreground text-sm font-semibold">Admin</span>
+                <span className="text-sm font-semibold text-white">Admin</span>
               </div>
             </Link>
             <Button
               variant="ghost"
               size="icon"
-              className="shell-action text-muted-foreground hover:text-foreground rounded-xl lg:hidden"
+              className="shell-action admin-subtle rounded-xl hover:text-white lg:hidden"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
@@ -95,8 +95,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     className={cn(
                       'shell-action shell-nav-item flex items-center gap-3 rounded-2xl px-3 py-2.5 font-medium',
                       isActive
-                        ? 'bg-primary text-primary-foreground shadow-[var(--10x-elev-shell-1)]'
-                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        ? 'bg-sky-400/90 text-slate-950 shadow-[var(--10x-elev-shell-1)]'
+                        : 'admin-subtle hover:bg-white/6 hover:text-white'
                     )}
                     onClick={() => {
                       if (window.innerWidth < 1024) {
@@ -114,13 +114,13 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
           {/* Footer - User info */}
           <div className="border-t p-4">
-            <div className="bg-primary/5 rounded-2xl border p-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
               <div className="flex items-center gap-3">
-                <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-2xl">
-                  <Shield className="text-primary h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-400/15">
+                  <Shield className="h-5 w-5 text-sky-300" />
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-semibold">Super Admin</p>
+                  <p className="text-sm font-semibold text-white">Super Admin</p>
                   <p className="shell-support text-xs">Platform Administrator</p>
                 </div>
               </div>

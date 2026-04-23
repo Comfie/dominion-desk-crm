@@ -83,15 +83,15 @@ export function CreateAdminDialog({ onAdminCreated }: CreateAdminDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-sky-400 text-slate-950 hover:bg-sky-300">
           <UserPlus className="mr-2 h-4 w-4" />
           Create Admin
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="admin-dialog sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Admin Account</DialogTitle>
+            <DialogTitle className="text-white">Create New Admin Account</DialogTitle>
             <DialogDescription>
               Create a new admin account with full platform access. The user will receive an email
               with their login credentials and will be required to change their password on first
@@ -105,6 +105,7 @@ export function CreateAdminDialog({ onAdminCreated }: CreateAdminDialogProps) {
                 id="email"
                 type="email"
                 placeholder="admin@example.com"
+                className="admin-input"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
@@ -118,6 +119,7 @@ export function CreateAdminDialog({ onAdminCreated }: CreateAdminDialogProps) {
                   id="firstName"
                   type="text"
                   placeholder="John"
+                  className="admin-input"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   required
@@ -130,6 +132,7 @@ export function CreateAdminDialog({ onAdminCreated }: CreateAdminDialogProps) {
                   id="lastName"
                   type="text"
                   placeholder="Doe"
+                  className="admin-input"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   required
@@ -142,12 +145,17 @@ export function CreateAdminDialog({ onAdminCreated }: CreateAdminDialogProps) {
             <Button
               type="button"
               variant="outline"
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
               onClick={() => setOpen(false)}
               disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              className="bg-sky-400 text-slate-950 hover:bg-sky-300"
+              disabled={loading}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Admin Account
             </Button>

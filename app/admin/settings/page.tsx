@@ -171,14 +171,24 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your admin account and platform settings</p>
+    <div className="admin-page">
+      <div className="admin-page-header">
+        <div className="admin-hero">
+          <div className="space-y-4">
+            <span className="admin-kicker">Account and platform</span>
+            <div className="space-y-2">
+              <h1 className="admin-page-title font-semibold">Settings</h1>
+              <p className="admin-page-description">
+                Manage your admin account, password, and platform-level subscription controls from
+                one settings workspace.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList>
+        <TabsList className="border border-white/10 bg-white/[0.04]">
           <TabsTrigger value="profile">
             <User className="mr-2 h-4 w-4" />
             Profile
@@ -199,10 +209,10 @@ export default function AdminSettingsPage() {
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-4">
-          <Card>
+          <Card className="admin-panel">
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">Profile Information</CardTitle>
+              <CardDescription className="text-white/60">
                 Update your personal information and contact details
               </CardDescription>
             </CardHeader>
@@ -213,6 +223,7 @@ export default function AdminSettingsPage() {
                     <Label htmlFor="firstName">First Name</Label>
                     <Input
                       id="firstName"
+                      className="admin-input"
                       value={profileData.firstName}
                       onChange={(e) =>
                         setProfileData({ ...profileData, firstName: e.target.value })
@@ -225,6 +236,7 @@ export default function AdminSettingsPage() {
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input
                       id="lastName"
+                      className="admin-input"
                       value={profileData.lastName}
                       onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                       required
@@ -237,6 +249,7 @@ export default function AdminSettingsPage() {
                   <Input
                     id="email"
                     type="email"
+                    className="admin-input"
                     value={profileData.email}
                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                     required
@@ -248,6 +261,7 @@ export default function AdminSettingsPage() {
                   <Input
                     id="phone"
                     type="tel"
+                    className="admin-input"
                     value={profileData.phone}
                     onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     placeholder="+27 XX XXX XXXX"
@@ -257,7 +271,11 @@ export default function AdminSettingsPage() {
                 <Separator />
 
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={loading}>
+                  <Button
+                    type="submit"
+                    className="bg-sky-400 text-slate-950 hover:bg-sky-300"
+                    disabled={loading}
+                  >
                     <Save className="mr-2 h-4 w-4" />
                     {loading ? 'Saving...' : 'Save Changes'}
                   </Button>
@@ -269,10 +287,12 @@ export default function AdminSettingsPage() {
 
         {/* Security Tab */}
         <TabsContent value="security" className="space-y-4">
-          <Card>
+          <Card className="admin-panel">
             <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>Update your password to keep your account secure</CardDescription>
+              <CardTitle className="text-white">Change Password</CardTitle>
+              <CardDescription className="text-white/60">
+                Update your password to keep your account secure
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
@@ -281,6 +301,7 @@ export default function AdminSettingsPage() {
                   <Input
                     id="currentPassword"
                     type="password"
+                    className="admin-input"
                     value={passwordData.currentPassword}
                     onChange={(e) =>
                       setPasswordData({ ...passwordData, currentPassword: e.target.value })
@@ -294,6 +315,7 @@ export default function AdminSettingsPage() {
                   <Input
                     id="newPassword"
                     type="password"
+                    className="admin-input"
                     value={passwordData.newPassword}
                     onChange={(e) =>
                       setPasswordData({ ...passwordData, newPassword: e.target.value })
@@ -301,9 +323,7 @@ export default function AdminSettingsPage() {
                     required
                     minLength={6}
                   />
-                  <p className="text-muted-foreground text-sm">
-                    Must be at least 6 characters long
-                  </p>
+                  <p className="text-sm text-white/55">Must be at least 6 characters long</p>
                 </div>
 
                 <div className="space-y-2">
@@ -311,6 +331,7 @@ export default function AdminSettingsPage() {
                   <Input
                     id="confirmPassword"
                     type="password"
+                    className="admin-input"
                     value={passwordData.confirmPassword}
                     onChange={(e) =>
                       setPasswordData({ ...passwordData, confirmPassword: e.target.value })
@@ -322,7 +343,11 @@ export default function AdminSettingsPage() {
                 <Separator />
 
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={loading}>
+                  <Button
+                    type="submit"
+                    className="bg-sky-400 text-slate-950 hover:bg-sky-300"
+                    disabled={loading}
+                  >
                     <Key className="mr-2 h-4 w-4" />
                     {loading ? 'Updating...' : 'Update Password'}
                   </Button>
@@ -331,16 +356,18 @@ export default function AdminSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="admin-panel">
             <CardHeader>
-              <CardTitle>Account Security</CardTitle>
-              <CardDescription>Additional security information</CardDescription>
+              <CardTitle className="text-white">Account Security</CardTitle>
+              <CardDescription className="text-white/60">
+                Additional security information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Role</p>
-                  <p className="text-muted-foreground text-sm">Super Administrator</p>
+                  <p className="text-sm text-white/55">Super Administrator</p>
                 </div>
               </div>
 
@@ -349,9 +376,7 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Account Created</p>
-                  <p className="text-muted-foreground text-sm">
-                    {session?.user ? 'Active' : 'Loading...'}
-                  </p>
+                  <p className="text-sm text-white/55">{session?.user ? 'Active' : 'Loading...'}</p>
                 </div>
               </div>
             </CardContent>
@@ -360,24 +385,24 @@ export default function AdminSettingsPage() {
 
         {/* Subscription Settings Tab */}
         <TabsContent value="subscription" className="space-y-4">
-          <Card>
+          <Card className="admin-panel">
             <CardHeader>
-              <CardTitle>Subscription Configuration</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">Subscription Configuration</CardTitle>
+              <CardDescription className="text-white/60">
                 Configure global subscription pricing, trial periods, and access restrictions
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-muted/50 rounded-lg border p-6">
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold">Manage Subscription Settings</h3>
-                    <p className="text-muted-foreground mt-1 text-sm">
+                    <h3 className="font-semibold text-white">Manage Subscription Settings</h3>
+                    <p className="mt-1 text-sm text-white/60">
                       Configure trial days, pricing percentages, property limits, and grace periods
                     </p>
                   </div>
                   <Link href="/admin/settings/subscription">
-                    <Button>
+                    <Button className="bg-sky-400 text-slate-950 hover:bg-sky-300">
                       Configure
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -388,23 +413,21 @@ export default function AdminSettingsPage() {
               <Separator />
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-medium">Trial Settings</h4>
-                  <p className="text-muted-foreground text-sm">Trial period, property limits</p>
+                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                  <h4 className="font-medium text-white">Trial Settings</h4>
+                  <p className="text-sm text-white/55">Trial period, property limits</p>
                 </div>
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-medium">Pricing Settings</h4>
-                  <p className="text-muted-foreground text-sm">
-                    Base fee, percentage, min/max fees
-                  </p>
+                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                  <h4 className="font-medium text-white">Pricing Settings</h4>
+                  <p className="text-sm text-white/55">Base fee, percentage, min/max fees</p>
                 </div>
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-medium">Access Restrictions</h4>
-                  <p className="text-muted-foreground text-sm">Grace periods after trial expiry</p>
+                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                  <h4 className="font-medium text-white">Access Restrictions</h4>
+                  <p className="text-sm text-white/55">Grace periods after trial expiry</p>
                 </div>
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-medium">Billing Integration</h4>
-                  <p className="text-muted-foreground text-sm">Coming soon</p>
+                <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                  <h4 className="font-medium text-white">Billing Integration</h4>
+                  <p className="text-sm text-white/55">Coming soon</p>
                 </div>
               </div>
             </CardContent>
@@ -413,10 +436,10 @@ export default function AdminSettingsPage() {
 
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-4">
-          <Card>
+          <Card className="admin-panel">
             <CardHeader>
-              <CardTitle>Email Notifications</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">Email Notifications</CardTitle>
+              <CardDescription className="text-white/60">
                 Configure which email notifications you want to receive
               </CardDescription>
             </CardHeader>
@@ -424,11 +447,15 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">New User Signups</p>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-sm text-white/55">
                     Receive notifications when new landlords register
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                >
                   Coming Soon
                 </Button>
               </div>
@@ -438,11 +465,15 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Subscription Changes</p>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-sm text-white/55">
                     Get notified when users upgrade or cancel subscriptions
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                >
                   Coming Soon
                 </Button>
               </div>
@@ -452,9 +483,13 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Payment Failures</p>
-                  <p className="text-muted-foreground text-sm">Alert when user payments fail</p>
+                  <p className="text-sm text-white/55">Alert when user payments fail</p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                >
                   Coming Soon
                 </Button>
               </div>

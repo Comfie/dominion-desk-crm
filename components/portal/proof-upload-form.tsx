@@ -153,26 +153,25 @@ export function ProofUploadForm({ paymentId, onSuccess, onCancel }: ProofUploadF
 
   return (
     <div className="space-y-4">
-      {/* File Upload Area */}
       <div>
-        <Label className="mb-2 block">Proof of Payment</Label>
+        <Label className="mb-2 block text-white/70">Proof of Payment</Label>
         {!file ? (
           <div
-            className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+            className={`rounded-[1.25rem] border-2 border-dashed p-8 text-center transition-colors ${
               dragActive
-                ? 'border-primary bg-primary/5'
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                ? 'border-sky-400/55 bg-sky-400/10'
+                : 'border-white/15 bg-white/[0.03] hover:border-white/30'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <Upload className="text-muted-foreground mx-auto mb-4 h-10 w-10" />
-            <p className="text-muted-foreground mb-2 text-sm">
+            <Upload className="mx-auto mb-4 h-10 w-10 text-white/45" />
+            <p className="mb-2 text-sm text-white/70">
               Drag and drop your proof of payment here, or click to browse
             </p>
-            <p className="text-muted-foreground mb-4 text-xs">
+            <p className="mb-4 text-xs text-white/45">
               Supported formats: PDF, JPEG, PNG, WebP (max 8MB)
             </p>
             <input
@@ -185,24 +184,26 @@ export function ProofUploadForm({ paymentId, onSuccess, onCancel }: ProofUploadF
             <Button
               type="button"
               variant="outline"
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
               onClick={() => document.getElementById('proof-upload')?.click()}
             >
               Select File
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between rounded-lg border p-4">
+          <div className="flex items-center justify-between rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-4">
             <div className="flex items-center gap-3">
               {getFileIcon(file.type)}
               <div>
-                <p className="max-w-[200px] truncate text-sm font-medium">{file.name}</p>
-                <p className="text-muted-foreground text-xs">{formatFileSize(file.size)}</p>
+                <p className="max-w-[200px] truncate text-sm font-medium text-white">{file.name}</p>
+                <p className="text-xs text-white/50">{formatFileSize(file.size)}</p>
               </div>
             </div>
             <Button
               type="button"
               variant="ghost"
               size="icon"
+              className="text-white/70 hover:bg-white/[0.08] hover:text-white"
               onClick={removeFile}
               disabled={isSubmitting || isUploading}
             >
@@ -212,9 +213,8 @@ export function ProofUploadForm({ paymentId, onSuccess, onCancel }: ProofUploadF
         )}
       </div>
 
-      {/* Notes */}
       <div>
-        <Label htmlFor="notes" className="mb-2 block">
+        <Label htmlFor="notes" className="mb-2 block text-white/70">
           Notes (optional)
         </Label>
         <Textarea
@@ -223,15 +223,16 @@ export function ProofUploadForm({ paymentId, onSuccess, onCancel }: ProofUploadF
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
+          className="border-white/10 bg-white/5 text-white placeholder:text-white/35"
           disabled={isSubmitting || isUploading}
         />
       </div>
 
-      {/* Actions */}
       <div className="flex justify-end gap-2 pt-2">
         <Button
           type="button"
           variant="outline"
+          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
           onClick={onCancel}
           disabled={isSubmitting || isUploading}
         >
@@ -239,6 +240,7 @@ export function ProofUploadForm({ paymentId, onSuccess, onCancel }: ProofUploadF
         </Button>
         <Button
           type="button"
+          className="bg-sky-400 text-slate-950 hover:bg-sky-300"
           onClick={handleSubmit}
           disabled={!file || isSubmitting || isUploading}
         >

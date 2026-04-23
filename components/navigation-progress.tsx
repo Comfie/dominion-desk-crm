@@ -30,8 +30,14 @@ export function NavigationProgress() {
   const progressRef = useRef(0);
   const intervalRef = useRef<number | null>(null);
   const resetTimeoutRef = useRef<number | null>(null);
+  const startFrameRef = useRef<number | null>(null);
 
   const clearTimers = useCallback(() => {
+    if (startFrameRef.current !== null) {
+      window.cancelAnimationFrame(startFrameRef.current);
+      startFrameRef.current = null;
+    }
+
     if (intervalRef.current !== null) {
       window.clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -67,6 +73,17 @@ export function NavigationProgress() {
       });
     }, 160);
   }, [clearTimers]);
+
+  const scheduleStart = useCallback(() => {
+    if (activeRef.current || startFrameRef.current !== null) {
+      return;
+    }
+
+    startFrameRef.current = window.requestAnimationFrame(() => {
+      startFrameRef.current = null;
+      start();
+    });
+  }, [start]);
 
   const complete = useCallback(() => {
     if (!activeRef.current && progressRef.current === 0) {
@@ -142,7 +159,7 @@ export function NavigationProgress() {
         return;
       }
 
-      start();
+      scheduleStart();
     };
 
     const originalPushState = window.history.pushState.bind(window.history);
@@ -153,7 +170,7 @@ export function NavigationProgress() {
       if (targetUrl && targetUrl.origin === window.location.origin) {
         const nextRoute = `${targetUrl.pathname}?${targetUrl.searchParams.toString()}`;
         if (nextRoute !== routeKey) {
-          start();
+          scheduleStart();
         }
       }
 
@@ -165,7 +182,7 @@ export function NavigationProgress() {
       if (targetUrl && targetUrl.origin === window.location.origin) {
         const nextRoute = `${targetUrl.pathname}?${targetUrl.searchParams.toString()}`;
         if (nextRoute !== routeKey) {
-          start();
+          scheduleStart();
         }
       }
 
@@ -173,7 +190,7 @@ export function NavigationProgress() {
     };
 
     const handlePopState = () => {
-      start();
+      scheduleStart();
     };
 
     document.addEventListener('click', handleDocumentClick, true);
@@ -186,7 +203,7 @@ export function NavigationProgress() {
       window.history.replaceState = originalReplaceState;
       clearTimers();
     };
-  }, [routeKey, start, clearTimers]);
+  }, [routeKey, scheduleStart, clearTimers]);
 
   return (
     <div

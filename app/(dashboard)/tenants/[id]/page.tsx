@@ -27,6 +27,7 @@ import {
 
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1220,22 +1221,22 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="leaseStartDate">Lease Start Date *</Label>
-                <Input
+                <DatePicker
                   id="leaseStartDate"
-                  type="date"
                   value={leaseStartDate}
-                  onChange={(e) => setLeaseStartDate(e.target.value)}
+                  placeholder="Choose a lease start date"
+                  onChange={setLeaseStartDate}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="leaseEndDate">Lease End Date *</Label>
-                <Input
+                <DatePicker
                   id="leaseEndDate"
-                  type="date"
                   value={leaseEndDate}
-                  onChange={(e) => setLeaseEndDate(e.target.value)}
-                  required
+                  min={leaseStartDate}
+                  placeholder="Choose a lease end date"
+                  onChange={setLeaseEndDate}
                 />
               </div>
             </div>
@@ -1279,11 +1280,12 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
             <div className="space-y-2">
               <Label htmlFor="moveInDate">Move-In Date</Label>
-              <Input
+              <DatePicker
                 id="moveInDate"
-                type="date"
                 value={moveInDate}
-                onChange={(e) => setMoveInDate(e.target.value)}
+                min={leaseStartDate}
+                placeholder="Choose a move-in date"
+                onChange={setMoveInDate}
               />
             </div>
           </div>
@@ -1333,22 +1335,22 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="editLeaseStartDate">Lease Start Date *</Label>
-                <Input
+                <DatePicker
                   id="editLeaseStartDate"
-                  type="date"
                   value={leaseStartDate}
-                  onChange={(e) => setLeaseStartDate(e.target.value)}
+                  placeholder="Choose a lease start date"
+                  onChange={setLeaseStartDate}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="editLeaseEndDate">Lease End Date *</Label>
-                <Input
+                <DatePicker
                   id="editLeaseEndDate"
-                  type="date"
                   value={leaseEndDate}
-                  onChange={(e) => setLeaseEndDate(e.target.value)}
-                  required
+                  min={leaseStartDate}
+                  placeholder="Choose a lease end date"
+                  onChange={setLeaseEndDate}
                 />
               </div>
             </div>
@@ -1379,11 +1381,12 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
             <div className="space-y-2">
               <Label htmlFor="editMoveInDate">Move-In Date</Label>
-              <Input
+              <DatePicker
                 id="editMoveInDate"
-                type="date"
                 value={moveInDate}
-                onChange={(e) => setMoveInDate(e.target.value)}
+                min={leaseStartDate}
+                placeholder="Choose a move-in date"
+                onChange={setMoveInDate}
               />
             </div>
           </div>
@@ -1429,11 +1432,12 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="moveOutDate">Move-Out Date *</Label>
-              <Input
+              <DatePicker
                 id="moveOutDate"
-                type="date"
                 value={moveOutDate}
-                onChange={(e) => setMoveOutDate(e.target.value)}
+                min={leaseStartDate}
+                placeholder="Choose a move-out date"
+                onChange={setMoveOutDate}
               />
             </div>
           </div>
