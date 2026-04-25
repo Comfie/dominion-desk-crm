@@ -273,6 +273,19 @@ export async function main() {
   await resetDatabase();
 
   // --- 1. SETUP USERS (Login Accounts) ---
+  // Quick test login sheet:
+  // - admin01.propertycrm@mailinator.com / Admin@123 / SUPER_ADMIN
+  // - demo01.propertycrm@mailinator.com / Demo@123 / CUSTOMER
+  // - john.smith.propertycrm@mailinator.com / Tenant@123 / TENANT
+  // - landlord.propertycrm@mailinator.com / password123 / CUSTOMER
+  // - sarah.johnson.propertycrm@mailinator.com / SarahJohnson2026! / TENANT
+  // - michael.brown.propertycrm@mailinator.com / MichaelBrown2026! / TENANT
+  // - emma.davis.propertycrm@mailinator.com / EmmaDavis2026! / TENANT
+  // - james.wilson.propertycrm@mailinator.com / JamesWilson2026! / TENANT
+  // - robert.taylor.propertycrm@mailinator.com / RobertTaylor2026! / TENANT
+  // - lisa.anderson.propertycrm@mailinator.com / LisaAnderson2026! / TENANT
+  // Password format for generated tenant portal users:
+  // - FirstLast2026! (generated at runtime from first/last name and current year)
 
   const landlordPassword = await bcrypt.hash('Demo@123', 10);
   const tenantPassword = await bcrypt.hash('Tenant@123', 10);
