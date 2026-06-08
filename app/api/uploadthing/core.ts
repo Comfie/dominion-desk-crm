@@ -43,14 +43,14 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file }) => {
       // This code runs on the server after upload completes
       console.log('Upload complete for userId:', metadata.userId);
-      console.log('File URL:', file.url);
+      console.log('File URL:', file.ufsUrl);
       console.log('File name:', file.name);
       console.log('File size:', file.size);
 
       // Return data to the client
       return {
         uploadedBy: metadata.userId,
-        fileUrl: file.url,
+        fileUrl: file.ufsUrl,
         fileName: file.name,
         fileSize: file.size,
       };
@@ -77,14 +77,14 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file }) => {
       // This code runs on the server after upload completes
       console.log('Image upload complete for userId:', metadata.userId);
-      console.log('File URL:', file.url);
+      console.log('File URL:', file.ufsUrl);
       console.log('File name:', file.name);
       console.log('File size:', file.size);
 
       // Return data to the client
       return {
         uploadedBy: metadata.userId,
-        fileUrl: file.url,
+        fileUrl: file.ufsUrl,
         fileName: file.name,
         fileSize: file.size,
       };
@@ -112,14 +112,14 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file }) => {
       // This code runs on the server after upload completes
       console.log('Payment proof upload complete for userId:', metadata.userId);
-      console.log('File URL:', file.url);
+      console.log('File URL:', file.ufsUrl);
       console.log('File name:', file.name);
       console.log('File size:', file.size);
 
       // Return data to the client
       return {
         uploadedBy: metadata.userId,
-        fileUrl: file.url,
+        fileUrl: file.ufsUrl,
         fileName: file.name,
         fileSize: file.size,
       };

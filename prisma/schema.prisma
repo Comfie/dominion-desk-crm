@@ -808,6 +808,7 @@ model Expense {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId      String?
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  unitLabel       String?   // Optional label for associating expense with a specific room/unit
   maintenanceRequestId String?
   maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id], onDelete: SetNull)
 

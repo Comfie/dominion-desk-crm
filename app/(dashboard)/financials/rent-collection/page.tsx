@@ -14,6 +14,7 @@ import {
 import { CollectionSummaryCards } from '@/components/financials/collection-summary-cards';
 import { CollectionTrendChart } from '@/components/financials/collection-trend-chart';
 import { RentCollectionGrid } from '@/components/financials/rent-collection-grid';
+import { ManualInvoiceHistory } from '@/components/financials/manual-invoice-history';
 import { QuickRecordPaymentModal } from '@/components/financials/quick-record-payment-modal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -407,6 +408,12 @@ export default function RentCollectionPage() {
             onRecordPayment={handleRecordPayment}
             onSendReminder={handleSendReminder}
             onVerifyProof={handleVerifyProof}
+          />
+
+          <ManualInvoiceHistory
+            invoices={data.manualInvoices || []}
+            onRecordPayment={handleRecordPayment}
+            onSendReminder={handleSendReminder}
           />
 
           {/* Collection Trend Chart */}

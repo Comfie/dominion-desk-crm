@@ -189,11 +189,15 @@ export class TenantService {
     }
 
     // Verify property belongs to user and check multi-tenant support
+    const today = new Date();
     const property = await prisma.property.findFirst({
       where: { id: assignment.propertyId, userId },
       include: {
         tenants: {
-          where: { isActive: true },
+          where: {
+            isActive: true,
+            OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: today } }],
+          },
         },
       },
     });
@@ -210,6 +214,7 @@ export class TenantService {
             where: {
               propertyId: assignment.propertyId,
               isActive: true,
+              OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: today } }],
             },
             select: { id: true },
           })

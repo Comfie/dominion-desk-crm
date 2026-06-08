@@ -681,13 +681,17 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                           expenseDate: string;
                           status: string;
                           isDeductible: boolean;
+                          unitLabel?: string | null;
                         }) => (
                           <div
                             key={expense.id}
                             className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
                           >
                             <div>
-                              <p className="font-medium">{expense.title}</p>
+                              <p className="font-medium">
+                                {expense.title}
+                                {expense.unitLabel ? ` - ${expense.unitLabel}` : ''}
+                              </p>
                               <div className="text-muted-foreground flex items-center gap-2 text-sm">
                                 <Badge variant="outline">
                                   {expense.category.replace('_', ' ')}
@@ -755,84 +759,88 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
             </CardHeader>
             <CardContent className="space-y-4">
               {activeLeases.length > 0 ? (
-                activeLeases.map(
-                  (lease: {
-                    id: string;
-                    leaseStartDate?: string;
-                    leaseEndDate?: string | null;
-                    moveInDate?: string | null;
-                    monthlyRent?: number | null;
-                    unitLabel?: string | null;
-                    tenant?: {
+                <div className="max-h-[28rem] space-y-4 overflow-y-auto pr-1">
+                  {activeLeases.map(
+                    (lease: {
                       id: string;
-                      firstName: string;
-                      lastName: string;
-                      email: string;
-                      phone: string;
-                    };
-                  }) => (
-                    <div key={lease.id} className="space-y-3 rounded-lg border p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold">
-                              {lease.tenant
-                                ? `${lease.tenant.firstName} ${lease.tenant.lastName}`
-                                : 'Tenant'}
-                            </p>
-                            {lease.unitLabel && (
-                              <Badge variant="outline" className="text-xs">
-                                {lease.unitLabel}
-                              </Badge>
+                      leaseStartDate?: string;
+                      leaseEndDate?: string | null;
+                      moveInDate?: string | null;
+                      monthlyRent?: number | null;
+                      unitLabel?: string | null;
+                      tenant?: {
+                        id: string;
+                        firstName: string;
+                        lastName: string;
+                        email: string;
+                        phone: string;
+                      };
+                    }) => (
+                      <div key={lease.id} className="space-y-3 rounded-lg border p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-semibold">
+                                {lease.tenant
+                                  ? `${lease.tenant.firstName} ${lease.tenant.lastName}`
+                                  : 'Tenant'}
+                              </p>
+                              {lease.unitLabel && (
+                                <Badge variant="outline" className="shrink-0 text-xs">
+                                  {lease.unitLabel}
+                                </Badge>
+                              )}
+                            </div>
+                            {lease.tenant?.email && (
+                              <p className="text-muted-foreground truncate text-xs">
+                                {lease.tenant.email}
+                              </p>
+                            )}
+                            {lease.tenant?.phone && (
+                              <p className="text-muted-foreground text-xs">{lease.tenant.phone}</p>
                             )}
                           </div>
-                          {lease.tenant?.email && (
-                            <p className="text-muted-foreground text-xs">{lease.tenant.email}</p>
+                          {lease.tenant?.id && (
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/tenants/${lease.tenant.id}`}>View</Link>
+                            </Button>
                           )}
-                          {lease.tenant?.phone && (
-                            <p className="text-muted-foreground text-xs">{lease.tenant.phone}</p>
-                          )}
                         </div>
-                        {lease.tenant?.id && (
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/tenants/${lease.tenant.id}`}>View</Link>
-                          </Button>
-                        )}
-                      </div>
 
-                      <Separator />
+                        <Separator />
 
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Lease Start</span>
-                          <span className="font-medium">
-                            {lease.leaseStartDate ? formatDate(lease.leaseStartDate) : 'TBD'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Move-in</span>
-                          <span className="font-medium">
-                            {lease.moveInDate ? formatDate(lease.moveInDate) : 'TBD'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Lease End</span>
-                          <span className="font-medium">
-                            {lease.leaseEndDate ? formatDate(lease.leaseEndDate) : 'Open-ended'}
-                          </span>
-                        </div>
-                        {lease.monthlyRent && (
+                        <div className="space-y-2 text-sm">
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Monthly Rent</span>
+                            <span className="text-muted-foreground">Lease Start</span>
                             <span className="font-medium">
-                              {formatCurrency(Number(lease.monthlyRent))}
+                              {lease.leaseStartDate ? formatDate(lease.leaseStartDate) : 'TBD'}
                             </span>
                           </div>
-                        )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Move-in</span>
+                            <span className="font-medium">
+                              {lease.moveInDate ? formatDate(lease.moveInDate) : 'TBD'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Lease End</span>
+                            <span className="font-medium">
+                              {lease.leaseEndDate ? formatDate(lease.leaseEndDate) : 'Open-ended'}
+                            </span>
+                          </div>
+                          {lease.monthlyRent && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Monthly Rent</span>
+                              <span className="font-medium">
+                                {formatCurrency(Number(lease.monthlyRent))}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                )
+                    )
+                  )}
+                </div>
               ) : (
                 <p className="text-muted-foreground text-sm">
                   This property does not have an active lease right now.

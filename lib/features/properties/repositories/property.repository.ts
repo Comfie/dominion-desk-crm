@@ -87,6 +87,7 @@ export class PropertyRepository {
             leaseStartDate: true,
             leaseEndDate: true,
             moveInDate: true,
+            unitLabel: true,
             tenant: {
               select: {
                 firstName: true,

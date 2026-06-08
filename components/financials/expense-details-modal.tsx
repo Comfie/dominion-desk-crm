@@ -20,6 +20,7 @@ interface ExpenseDetailsModalProps {
     status: string;
     vendor?: string | null;
     vendorInvoice?: string | null;
+    unitLabel?: string | null;
     isDeductible: boolean;
     notes?: string | null;
     property?: {
@@ -179,7 +180,10 @@ export function ExpenseDetailsModal({ expense, open, onOpenChange }: ExpenseDeta
                 <Building2 className="text-muted-foreground mt-0.5 h-5 w-5 flex-shrink-0" />
                 <div>
                   <p className="text-muted-foreground text-sm">Property</p>
-                  <p className="font-medium">{expense.property?.name || 'General Expense'}</p>
+                  <p className="font-medium">
+                    {expense.property?.name || 'General Expense'}
+                    {expense.unitLabel ? ` - ${expense.unitLabel}` : ''}
+                  </p>
                   {expense.property?.address && (
                     <p className="text-muted-foreground text-sm">{expense.property.address}</p>
                   )}

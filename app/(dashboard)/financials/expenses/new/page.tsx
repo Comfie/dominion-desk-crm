@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const expenseSchema = z.object({
   propertyId: z.string().optional(),
+  unitLabel: z.string().optional(),
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
@@ -54,6 +55,7 @@ function NewExpenseForm() {
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors },
   } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -65,6 +67,20 @@ function NewExpenseForm() {
       expenseDate: new Date().toISOString().split('T')[0],
     },
   });
+
+  const selectedPropertyId = useWatch({
+    control,
+    name: 'propertyId',
+  });
+
+  const selectedProperty = Array.isArray(properties)
+    ? properties.find((p: any) => p.id === selectedPropertyId)
+    : null;
+
+  // Extract unique unit labels from tenants
+  const activeUnits = selectedProperty?.tenants
+    ? Array.from(new Set(selectedProperty.tenants.map((t: any) => t.unitLabel).filter(Boolean)))
+    : [];
 
   // Set property value when preselectedPropertyId is available
   useEffect(() => {
@@ -202,19 +218,63 @@ function NewExpenseForm() {
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <select
-                  id="status"
-                  className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-                  {...register('status')}
-                >
-                  <option value="UNPAID">Unpaid</option>
-                  <option value="PAID">Paid</option>
-                  <option value="OVERDUE">Overdue</option>
-                </select>
-              </div>
+              {selectedProperty?.allowsMultipleTenants ? (
+                <div className="space-y-2">
+                  <Label htmlFor="unitLabel">Unit / Room (Optional)</Label>
+                  <div className="relative">
+                    <Input
+                      id="unitLabel"
+                      list="unit-suggestions"
+                      placeholder="e.g. Room A"
+                      {...register('unitLabel')}
+                    />
+                    {activeUnits.length > 0 && (
+                      <datalist id="unit-suggestions">
+                        {activeUnits.map((unit: string) => (
+                          <option key={unit} value={unit} />
+                        ))}
+                      </datalist>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Attach this expense to a specific unit.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <select
+                    id="status"
+                    className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                    {...register('status')}
+                  >
+                    <option value="UNPAID">Unpaid</option>
+                    <option value="PAID">Paid</option>
+                    <option value="OVERDUE">Overdue</option>
+                  </select>
+                </div>
+              )}
             </div>
+
+            {/* If allowsMultipleTenants is true, the status needs its own row or needs to be pushed down. Let's make sure status is always visible. */}
+            {selectedProperty?.allowsMultipleTenants && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <select
+                    id="status"
+                    className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                    {...register('status')}
+                  >
+                    <option value="UNPAID">Unpaid</option>
+                    <option value="PAID">Paid</option>
+                    <option value="OVERDUE">Overdue</option>
+                  </select>
+                </div>
+                {/* Empty div to keep the grid aligned */}
+                <div></div>
+              </div>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
