@@ -243,6 +243,71 @@ describe('TenantService', () => {
       );
     });
 
+    it('should create a property assignment when a single-tenant property only has expired lease rows', async () => {
+      const dataWithProperty: CreateTenantDTO = {
+        ...validTenantData,
+        assignProperty: true,
+        propertyId: 'property-123',
+        leaseStartDate: '2026-07-01',
+        propertyMonthlyRent: 5000,
+        propertyDepositPaid: 10000,
+      };
+
+      const mockTenant = {
+        id: 'tenant-123',
+        ...dataWithProperty,
+        userId: mockUserId,
+        status: 'ACTIVE',
+      };
+
+      vi.mocked(prisma.tenant.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.tenant.create).mockResolvedValue(mockTenant as never);
+      vi.mocked(prisma.property.findFirst).mockImplementation((async (args: any) => {
+        const filtersOutExpiredLeases = Boolean(args?.include?.tenants?.where?.OR);
+
+        return {
+          id: 'property-123',
+          name: 'Test Property',
+          userId: mockUserId,
+          allowsMultipleTenants: false,
+          tenants: filtersOutExpiredLeases
+            ? []
+            : [
+                {
+                  id: 'expired-assignment',
+                  isActive: true,
+                  leaseEndDate: new Date('2025-12-31'),
+                },
+              ],
+        };
+      }) as any);
+      vi.mocked(prisma.propertyTenant.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.propertyTenant.create).mockResolvedValue({} as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        firstName: 'Landlord',
+        lastName: 'Name',
+        email: 'landlord@example.com',
+        phone: '0811234567',
+      } as never);
+      vi.mocked(prisma.property.findUnique).mockResolvedValue({
+        name: 'Test Property',
+        address: '123 Test St',
+        city: 'Cape Town',
+      } as never);
+
+      await service.createTenant(mockUserId, dataWithProperty);
+
+      expect(prisma.propertyTenant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            propertyId: 'property-123',
+            tenantId: 'tenant-123',
+            isActive: true,
+          }),
+        })
+      );
+    });
+
     it('should throw error if property already has active tenant', async () => {
       const dataWithProperty: CreateTenantDTO = {
         ...validTenantData,

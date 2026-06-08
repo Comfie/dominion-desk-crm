@@ -19,6 +19,7 @@ interface ExpenseCardProps {
     status: string;
     vendor?: string | null;
     vendorInvoice?: string | null;
+    unitLabel?: string | null;
     isDeductible: boolean;
     notes?: string | null;
     property?: {
@@ -83,7 +84,10 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
                 {expense.property && (
                   <div className="flex items-center gap-1">
                     <Building2 className="h-4 w-4" />
-                    <span>{expense.property.name}</span>
+                    <span>
+                      {expense.property.name}
+                      {expense.unitLabel ? ` - ${expense.unitLabel}` : ''}
+                    </span>
                   </div>
                 )}
                 {expense.vendor && (

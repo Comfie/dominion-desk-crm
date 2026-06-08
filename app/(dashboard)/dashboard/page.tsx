@@ -368,33 +368,37 @@ export default function DashboardPage() {
         </Card>
 
         <Card variant="elevated">
-          <CardHeader className="p-5 pb-3">
+          <CardHeader className="p-5 pb-2">
             <CardTitle className="text-base">Today&apos;s focus</CardTitle>
             <CardDescription className="text-xs">
               Three areas most likely to affect cash flow or service quality.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2.5 px-5 pt-0 pb-5">
+          <CardContent className="flex flex-col gap-2 px-5 pt-0 pb-5">
             {focusItems.map((item) => {
               const Icon = item.icon;
 
               return (
                 <Link key={item.title} href={item.href}>
                   <div
-                    className={`rounded-xl border p-3.5 transition-all hover:shadow-sm ${item.tone}`}
+                    className={`rounded-xl border px-3 py-2.5 transition-all hover:shadow-sm ${item.tone}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex gap-3">
-                        <div className="bg-background/80 flex h-9 w-9 items-center justify-center rounded-lg">
-                          <Icon className="h-4.5 w-4.5" />
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <div className="bg-background/80 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg">
+                          <Icon className="h-3.5 w-3.5" />
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold">{item.title}</p>
-                          <p className="mt-1 text-lg font-semibold tracking-tight">{item.value}</p>
-                          <p className="text-muted-foreground mt-1 text-xs">{item.description}</p>
+                        <div className="min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-sm leading-none font-semibold">{item.value}</p>
+                            <p className="text-muted-foreground truncate text-xs">{item.title}</p>
+                          </div>
+                          <p className="text-muted-foreground mt-1 truncate text-xs">
+                            {item.description}
+                          </p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="text-[11px]">
+                      <Badge variant="secondary" className="flex-shrink-0 text-[11px]">
                         {item.badge}
                       </Badge>
                     </div>
@@ -476,7 +480,7 @@ export default function DashboardPage() {
                       <Badge variant="secondary">{data?.paymentsWithIssues?.length || 0}</Badge>
                     </div>
                     {data?.paymentsWithIssues && data.paymentsWithIssues.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="flex flex-col gap-1.5">
                         {data.paymentsWithIssues.slice(0, 3).map((payment) => {
                           const isOverdue = payment.status === 'OVERDUE';
                           const daysOverdue = payment.dueDate
@@ -488,31 +492,27 @@ export default function DashboardPage() {
 
                           return (
                             <Link key={payment.id} href={`/tenants/${payment.tenant?.id || ''}`}>
-                              <div className="bg-background/80 rounded-lg border border-yellow-200 p-3 transition-all hover:shadow-sm dark:border-yellow-900">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="text-sm font-medium">
-                                      {payment.tenant
-                                        ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
-                                        : 'Unknown tenant'}
-                                    </p>
-                                    <p className="text-muted-foreground text-xs">
-                                      {payment.property?.name || 'No property'}
-                                    </p>
-                                  </div>
+                              <div className="bg-background/80 flex items-center justify-between gap-3 rounded-lg border border-yellow-200 px-3 py-2 transition-all hover:shadow-sm dark:border-yellow-900">
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-xs font-medium">
+                                    {payment.tenant
+                                      ? `${payment.tenant.firstName} ${payment.tenant.lastName}`
+                                      : 'Unknown tenant'}
+                                  </p>
+                                  <p className="text-muted-foreground truncate text-xs">
+                                    {payment.property?.name || 'No property'}
+                                  </p>
+                                </div>
+                                <div className="flex flex-shrink-0 items-center gap-2">
+                                  <Badge
+                                    variant={isOverdue ? 'destructive' : 'secondary'}
+                                    className="text-[10px]"
+                                  >
+                                    {isOverdue ? `${daysOverdue}d overdue` : 'Review'}
+                                  </Badge>
                                   <p className="text-xs font-semibold">
                                     {formatCurrency(Number(payment.amount))}
                                   </p>
-                                </div>
-                                <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-                                  <Badge variant={isOverdue ? 'destructive' : 'secondary'}>
-                                    {isOverdue
-                                      ? `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`
-                                      : 'Needs review'}
-                                  </Badge>
-                                  <span className="text-muted-foreground">
-                                    {payment.dueDate ? formatDate(payment.dueDate) : 'No due date'}
-                                  </span>
                                 </div>
                               </div>
                             </Link>
@@ -539,22 +539,19 @@ export default function DashboardPage() {
                       <Badge variant="secondary">{data?.staleMaintenance?.length || 0}</Badge>
                     </div>
                     {data?.staleMaintenance && data.staleMaintenance.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="flex flex-col gap-1.5">
                         {data.staleMaintenance.slice(0, 3).map((request) => (
                           <Link key={request.id} href={`/maintenance/${request.id}`}>
-                            <div className="bg-background/80 rounded-lg border border-red-200 p-3 transition-all hover:shadow-sm dark:border-red-900">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-medium">{request.title}</p>
-                                  <p className="text-muted-foreground text-xs">
-                                    {request.property.name}
-                                  </p>
-                                </div>
-                                <Badge variant="destructive">{request.daysStale}d</Badge>
+                            <div className="bg-background/80 flex items-center justify-between gap-3 rounded-lg border border-red-200 px-3 py-2 transition-all hover:shadow-sm dark:border-red-900">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-medium">{request.title}</p>
+                                <p className="text-muted-foreground truncate text-xs">
+                                  {request.property.name} · {request.priority} · {request.status}
+                                </p>
                               </div>
-                              <p className="text-muted-foreground mt-3 text-xs">
-                                {request.priority} priority · {request.status}
-                              </p>
+                              <Badge variant="destructive" className="flex-shrink-0 text-[10px]">
+                                {request.daysStale}d
+                              </Badge>
                             </div>
                           </Link>
                         ))}

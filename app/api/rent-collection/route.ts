@@ -70,6 +70,58 @@ export async function GET(req: NextRequest) {
       status,
     });
 
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const manualInvoicePayments = await prisma.payment.findMany({
+      where: {
+        userId,
+        invoiceNumber: {
+          startsWith: 'INV-MANUAL-',
+        },
+        dueDate: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+        ...(propertyId && propertyId !== 'all' ? { propertyId } : {}),
+        ...(status ? { status } : {}),
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: [{ dueDate: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    const manualInvoices = manualInvoicePayments.map((payment) => ({
+      id: payment.id,
+      invoiceNumber: payment.invoiceNumber,
+      amount: Number(payment.amount),
+      status: payment.status,
+      dueDate: payment.dueDate,
+      paymentDate: payment.paymentDate,
+      paymentType: payment.paymentType,
+      description: payment.description,
+      notes: payment.notes,
+      reminderCount: payment.reminderCount,
+      reminderSentAt: payment.reminderSentAt,
+      tenant: payment.tenant,
+      property: payment.property,
+    }));
+
     const paymentIds = data.properties.flatMap((property) =>
       property.tenants
         .map((tenant) => tenant.payment?.id)
@@ -142,6 +194,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ...data,
       properties: enrichedProperties,
+      manualInvoices,
       summary: {
         ...data.summary,
         openFollowUpTasks: followUpTasks.length,

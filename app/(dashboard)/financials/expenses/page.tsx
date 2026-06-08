@@ -190,6 +190,7 @@ export default function ExpensesPage() {
                 expenseDate: string;
                 status: string;
                 vendor?: string | null;
+                unitLabel?: string | null;
                 isDeductible: boolean;
                 property?: {
                   id: string;

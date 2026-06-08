@@ -24,7 +24,10 @@ export class ExpenseService {
       vendor?: string;
       invoiceNumber?: string;
       receiptUrl?: string;
+      unitLabel?: string;
       notes?: string;
+      status?: ExpenseStatus;
+      isDeductible?: boolean;
     }
   ) {
     // Validation: Verify property belongs to user
@@ -65,7 +68,11 @@ export class ExpenseService {
       expenseDate: data.expenseDate,
       description: data.description,
       vendor: data.vendor,
+      unitLabel: data.unitLabel,
       notes: data.notes,
+      ...(data.status && { status: data.status }),
+      ...(data.status === 'PAID' && { paidDate: new Date() }),
+      ...(data.isDeductible !== undefined && { isDeductible: data.isDeductible }),
     });
 
     logger.info('Expense created', {
@@ -95,8 +102,10 @@ export class ExpenseService {
       vendor?: string;
       invoiceNumber?: string;
       receiptUrl?: string;
+      unitLabel?: string;
       notes?: string;
       status?: ExpenseStatus;
+      isDeductible?: boolean;
     }
   ) {
     const expense = await expenseRepository.findById(expenseId);
@@ -123,7 +132,14 @@ export class ExpenseService {
       }
     }
 
-    const updated = await expenseRepository.update(expenseId, data);
+    const updateData: any = { ...data };
+    if (data.status === 'PAID' && expense.status !== 'PAID') {
+      updateData.paidDate = new Date();
+    } else if (data.status && data.status !== 'PAID') {
+      updateData.paidDate = null;
+    }
+
+    const updated = await expenseRepository.update(expenseId, updateData);
 
     logger.info('Expense updated', {
       expenseId,

@@ -16,6 +16,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const purpose = searchParams.get('purpose'); // 'booking' or 'tenant'
+    const today = new Date();
 
     // Determine which rental types to include based on purpose
     let rentalTypeFilter;
@@ -25,11 +26,13 @@ export async function GET(request: Request) {
       rentalTypeFilter = { in: ['LONG_TERM', 'BOTH'] };
     }
 
+    const availabilityFilter = purpose === 'tenant' ? {} : { isAvailable: true };
+
     // Get all properties owned by the user
     const properties = await prisma.property.findMany({
       where: {
         userId: session.user.id,
-        isAvailable: true, // Only include properties marked as available
+        ...availabilityFilter,
         ...(rentalTypeFilter && { rentalType: rentalTypeFilter }),
       },
       select: {
@@ -50,6 +53,7 @@ export async function GET(request: Request) {
         tenants: {
           where: {
             isActive: true,
+            OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: today } }],
           },
           select: {
             id: true,
@@ -78,9 +82,13 @@ export async function GET(request: Request) {
 
     // Filter properties based on availability criteria
     const availableProperties = properties.filter((property) => {
+      const activeLeases = property.tenants.filter((tenant) => {
+        return !tenant.leaseEndDate || tenant.leaseEndDate >= today;
+      });
+
       // Criteria 1: Check multi-tenant support
       // If property doesn't allow multiple tenants and already has active tenants, exclude it
-      if (!property.allowsMultipleTenants && property.tenants.length > 0) {
+      if (!property.allowsMultipleTenants && activeLeases.length > 0) {
         return false;
       }
 
@@ -116,27 +124,33 @@ export async function GET(request: Request) {
     });
 
     // Return simplified property data
-    const formattedProperties = availableProperties.map((property) => ({
-      id: property.id,
-      name: property.name,
-      address: property.address,
-      city: property.city,
-      province: property.province,
-      propertyType: property.propertyType,
-      bedrooms: property.bedrooms,
-      bathrooms: property.bathrooms,
-      parkingSpaces: property.parkingSpaces,
-      rentalType: property.rentalType,
-      monthlyRent: property.monthlyRent,
-      dailyRate: property.dailyRate,
-      securityDeposit: property.securityDeposit,
-      allowsMultipleTenants: property.allowsMultipleTenants,
-      activeTenantsCount: property.tenants.length,
-      activeTenants: property.tenants.map((t) => ({
-        unitLabel: t.unitLabel,
-        leaseEndDate: t.leaseEndDate,
-      })),
-    }));
+    const formattedProperties = availableProperties.map((property) => {
+      const activeLeases = property.tenants.filter((tenant) => {
+        return !tenant.leaseEndDate || tenant.leaseEndDate >= today;
+      });
+
+      return {
+        id: property.id,
+        name: property.name,
+        address: property.address,
+        city: property.city,
+        province: property.province,
+        propertyType: property.propertyType,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        parkingSpaces: property.parkingSpaces,
+        rentalType: property.rentalType,
+        monthlyRent: property.monthlyRent,
+        dailyRate: property.dailyRate,
+        securityDeposit: property.securityDeposit,
+        allowsMultipleTenants: property.allowsMultipleTenants,
+        activeTenantsCount: activeLeases.length,
+        activeTenants: activeLeases.map((t) => ({
+          unitLabel: t.unitLabel,
+          leaseEndDate: t.leaseEndDate,
+        })),
+      };
+    });
 
     return NextResponse.json(formattedProperties);
   } catch (error) {

@@ -254,12 +254,14 @@ export default function TenantPaymentLedgerPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-muted-foreground text-sm font-medium">Total Paid</p>
-                <p className="mt-2 text-2xl font-bold">{formatCurrency(summary.totalPaid)}</p>
+                <p className="mt-2 truncate text-2xl font-bold">
+                  {formatCurrency(summary.totalPaid)}
+                </p>
               </div>
-              <div className="rounded-full bg-green-50 p-3 dark:bg-green-950">
+              <div className="flex-shrink-0 rounded-full bg-green-50 p-3 dark:bg-green-950">
                 <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
@@ -268,10 +270,10 @@ export default function TenantPaymentLedgerPage() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-muted-foreground text-sm font-medium">On-Time Rate</p>
-                <p className="mt-2 text-2xl font-bold">{summary.onTimeRate.toFixed(1)}%</p>
+                <p className="mt-2 truncate text-2xl font-bold">{summary.onTimeRate.toFixed(1)}%</p>
                 <p
                   className={`mt-1 text-xs ${
                     summary.onTimeRate >= 90
@@ -289,7 +291,7 @@ export default function TenantPaymentLedgerPage() {
                 </p>
               </div>
               <div
-                className={`rounded-full p-3 ${
+                className={`flex-shrink-0 rounded-full p-3 ${
                   summary.onTimeRate >= 90
                     ? 'bg-green-50 dark:bg-green-950'
                     : summary.onTimeRate >= 70
@@ -315,10 +317,10 @@ export default function TenantPaymentLedgerPage() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-muted-foreground text-sm font-medium">Avg. Days to Pay</p>
-                <p className="mt-2 text-2xl font-bold">
+                <p className="mt-2 truncate text-2xl font-bold">
                   {summary.avgDaysToPay >= 0 ? '+' : ''}
                   {summary.avgDaysToPay.toFixed(1)}
                 </p>
@@ -330,7 +332,7 @@ export default function TenantPaymentLedgerPage() {
                       : 'Pays late'}
                 </p>
               </div>
-              <div className="rounded-full bg-blue-50 p-3 dark:bg-blue-950">
+              <div className="flex-shrink-0 rounded-full bg-blue-50 p-3 dark:bg-blue-950">
                 <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
@@ -339,10 +341,12 @@ export default function TenantPaymentLedgerPage() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-muted-foreground text-sm font-medium">Current Balance</p>
-                <p className="mt-2 text-2xl font-bold">{formatCurrency(summary.currentBalance)}</p>
+                <p className="mt-2 truncate text-2xl font-bold">
+                  {formatCurrency(summary.currentBalance)}
+                </p>
                 <p className="text-muted-foreground mt-1 text-xs">
                   {summary.overdueCount > 0 && (
                     <span className="text-red-600 dark:text-red-400">
@@ -354,7 +358,7 @@ export default function TenantPaymentLedgerPage() {
                 </p>
               </div>
               <div
-                className={`rounded-full p-3 ${
+                className={`flex-shrink-0 rounded-full p-3 ${
                   summary.currentBalance === 0
                     ? 'bg-green-50 dark:bg-green-950'
                     : summary.overdueCount > 0
