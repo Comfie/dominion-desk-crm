@@ -33,11 +33,22 @@ const expenseSchema = z.object({
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
 
+type PropertyTenantUnit = {
+  unitLabel: string | null;
+};
+
+type ExpensePropertyOption = {
+  id: string;
+  name: string;
+  allowsMultipleTenants?: boolean;
+  tenants?: PropertyTenantUnit[];
+};
+
 async function fetchProperties() {
   const response = await fetch('/api/properties');
   if (!response.ok) throw new Error('Failed to fetch properties');
   const result = await response.json();
-  return result.data || [];
+  return (result.data || []) as ExpensePropertyOption[];
 }
 
 function NewExpenseForm() {
@@ -74,12 +85,18 @@ function NewExpenseForm() {
   });
 
   const selectedProperty = Array.isArray(properties)
-    ? properties.find((p: any) => p.id === selectedPropertyId)
+    ? properties.find((property) => property.id === selectedPropertyId)
     : null;
 
   // Extract unique unit labels from tenants
-  const activeUnits = selectedProperty?.tenants
-    ? Array.from(new Set(selectedProperty.tenants.map((t: any) => t.unitLabel).filter(Boolean)))
+  const activeUnits: string[] = selectedProperty?.tenants
+    ? Array.from(
+        new Set(
+          selectedProperty.tenants
+            .map((tenant) => tenant.unitLabel)
+            .filter((unitLabel): unitLabel is string => Boolean(unitLabel))
+        )
+      )
     : [];
 
   // Set property value when preselectedPropertyId is available
@@ -210,7 +227,7 @@ function NewExpenseForm() {
                 >
                   <option value="">General expense</option>
                   {Array.isArray(properties) &&
-                    properties.map((property: { id: string; name: string }) => (
+                    properties.map((property) => (
                       <option key={property.id} value={property.id}>
                         {property.name}
                       </option>
