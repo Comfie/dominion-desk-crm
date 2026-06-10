@@ -309,6 +309,12 @@ export default function MaintenancePage() {
                 estimatedCost: number | null;
                 actualCost: number | null;
                 assignedTo: string | null;
+                images?: Array<{
+                  url: string;
+                  name: string;
+                  size: number;
+                  type: string;
+                }> | null;
                 createdAt: string;
                 property: {
                   id: string;

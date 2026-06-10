@@ -1,5 +1,15 @@
 import Link from 'next/link';
-import { MoreVertical, Eye, Trash2, Home, Calendar, User, Wrench, DollarSign } from 'lucide-react';
+import {
+  MoreVertical,
+  Eye,
+  Trash2,
+  Home,
+  Calendar,
+  User,
+  Wrench,
+  DollarSign,
+  Image as ImageIcon,
+} from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +35,12 @@ interface MaintenanceCardProps {
     estimatedCost: number | null;
     actualCost: number | null;
     assignedTo: string | null;
+    images?: Array<{
+      url: string;
+      name: string;
+      size: number;
+      type: string;
+    }> | null;
     createdAt: string;
     property: {
       id: string;
@@ -216,6 +232,15 @@ export function MaintenanceCard({ request, onDelete }: MaintenanceCardProps) {
                   {request.actualCost
                     ? `Cost: ${formatCurrency(request.actualCost)}`
                     : `Est: ${formatCurrency(request.estimatedCost!)}`}
+                </span>
+              </div>
+            )}
+
+            {request.images && request.images.length > 0 && (
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                <span>
+                  {request.images.length} photo{request.images.length === 1 ? '' : 's'} attached
                 </span>
               </div>
             )}

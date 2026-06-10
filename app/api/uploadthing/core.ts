@@ -124,6 +124,37 @@ export const ourFileRouter = {
         fileSize: file.size,
       };
     }),
+
+  // Maintenance image uploader - temporary UploadThing transport until AWS storage migration
+  maintenanceImageUploader: f({
+    image: { maxFileSize: '8MB', maxFileCount: 5 },
+  })
+    .middleware(async () => {
+      const session = await getServerSession(authOptions);
+
+      if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+      }
+
+      return {
+        userId: session.user.id,
+        userEmail: session.user.email,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log('Maintenance image upload complete for userId:', metadata.userId);
+      console.log('File URL:', file.ufsUrl);
+      console.log('File name:', file.name);
+      console.log('File size:', file.size);
+
+      return {
+        uploadedBy: metadata.userId,
+        fileUrl: file.ufsUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

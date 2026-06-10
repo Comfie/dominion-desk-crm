@@ -321,19 +321,28 @@ export function PaymentDetailModal({
 
           <Separator className="bg-white/10" />
 
-          <div className="flex flex-wrap gap-2">
+          <div
+            className={
+              canUploadProof
+                ? 'grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+                : 'grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]'
+            }
+          >
             {canUploadProof && (
               <Button
-                className="flex-1 bg-sky-400 text-slate-950 hover:bg-sky-300"
-                onClick={() => (window.location.href = `/portal/payments/${payment.id}/pay`)}
+                className="cursor-not-allowed border-white/10 bg-white/10 text-white/55 hover:bg-white/10"
+                disabled
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Pay Online
+                <Badge variant="secondary" className="ml-2">
+                  Soon
+                </Badge>
               </Button>
             )}
             <Button
               variant="outline"
-              className="flex-1 border-white/10 bg-white/5 text-white hover:bg-white/10"
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
               onClick={() => window.open(`/api/tenant/payments/${payment.id}/invoice`, '_blank')}
             >
               <Download className="mr-2 h-4 w-4" />

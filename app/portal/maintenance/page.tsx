@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardList,
   Home,
+  Image as ImageIcon,
   MapPin,
   Search,
 } from 'lucide-react';
@@ -39,6 +40,12 @@ type MaintenanceRequest = {
   scheduledDate: string | null;
   completedDate: string | null;
   resolutionNotes: string | null;
+  images: Array<{
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+  }> | null;
   createdAt: string;
   property: {
     id: string;
@@ -368,6 +375,33 @@ export default function TenantMaintenancePage() {
                       Reported {formatDate(request.createdAt)}
                     </div>
                   </div>
+
+                  {request.images && request.images.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-white/75">
+                        <ImageIcon className="h-4 w-4" />
+                        {request.images.length} photo{request.images.length === 1 ? '' : 's'}{' '}
+                        attached
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {request.images.map((image) => (
+                          <a
+                            key={image.url}
+                            href={image.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
+                          >
+                            <img
+                              src={image.url}
+                              alt={image.name}
+                              className="h-20 w-20 object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
