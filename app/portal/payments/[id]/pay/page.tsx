@@ -328,18 +328,8 @@ export default function PaymentCheckoutPage() {
                   <CardContent className="space-y-4">
                     {/* Card Payment Option */}
                     <div
-                      className={`rounded-lg border-2 p-4 transition-all ${
-                        payment.onlinePaymentAvailable
-                          ? selectedMethod === 'card'
-                            ? 'border-primary bg-primary/5 cursor-pointer'
-                            : 'border-border hover:border-primary/50 cursor-pointer'
-                          : 'border-border bg-muted/40 cursor-not-allowed opacity-60'
-                      }`}
-                      onClick={() => {
-                        if (payment.onlinePaymentAvailable) {
-                          setSelectedMethod('card');
-                        }
-                      }}
+                      className="border-border bg-muted/40 cursor-not-allowed rounded-lg border-2 p-4 opacity-60 transition-all"
+                      aria-disabled="true"
                     >
                       <div className="flex items-start gap-4">
                         <div
@@ -352,28 +342,19 @@ export default function PaymentCheckoutPage() {
                           <CreditCard className="h-6 w-6" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold">Pay with Card</h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold">Pay Online</h3>
+                            <Badge variant="secondary">Coming soon</Badge>
+                          </div>
                           <p className="text-muted-foreground text-sm">
-                            {payment.onlinePaymentAvailable
-                              ? 'Credit or Debit Card via Paystack'
-                              : 'Temporarily unavailable for this payment'}
+                            Online card payments are not available yet.
                           </p>
                           <div className="mt-2 flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-green-600" />
-                            <span className="text-muted-foreground text-xs">Secure payment</span>
+                            <Shield className="text-muted-foreground h-4 w-4" />
+                            <span className="text-muted-foreground text-xs">
+                              Use EFT for now and upload proof of payment.
+                            </span>
                           </div>
-                          {payment.transactionFeePercentage > 0 && (
-                            <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
-                              <strong>Note:</strong> A {payment.transactionFeePercentage}% service
-                              fee ({payment.currency} {transactionFee.toFixed(2)}) will be added for
-                              card payments.
-                            </div>
-                          )}
-                          {!payment.onlinePaymentAvailable && (
-                            <div className="mt-2 rounded border border-dashed px-2 py-1 text-xs">
-                              Use EFT and upload proof of payment instead.
-                            </div>
-                          )}
                         </div>
                         <div className="flex gap-1">
                           <div className="flex h-5 w-8 items-center justify-center rounded bg-blue-600 text-xs font-bold text-white">
@@ -621,8 +602,8 @@ export default function PaymentCheckoutPage() {
       <footer className="border-t py-6">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-            <Shield className="h-4 w-4" />
-            <span>Secure payment powered by Paystack</span>
+            <Landmark className="h-4 w-4" />
+            <span>EFT payments are available now. Online payments are coming soon.</span>
           </div>
         </div>
       </footer>

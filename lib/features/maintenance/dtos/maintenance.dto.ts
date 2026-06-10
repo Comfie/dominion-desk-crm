@@ -1,6 +1,17 @@
 import { z } from 'zod';
 import { MaintenanceStatus, Priority, MaintenanceCategory } from '@prisma/client';
 
+export const maintenanceImageSchema = z.object({
+  url: z.string().url(),
+  name: z.string().min(1).max(255),
+  size: z
+    .number()
+    .int()
+    .positive()
+    .max(8 * 1024 * 1024),
+  type: z.string().startsWith('image/'),
+});
+
 /**
  * Create Maintenance Request DTO
  */
@@ -13,9 +24,11 @@ export const createMaintenanceSchema = z.object({
   priority: z.nativeEnum(Priority).default('NORMAL'),
   scheduledDate: z.coerce.date().optional(),
   estimatedCost: z.number().min(0).optional(),
+  images: z.array(maintenanceImageSchema).max(5, 'Maximum 5 photos allowed').optional(),
 });
 
 export type CreateMaintenanceDTO = z.infer<typeof createMaintenanceSchema>;
+export type MaintenanceImageDTO = z.infer<typeof maintenanceImageSchema>;
 
 /**
  * Update Maintenance Request DTO

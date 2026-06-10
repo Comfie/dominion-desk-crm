@@ -301,6 +301,7 @@ export default function TaskDetailPage() {
     new Date(task.dueDate) < new Date() &&
     task.status !== 'COMPLETED' &&
     task.status !== 'CANCELLED';
+  const canChangeQuickStatus = task.status !== 'COMPLETED' && task.status !== 'CANCELLED';
 
   return (
     <div className="space-y-6">
@@ -614,7 +615,7 @@ export default function TaskDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {task.status !== 'TODO' && (
+                {canChangeQuickStatus && task.status !== 'TODO' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -624,7 +625,7 @@ export default function TaskDetailPage() {
                     Mark as To Do
                   </Button>
                 )}
-                {task.status !== 'IN_PROGRESS' && (
+                {canChangeQuickStatus && task.status !== 'IN_PROGRESS' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -635,7 +636,7 @@ export default function TaskDetailPage() {
                     Start Progress
                   </Button>
                 )}
-                {task.status !== 'COMPLETED' && (
+                {canChangeQuickStatus && (
                   <Button
                     variant="outline"
                     size="sm"
