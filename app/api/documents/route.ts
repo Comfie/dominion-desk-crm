@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 
 // GET - List documents
 export async function GET(request: NextRequest) {
@@ -26,12 +27,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'User email not found' }, { status: 400 });
       }
 
-      // Find tenant profile by email
-      const tenantProfile = await prisma.tenant.findFirst({
-        where: {
-          email: session.user.email,
-        },
-      });
+      const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
 
       if (!tenantProfile) {
         return NextResponse.json({ error: 'Tenant profile not found' }, { status: 404 });

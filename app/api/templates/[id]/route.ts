@@ -5,6 +5,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
 
+const supportedTemplateTypes = ['EMAIL', 'IN_APP'] as const;
+
 // GET /api/templates/[id] - Get a single template
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -54,6 +56,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (!existingTemplate) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
+
+    if (data.messageType && !supportedTemplateTypes.includes(data.messageType)) {
+      return NextResponse.json(
+        { error: 'SMS and WhatsApp are temporarily unavailable. Use Email or In-App.' },
+        { status: 400 }
+      );
     }
 
     // Extract variables from the template body if body is being updated

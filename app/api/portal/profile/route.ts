@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 
 const updateTenantProfileSchema = z.object({
   phone: z.string().trim().min(1, 'Phone is required'),
@@ -38,7 +38,7 @@ export async function GET() {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
 
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
@@ -97,7 +97,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
 
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });

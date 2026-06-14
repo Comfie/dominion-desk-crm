@@ -139,7 +139,7 @@ const navigationSections: NavSection[] = [
         icon: Settings,
         children: [
           { name: 'Profile', href: '/settings/profile' },
-          { name: 'Integrations', href: '/settings/integrations' },
+          // { name: 'Integrations', href: '/settings/integrations' },
         ],
       },
     ],

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
 
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });

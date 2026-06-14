@@ -25,13 +25,13 @@ vi.mock('@/lib/notifications', () => ({
 }));
 
 vi.mock('@/lib/tenant-session', () => ({
-  getTenantBySessionEmail: vi.fn(),
+  getTenantForPortalSession: vi.fn(),
 }));
 
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { notifyMaintenanceRequest } from '@/lib/notifications';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 import { POST } from './route';
 
 describe('POST /api/portal/maintenance', () => {
@@ -46,7 +46,7 @@ describe('POST /api/portal/maintenance', () => {
       },
     } as never);
 
-    vi.mocked(getTenantBySessionEmail).mockResolvedValue({
+    vi.mocked(getTenantForPortalSession).mockResolvedValue({
       id: 'tenant-123',
     } as never);
 

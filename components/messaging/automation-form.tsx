@@ -270,8 +270,6 @@ export function AutomationForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="EMAIL">Email</SelectItem>
-                <SelectItem value="SMS">SMS</SelectItem>
-                <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
                 <SelectItem value="IN_APP">In-App Notification</SelectItem>
               </SelectContent>
             </Select>
