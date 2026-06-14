@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { maintenanceImageSchema } from '@/lib/features/maintenance/dtos/maintenance.dto';
 import { notifyMaintenanceRequest } from '@/lib/notifications';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 
 const maintenanceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -29,7 +29,7 @@ export async function GET() {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
     }
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
     }

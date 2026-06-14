@@ -37,9 +37,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // Check if tenant has portal access by looking for a User account with their email
-    const existingTenantUser = await prisma.user.findUnique({
-      where: { email: tenant.email },
-    });
+    const existingTenantUser = tenant.portalUserId
+      ? await prisma.user.findUnique({
+          where: { id: tenant.portalUserId },
+        })
+      : await prisma.user.findUnique({
+          where: { email: tenant.email },
+        });
 
     const hasPortalAccess = existingTenantUser?.accountType === 'TENANT';
 
@@ -78,6 +82,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             propertyLimit: 0,
           },
         });
+
+        const portalUser = await prisma.user.findUnique({
+          where: { email: tenant.email },
+          select: { id: true },
+        });
+
+        if (portalUser) {
+          await prisma.tenant.update({
+            where: { id: tenant.id },
+            data: { portalUserId: portalUser.id },
+          });
+        }
 
         // Send welcome email with portal access
         try {
@@ -203,7 +219,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         // Update password
         await prisma.user.update({
-          where: { email: tenant.email },
+          where: { id: tenant.portalUserId || existingTenantUser.id },
           data: { password: hashedPassword },
         });
 
@@ -226,7 +242,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         // Delete the tenant user account
         await prisma.user.delete({
-          where: { email: tenant.email },
+          where: { id: tenant.portalUserId || existingTenantUser.id },
+        });
+
+        await prisma.tenant.update({
+          where: { id: tenant.id },
+          data: { portalUserId: null },
         });
 
         return NextResponse.json({
@@ -276,9 +297,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Check if tenant has portal access by looking for a User account with their email
-    const tenantUser = await prisma.user.findUnique({
-      where: { email: tenant.email },
-    });
+    const tenantUser = tenant.portalUserId
+      ? await prisma.user.findUnique({
+          where: { id: tenant.portalUserId },
+        })
+      : await prisma.user.findUnique({
+          where: { email: tenant.email },
+        });
 
     const hasPortalAccess = tenantUser?.accountType === 'TENANT';
 

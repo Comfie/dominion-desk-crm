@@ -24,9 +24,8 @@ import {
 } from '@/components/ui/select';
 
 const messageSchema = z.object({
-  messageType: z.enum(['EMAIL', 'SMS', 'WHATSAPP', 'IN_APP']),
+  messageType: z.enum(['EMAIL', 'IN_APP']),
   recipientEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
-  recipientPhone: z.string().optional(),
   recipientName: z.string().optional(),
   subject: z.string().optional(),
   message: z.string().min(1, 'Message is required'),
@@ -131,9 +130,6 @@ function ComposeMessageForm() {
     if (!data.recipientEmail && messageType === 'EMAIL') {
       data.recipientEmail = selectedBooking?.guestEmail || selectedTenant?.email || '';
     }
-    if (!data.recipientPhone && (messageType === 'SMS' || messageType === 'WHATSAPP')) {
-      data.recipientPhone = selectedBooking?.guestPhone || selectedTenant?.phone || '';
-    }
     if (!data.recipientName) {
       data.recipientName =
         selectedBooking?.guestName ||
@@ -197,7 +193,7 @@ function ComposeMessageForm() {
                     <Select
                       value={messageType}
                       onValueChange={(value) =>
-                        setValue('messageType', value as 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP')
+                        setValue('messageType', value as 'EMAIL' | 'IN_APP')
                       }
                     >
                       <SelectTrigger>
@@ -205,8 +201,6 @@ function ComposeMessageForm() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="EMAIL">Email</SelectItem>
-                        <SelectItem value="SMS">SMS</SelectItem>
-                        <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
                         <SelectItem value="IN_APP">In-App</SelectItem>
                       </SelectContent>
                     </Select>
@@ -229,51 +223,38 @@ function ComposeMessageForm() {
                   </div>
                 </div>
 
-                {messageType === 'EMAIL' && (
+                {(messageType === 'EMAIL' || messageType === 'IN_APP') && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="recipientEmail">Recipient Email</Label>
-                      <Input
-                        id="recipientEmail"
-                        type="email"
-                        placeholder={
-                          selectedBooking?.guestEmail ||
-                          selectedTenant?.email ||
-                          'Enter email address'
-                        }
-                        {...register('recipientEmail')}
-                      />
-                      {errors.recipientEmail && (
-                        <p className="text-sm text-red-500">{errors.recipientEmail.message}</p>
-                      )}
-                      {(selectedBooking?.guestEmail || selectedTenant?.email) && (
-                        <p className="text-muted-foreground text-xs">
-                          Will use {selectedBooking?.guestEmail || selectedTenant?.email} if left
-                          empty
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="subject">Subject</Label>
-                      <Input id="subject" placeholder="Email subject" {...register('subject')} />
+                      <Input
+                        id="subject"
+                        placeholder={messageType === 'EMAIL' ? 'Email subject' : 'In-app title'}
+                        {...register('subject')}
+                      />
                     </div>
                   </>
                 )}
 
-                {(messageType === 'SMS' || messageType === 'WHATSAPP') && (
+                {messageType === 'EMAIL' && (
                   <div className="space-y-2">
-                    <Label htmlFor="recipientPhone">Recipient Phone</Label>
+                    <Label htmlFor="recipientEmail">Recipient Email</Label>
                     <Input
-                      id="recipientPhone"
+                      id="recipientEmail"
+                      type="email"
                       placeholder={
-                        selectedBooking?.guestPhone || selectedTenant?.phone || 'Enter phone number'
+                        selectedBooking?.guestEmail ||
+                        selectedTenant?.email ||
+                        'Enter email address'
                       }
-                      {...register('recipientPhone')}
+                      {...register('recipientEmail')}
                     />
-                    {(selectedBooking?.guestPhone || selectedTenant?.phone) && (
+                    {errors.recipientEmail && (
+                      <p className="text-sm text-red-500">{errors.recipientEmail.message}</p>
+                    )}
+                    {(selectedBooking?.guestEmail || selectedTenant?.email) && (
                       <p className="text-muted-foreground text-xs">
-                        Will use {selectedBooking?.guestPhone || selectedTenant?.phone} if left
+                        Will use {selectedBooking?.guestEmail || selectedTenant?.email} if left
                         empty
                       </p>
                     )}

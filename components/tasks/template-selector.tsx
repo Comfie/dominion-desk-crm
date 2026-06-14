@@ -116,7 +116,7 @@ export function TemplateSelector({ onSelect, selectedTemplateId }: TemplateSelec
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[95vw] max-w-6xl flex-col overflow-hidden">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[98vw] flex-col overflow-hidden sm:max-w-[45rem]">
         <DialogHeader>
           <DialogTitle>Select a Task Template</DialogTitle>
           <DialogDescription>

@@ -69,6 +69,7 @@ model User {
 
   // Relations
   properties      Property[]
+  tenantPortal    Tenant?   @relation("TenantPortalUser")
   bookings        Booking[]
   tenants         Tenant[]
   propertyTenants PropertyTenant[]
@@ -430,6 +431,8 @@ model Tenant {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portalUserId    String?   @unique
+  portalUser      User?     @relation("TenantPortalUser", fields: [portalUserId], references: [id], onDelete: SetNull)
 
   // Personal Info
   firstName       String

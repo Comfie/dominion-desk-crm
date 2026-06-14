@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Bell, Shield, CreditCard, Link2, Building2, Users } from 'lucide-react';
+import { User, Bell, Shield, CreditCard, Building2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const settingsNav = [
@@ -38,11 +38,11 @@ const settingsNav = [
     href: '/settings/subscription',
     icon: CreditCard,
   },
-  {
-    name: 'Integrations',
-    href: '/settings/integrations',
-    icon: Link2,
-  },
+  // {
+  //   name: 'Integrations',
+  //   href: '/settings/integrations',
+  //   icon: Link2,
+  // },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

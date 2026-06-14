@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 import { allowMockTenantPayments } from '@/lib/features/payments/utils/mock-payments';
 
 /**
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find tenant record for this user
-    const tenant = await getTenantBySessionEmail(session.user.email);
+    const tenant = await getTenantForPortalSession(session.user.id, session.user.email);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });

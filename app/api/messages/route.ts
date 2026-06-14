@@ -5,6 +5,28 @@ import { prisma } from '@/lib/db';
 import { requireAuth } from '@/lib/auth-helpers';
 import { logAudit } from '@/lib/shared/audit';
 
+const supportedMessageTypes = ['EMAIL', 'IN_APP'] as const;
+
+async function verifyOwnedBooking(bookingId: string, organizationId: string) {
+  return prisma.booking.findFirst({
+    where: {
+      id: bookingId,
+      userId: organizationId,
+    },
+    select: { id: true },
+  });
+}
+
+async function verifyOwnedTenant(tenantId: string, organizationId: string) {
+  return prisma.tenant.findFirst({
+    where: {
+      id: tenantId,
+      userId: organizationId,
+    },
+    select: { id: true },
+  });
+}
+
 // GET /api/messages - Get all messages for the user
 export async function GET(request: Request) {
   try {
@@ -21,10 +43,20 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
 
+    if (
+      messageType &&
+      !supportedMessageTypes.includes(messageType as (typeof supportedMessageTypes)[number])
+    ) {
+      return NextResponse.json(
+        { error: 'SMS and WhatsApp are temporarily unavailable. Use Email or In-App.' },
+        { status: 400 }
+      );
+    }
+
     const where = {
       userId: session.user.organizationId,
       ...(direction && { direction: direction as 'INBOUND' | 'OUTBOUND' }),
-      ...(messageType && { messageType: messageType as 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP' }),
+      ...(messageType && { messageType: messageType as 'EMAIL' | 'IN_APP' }),
       ...(status && { status: status as 'DRAFT' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' }),
       ...(bookingId && { bookingId }),
       ...(tenantId && { tenantId }),
@@ -132,6 +164,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!supportedMessageTypes.includes(data.messageType)) {
+      return NextResponse.json(
+        { error: 'SMS and WhatsApp are temporarily unavailable. Use Email or In-App.' },
+        { status: 400 }
+      );
+    }
+
     // For outbound messages, require recipient info
     if (data.direction === 'OUTBOUND') {
       if (data.messageType === 'EMAIL' && !data.recipientEmail) {
@@ -140,10 +179,24 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if ((data.messageType === 'SMS' || data.messageType === 'WHATSAPP') && !data.recipientPhone) {
+    }
+
+    if (data.bookingId) {
+      const booking = await verifyOwnedBooking(data.bookingId, session.user.organizationId);
+      if (!booking) {
         return NextResponse.json(
-          { error: 'Recipient phone is required for SMS/WhatsApp messages' },
-          { status: 400 }
+          { error: 'Booking not found or does not belong to you' },
+          { status: 404 }
+        );
+      }
+    }
+
+    if (data.tenantId) {
+      const tenant = await verifyOwnedTenant(data.tenantId, session.user.organizationId);
+      if (!tenant) {
+        return NextResponse.json(
+          { error: 'Tenant not found or does not belong to you' },
+          { status: 404 }
         );
       }
     }

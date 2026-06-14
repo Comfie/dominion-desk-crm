@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db';
 import { PaymentStatus } from '@prisma/client';
 import { logger } from '@/lib/shared/logger';
 import { handleApiError } from '@/lib/shared/errors';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 
 /**
  * GET /api/portal/payment-history
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenant = await getTenantBySessionEmail(session.user.email);
+    const tenant = await getTenantForPortalSession(session.user.id, session.user.email);
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });
     }

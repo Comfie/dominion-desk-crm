@@ -30,7 +30,7 @@ const templateSchema = z.object({
   description: z.string().optional(),
   subject: z.string().min(1, 'Subject is required'),
   body: z.string().min(1, 'Body is required'),
-  messageType: z.enum(['EMAIL', 'SMS', 'WHATSAPP', 'IN_APP']),
+  messageType: z.enum(['EMAIL', 'IN_APP']),
   category: z.string().optional(),
   isActive: z.boolean(),
 });
@@ -172,7 +172,7 @@ export default function EditTemplatePage({ params }: { params: Promise<{ id: str
                     <Select
                       value={messageType}
                       onValueChange={(value) =>
-                        setValue('messageType', value as 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP')
+                        setValue('messageType', value as 'EMAIL' | 'IN_APP')
                       }
                     >
                       <SelectTrigger>
@@ -180,8 +180,6 @@ export default function EditTemplatePage({ params }: { params: Promise<{ id: str
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="EMAIL">Email</SelectItem>
-                        <SelectItem value="SMS">SMS</SelectItem>
-                        <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
                         <SelectItem value="IN_APP">In-App</SelectItem>
                       </SelectContent>
                     </Select>
