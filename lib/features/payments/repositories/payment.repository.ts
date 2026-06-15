@@ -402,8 +402,23 @@ export class PaymentRepository {
         OR: [{ leaseEndDate: null }, { leaseEndDate: { gte: new Date(year, month - 1, 1) } }],
       },
       include: {
-        tenant: true,
-        property: true,
+        tenant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+          },
+        },
       },
     });
 
@@ -553,8 +568,23 @@ export class PaymentRepository {
         ...(propertyId && propertyId !== 'all' ? { propertyId } : {}),
       },
       include: {
-        tenant: true,
-        property: true,
+        tenant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+          },
+        },
       },
     });
 
@@ -588,8 +618,23 @@ export class PaymentRepository {
         ...(propertyId && propertyId !== 'all' ? { propertyId } : {}),
       },
       include: {
-        tenant: true,
-        property: true,
+        tenant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+          },
+        },
       },
     });
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { User, Building2, Globe, Save, Calendar } from 'lucide-react';
@@ -98,6 +98,7 @@ export default function ProfileSettingsPage() {
   const {
     register,
     handleSubmit,
+    control,
     setValue,
     watch,
     reset,
@@ -259,7 +260,10 @@ export default function ProfileSettingsPage() {
               <Select
                 value={accountType}
                 onValueChange={(value) =>
-                  setValue('accountType', value as 'INDIVIDUAL' | 'COMPANY' | 'AGENCY')
+                  setValue('accountType', value as 'INDIVIDUAL' | 'COMPANY' | 'AGENCY', {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                  })
                 }
               >
                 <SelectTrigger>
@@ -294,39 +298,45 @@ export default function ProfileSettingsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="timezone">Timezone</Label>
-                <Select
-                  value={watch('timezone')}
-                  onValueChange={(value) => setValue('timezone', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timezones.map((tz) => (
-                      <SelectItem key={tz.value} value={tz.value}>
-                        {tz.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="timezone"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timezones.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
-                <Select
-                  value={watch('currency')}
-                  onValueChange={(value) => setValue('currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencies.map((curr) => (
-                      <SelectItem key={curr.value} value={curr.value}>
-                        {curr.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="currency"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((curr) => (
+                          <SelectItem key={curr.value} value={curr.value}>
+                            {curr.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
           </CardContent>
@@ -344,27 +354,33 @@ export default function ProfileSettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="rentalDueDay">Rental Due Day</Label>
-              <Select
-                value={String(watch('rentalDueDay') || 1)}
-                onValueChange={(value) => {
-                  const numValue = parseInt(value, 10);
-                  if (!isNaN(numValue)) {
-                    setValue('rentalDueDay', numValue, { shouldValidate: true });
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select day of month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                    <SelectItem key={day} value={day.toString()}>
-                      {day === 1 ? '1st' : day === 2 ? '2nd' : day === 3 ? '3rd' : `${day}th`} of
-                      each month
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="rentalDueDay"
+                render={({ field }) => (
+                  <Select
+                    value={String(field.value || 1)}
+                    onValueChange={(value) => {
+                      const numValue = parseInt(value, 10);
+                      if (!isNaN(numValue)) {
+                        field.onChange(numValue);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select day of month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                        <SelectItem key={day} value={day.toString()}>
+                          {day === 1 ? '1st' : day === 2 ? '2nd' : day === 3 ? '3rd' : `${day}th`}{' '}
+                          of each month
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               <p className="text-muted-foreground text-sm">
                 Default day of the month when rental payments are due. This will be used for
                 automated reminders and tenant portal displays.

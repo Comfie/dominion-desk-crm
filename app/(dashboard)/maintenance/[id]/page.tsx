@@ -280,11 +280,11 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
           </Card>
 
           {request.workflow && (
-            <Alert className="border-orange-200 bg-orange-50/70">
-              <AlertTitle>{request.workflow.label}</AlertTitle>
-              <AlertDescription className="space-y-2">
+            <Alert className="border-orange-200 bg-orange-50/70 text-orange-950 dark:border-orange-400/20 dark:bg-orange-500/10 dark:text-orange-100">
+              <AlertTitle className="dark:text-orange-100">{request.workflow.label}</AlertTitle>
+              <AlertDescription className="space-y-2 dark:text-orange-100/85">
                 <p>{request.workflow.guidance}</p>
-                <p className="text-muted-foreground">
+                <p className="text-orange-900/75 dark:text-orange-100/70">
                   Open for {request.workflow.ageDays} day{request.workflow.ageDays === 1 ? '' : 's'}
                   {request.workflow.daysPastSchedule > 0
                     ? `, ${request.workflow.daysPastSchedule} day${request.workflow.daysPastSchedule === 1 ? '' : 's'} past the planned visit`
@@ -296,12 +296,14 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
                 {request.workflow.task ? (
                   <Link
                     href={`/tasks/${request.workflow.task.id}`}
-                    className="text-sm font-medium underline underline-offset-4"
+                    className="text-sm font-medium text-orange-950 underline underline-offset-4 dark:text-orange-100"
                   >
                     Open workflow task
                   </Link>
                 ) : (
-                  <p className="text-sm font-medium">No workflow task has been created yet.</p>
+                  <p className="text-sm font-medium text-orange-950 dark:text-orange-100">
+                    No workflow task has been created yet.
+                  </p>
                 )}
               </AlertDescription>
             </Alert>
@@ -373,6 +375,38 @@ export default function MaintenanceDetailPage({ params }: { params: Promise<{ id
               )}
             </CardContent>
           </Card>
+
+          {request.images && request.images.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Photos</CardTitle>
+                <CardDescription>
+                  Uploaded by the tenant with the maintenance request.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {request.images.map(
+                    (image: { url: string; name: string; size: number; type: string }) => (
+                      <a
+                        key={image.url}
+                        href={image.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group bg-muted overflow-hidden rounded-lg border"
+                      >
+                        <img
+                          src={image.url}
+                          alt={image.name}
+                          className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      </a>
+                    )
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Complete Request */}
           {request.status === 'IN_PROGRESS' && (

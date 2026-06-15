@@ -18,6 +18,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import {
+  buildPropertyImportTemplate,
+  parsePropertyImportFile,
+} from '@/lib/features/properties/utils/property-import';
 
 interface ImportResult {
   total: number;
@@ -45,179 +50,34 @@ async function importProperties(data: {
   return response.json();
 }
 
-/**
- * Parse CSV text into an array of objects
- * Handles Excel-formatted CSV with quoted fields, commas within fields, etc.
- */
-function parseCSV(csvText: string): unknown[] {
-  // Remove BOM if present (Excel sometimes adds UTF-8 BOM)
-  const cleanText = csvText.replace(/^\uFEFF/, '');
-  const lines = cleanText.trim().split(/\r?\n/); // Handle both \n and \r\n line endings
-
-  if (lines.length < 2) {
-    throw new Error('CSV must contain at least a header row and one data row');
-  }
-
-  // Auto-detect delimiter (comma or semicolon)
-  // Excel in some regions uses semicolon instead of comma
-  const firstLine = lines[0];
-  const commaCount = (firstLine.match(/,/g) || []).length;
-  const semicolonCount = (firstLine.match(/;/g) || []).length;
-  const delimiter = semicolonCount > commaCount ? ';' : ',';
-
-  console.log('Detected CSV delimiter:', delimiter === ';' ? 'semicolon (;)' : 'comma (,)');
-
-  // Parse a single CSV line handling quoted fields
-  const parseLine = (line: string): string[] => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      const nextChar = line[i + 1];
-
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          // Escaped quote ""
-          current += '"';
-          i++; // Skip next quote
-        } else {
-          // Toggle quote state
-          inQuotes = !inQuotes;
-        }
-      } else if (char === delimiter && !inQuotes) {
-        // Field separator (using detected delimiter)
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-
-    result.push(current.trim());
-    return result;
-  };
-
-  const rawHeaders = parseLine(lines[0]);
-  // Normalize headers: trim whitespace
-  const headers = rawHeaders.map((h) => h.trim());
-
-  // Debug: log headers to help troubleshoot
-  console.log('CSV Headers:', headers);
-
-  const properties: Record<string, unknown>[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    // Skip empty lines
-    if (!lines[i].trim()) continue;
-
-    const values = parseLine(lines[i]);
-    const property: Record<string, unknown> = {};
-
-    headers.forEach((header, index) => {
-      const value = values[index] || '';
-      // Normalize header for comparison (case-insensitive)
-      const normalizedHeader = header.toLowerCase();
-
-      // Map to the correct property name (camelCase as expected by schema)
-      let propertyName = header; // Default to original header
-
-      // Create mapping for known fields to handle case variations
-      const fieldMap: Record<string, string> = {
-        name: 'name',
-        description: 'description',
-        propertytype: 'propertyType',
-        address: 'address',
-        city: 'city',
-        province: 'province',
-        postalcode: 'postalCode',
-        country: 'country',
-        bedrooms: 'bedrooms',
-        bathrooms: 'bathrooms',
-        size: 'size',
-        furnished: 'furnished',
-        parkingspaces: 'parkingSpaces',
-        amenities: 'amenities',
-        primaryimageurl: 'primaryImageUrl',
-        rentaltype: 'rentalType',
-        monthlyrent: 'monthlyRent',
-        dailyrate: 'dailyRate',
-        weeklyrate: 'weeklyRate',
-        monthlyrate: 'monthlyRate',
-        cleaningfee: 'cleaningFee',
-        securitydeposit: 'securityDeposit',
-        isavailable: 'isAvailable',
-        availablefrom: 'availableFrom',
-        minimumstay: 'minimumStay',
-        maximumstay: 'maximumStay',
-        petsallowed: 'petsAllowed',
-        smokingallowed: 'smokingAllowed',
-        checkintime: 'checkInTime',
-        checkouttime: 'checkOutTime',
-        houserules: 'houseRules',
-      };
-
-      propertyName = fieldMap[normalizedHeader] || header;
-
-      // Convert data types based on field type
-      if (
-        propertyName === 'bedrooms' ||
-        propertyName === 'parkingSpaces' ||
-        propertyName === 'minimumStay' ||
-        propertyName === 'maximumStay'
-      ) {
-        property[propertyName] = value ? parseInt(value, 10) : undefined;
-      } else if (
-        propertyName === 'bathrooms' ||
-        propertyName === 'size' ||
-        propertyName === 'monthlyRent' ||
-        propertyName === 'dailyRate' ||
-        propertyName === 'weeklyRate' ||
-        propertyName === 'monthlyRate' ||
-        propertyName === 'cleaningFee' ||
-        propertyName === 'securityDeposit'
-      ) {
-        property[propertyName] = value ? parseFloat(value) : undefined;
-      } else if (
-        propertyName === 'furnished' ||
-        propertyName === 'isAvailable' ||
-        propertyName === 'petsAllowed' ||
-        propertyName === 'smokingAllowed'
-      ) {
-        property[propertyName] = value?.toLowerCase() === 'true' || value === '1';
-      } else if (propertyName === 'amenities') {
-        property[propertyName] = value ? value.split('|').map((a: string) => a.trim()) : [];
-      } else if (propertyName === 'availableFrom') {
-        property[propertyName] = value ? new Date(value) : undefined;
-      } else {
-        property[propertyName] = value || undefined;
-      }
-    });
-
-    properties.push(property);
-  }
-
-  return properties;
-}
-
 interface ImportPropertiesDialogProps {
   disabled?: boolean;
   disabledMessage?: string;
 }
 
 export function ImportPropertiesDialog({ disabled, disabledMessage }: ImportPropertiesDialogProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [skipErrors, setSkipErrors] = useState(true);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [importStage, setImportStage] = useState<'idle' | 'reading' | 'importing' | 'done'>('idle');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [parsedCount, setParsedCount] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const importMutation = useMutation({
     mutationFn: importProperties,
     onSuccess: (data) => {
       setResult(data.result);
+      setImportStage('done');
+      setStatusMessage(`Imported ${data.result.successful} of ${data.result.total} properties.`);
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+    },
+    onError: (error: Error) => {
+      setImportStage('idle');
+      setStatusMessage(null);
+      console.error('Import failed:', error);
     },
   });
 
@@ -226,6 +86,9 @@ export function ImportPropertiesDialog({ disabled, disabledMessage }: ImportProp
     if (selectedFile) {
       setFile(selectedFile);
       setResult(null);
+      setImportStage('idle');
+      setStatusMessage(null);
+      setParsedCount(null);
     }
   };
 
@@ -233,20 +96,24 @@ export function ImportPropertiesDialog({ disabled, disabledMessage }: ImportProp
     if (!file) return;
 
     try {
-      const text = await file.text();
-      let properties: unknown[];
+      setImportStage('reading');
+      setStatusMessage(`Reading ${file.name}...`);
 
-      if (file.name.endsWith('.csv')) {
-        properties = parseCSV(text);
-      } else if (file.name.endsWith('.json')) {
-        const data = JSON.parse(text);
-        properties = Array.isArray(data) ? data : [data];
-      } else {
-        throw new Error('Unsupported file format. Please upload a CSV or JSON file.');
-      }
+      const properties = await parsePropertyImportFile(file);
+      setParsedCount(properties.length);
+
+      setImportStage('importing');
+      setStatusMessage(`Importing ${properties.length} properties...`);
 
       await importMutation.mutateAsync({ properties, skipErrors });
     } catch (error) {
+      setImportStage('idle');
+      setStatusMessage(null);
+      toast({
+        title: 'Import failed',
+        description: error instanceof Error ? error.message : 'Failed to import properties',
+        variant: 'destructive',
+      });
       console.error('Import failed:', error);
     }
   };
@@ -255,19 +122,20 @@ export function ImportPropertiesDialog({ disabled, disabledMessage }: ImportProp
     setOpen(false);
     setFile(null);
     setResult(null);
+    setImportStage('idle');
+    setStatusMessage(null);
+    setParsedCount(null);
     importMutation.reset();
   };
 
   const downloadTemplate = () => {
-    const template = `name,address,city,province,postalCode,propertyType,bedrooms,bathrooms,monthlyRent,rentalType
-Sample Property 1,123 Main St,Cape Town,Western Cape,8001,APARTMENT,2,1,15000,LONG_TERM
-Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TERM`;
-
-    const blob = new Blob([template], { type: 'text/csv' });
+    const blob = new Blob([buildPropertyImportTemplate()], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'property-import-template.csv';
+    a.download = 'property-import-template.xlsx';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -293,8 +161,8 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
         <DialogHeader>
           <DialogTitle>Import Properties</DialogTitle>
           <DialogDescription>
-            Upload a CSV or JSON file to bulk import properties. Download the template to get
-            started.
+            Upload an Excel, CSV, or JSON file to bulk import properties. Download the Excel
+            template to get started.
           </DialogDescription>
         </DialogHeader>
 
@@ -303,7 +171,7 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
           <Alert>
             <Download className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
-              <span>Download our CSV template to ensure proper formatting</span>
+              <span>Download our Excel template to ensure proper formatting</span>
               <Button variant="link" size="sm" onClick={downloadTemplate}>
                 Download Template
               </Button>
@@ -315,7 +183,7 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
             <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
             <input
               type="file"
-              accept=".csv,.json"
+              accept=".csv,.json,.xlsx,.xls"
               onChange={handleFileChange}
               className="hidden"
               id="file-upload"
@@ -330,6 +198,9 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
                 Selected: <span className="font-medium">{file.name}</span>
               </p>
             )}
+            <p className="text-muted-foreground mt-1 text-xs">
+              Excel is preferred. CSV remains supported as a fallback.
+            </p>
           </div>
 
           {/* Options */}
@@ -345,10 +216,22 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
           </div>
 
           {/* Import Progress/Results */}
-          {importMutation.isPending && (
+          {(importStage === 'reading' ||
+            importStage === 'importing' ||
+            importMutation.isPending) && (
             <div className="space-y-2">
-              <Progress value={undefined} className="w-full" />
-              <p className="text-muted-foreground text-center text-sm">Importing properties...</p>
+              <Progress
+                value={importStage === 'reading' ? 30 : importStage === 'importing' ? 70 : 90}
+                className="w-full"
+              />
+              <p className="text-muted-foreground text-center text-sm">
+                {statusMessage || 'Importing properties...'}
+              </p>
+              {parsedCount !== null && importStage !== 'done' && (
+                <p className="text-muted-foreground text-center text-xs">
+                  Parsed {parsedCount} properties. Issues will be listed after the import runs.
+                </p>
+              )}
             </div>
           )}
 
@@ -409,8 +292,13 @@ Sample Property 2,456 Beach Rd,Durban,KwaZulu-Natal,4001,HOUSE,3,2,2500,SHORT_TE
             {result ? 'Close' : 'Cancel'}
           </Button>
           {!result && (
-            <Button onClick={handleImport} disabled={!file || importMutation.isPending}>
-              {importMutation.isPending ? 'Importing...' : 'Import Properties'}
+            <Button
+              onClick={handleImport}
+              disabled={!file || importStage !== 'idle' || importMutation.isPending}
+            >
+              {importStage === 'reading' || importStage === 'importing' || importMutation.isPending
+                ? 'Importing...'
+                : 'Import Properties'}
             </Button>
           )}
         </DialogFooter>

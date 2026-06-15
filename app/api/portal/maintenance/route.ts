@@ -3,14 +3,16 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { maintenanceImageSchema } from '@/lib/features/maintenance/dtos/maintenance.dto';
 import { notifyMaintenanceRequest } from '@/lib/notifications';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 
 const maintenanceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
   priority: z.string().min(1, 'Priority is required'),
+  images: z.array(maintenanceImageSchema).max(5, 'Maximum 5 photos allowed').optional(),
 });
 
 export async function GET() {
@@ -27,7 +29,7 @@ export async function GET() {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
     }
@@ -72,6 +74,7 @@ export async function GET() {
         scheduledDate: true,
         completedDate: true,
         resolutionNotes: true,
+        images: true,
         createdAt: true,
         property: {
           select: {
@@ -141,7 +144,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const tenantProfile = await getTenantBySessionEmail(session.user.email);
+    const tenantProfile = await getTenantForPortalSession(session.user.id, session.user.email);
     if (!tenantProfile) {
       return NextResponse.json({ error: 'No tenant record found for this email' }, { status: 404 });
     }
@@ -205,6 +208,7 @@ export async function POST(request: Request) {
           | 'SECURITY'
           | 'OTHER',
         priority: validatedData.priority as 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT',
+        images: validatedData.images ?? [],
         status: 'PENDING',
       },
     });

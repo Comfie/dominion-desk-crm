@@ -7,7 +7,27 @@ import { logAudit } from '@/lib/shared/audit';
 import { sendEmail, emailTemplates } from '@/lib/email';
 import { threadRepository } from '@/lib/features/messaging/repositories/thread.repository';
 
-// POST /api/messages/send - Send a message (email/SMS)
+async function verifyOwnedBooking(bookingId: string, organizationId: string) {
+  return prisma.booking.findFirst({
+    where: {
+      id: bookingId,
+      userId: organizationId,
+    },
+    select: { id: true },
+  });
+}
+
+async function verifyOwnedTenant(tenantId: string, organizationId: string) {
+  return prisma.tenant.findFirst({
+    where: {
+      id: tenantId,
+      userId: organizationId,
+    },
+    select: { id: true },
+  });
+}
+
+// POST /api/messages/send - Send a message (email/in-app)
 export async function POST(request: Request) {
   try {
     const session = await requireAuth();
@@ -19,6 +39,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message type is required' }, { status: 400 });
     }
 
+    if (data.messageType !== 'EMAIL' && data.messageType !== 'IN_APP') {
+      return NextResponse.json(
+        { error: 'SMS and WhatsApp are temporarily unavailable. Use Email or In-App.' },
+        { status: 400 }
+      );
+    }
+
     if (data.messageType === 'EMAIL' && !data.recipientEmail) {
       return NextResponse.json(
         { error: 'Recipient email is required for email messages' },
@@ -26,11 +53,24 @@ export async function POST(request: Request) {
       );
     }
 
-    if ((data.messageType === 'SMS' || data.messageType === 'WHATSAPP') && !data.recipientPhone) {
-      return NextResponse.json(
-        { error: 'Recipient phone is required for SMS/WhatsApp messages' },
-        { status: 400 }
-      );
+    if (data.bookingId) {
+      const booking = await verifyOwnedBooking(data.bookingId, session.user.organizationId);
+      if (!booking) {
+        return NextResponse.json(
+          { error: 'Booking not found or does not belong to you' },
+          { status: 404 }
+        );
+      }
+    }
+
+    if (data.tenantId) {
+      const tenant = await verifyOwnedTenant(data.tenantId, session.user.organizationId);
+      if (!tenant) {
+        return NextResponse.json(
+          { error: 'Tenant not found or does not belong to you' },
+          { status: 404 }
+        );
+      }
     }
 
     let emailContent: { subject: string; html: string; text: string };
@@ -85,15 +125,20 @@ export async function POST(request: Request) {
       }
     } else {
       // Custom message
-      if (!data.subject || !data.message) {
+      if (!data.message || (data.messageType === 'EMAIL' && !data.subject)) {
         return NextResponse.json(
-          { error: 'Subject and message are required for custom emails' },
+          {
+            error:
+              data.messageType === 'EMAIL'
+                ? 'Subject and message are required for custom emails'
+                : 'Message is required for in-app messages',
+          },
           { status: 400 }
         );
       }
       emailContent = emailTemplates.generic({
         recipientName,
-        subject: data.subject,
+        subject: data.subject || 'Message from Property Management',
         body: data.message,
       });
     }
@@ -121,17 +166,27 @@ export async function POST(request: Request) {
       threadId = thread.id;
     }
 
-    // Send the email
-    const emailResult =
-      data.messageType === 'EMAIL'
-        ? await sendEmail({
-            to: data.recipientEmail,
-            subject: emailContent.subject,
-            html: emailContent.html,
-            text: emailContent.text,
-            replyTo: data.replyTo,
-          })
-        : { success: false, error: 'Only email delivery is currently supported.' };
+    // Send the message via the appropriate channel
+    type DeliveryResult =
+      | { success: true; messageId: string | null }
+      | { success: false; error: string };
+
+    let deliveryResult: DeliveryResult;
+    if (data.messageType === 'EMAIL') {
+      const emailSendResult = await sendEmail({
+        to: data.recipientEmail,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        replyTo: data.replyTo,
+      });
+
+      deliveryResult = emailSendResult.success
+        ? { success: true, messageId: emailSendResult.messageId || null }
+        : { success: false, error: emailSendResult.error || 'Failed to send email' };
+    } else {
+      deliveryResult = { success: true, messageId: null };
+    }
 
     // Create message record
     const message = await prisma.message.create({
@@ -145,8 +200,9 @@ export async function POST(request: Request) {
         direction: 'OUTBOUND',
         recipientEmail: data.recipientEmail,
         recipientPhone: data.recipientPhone || null,
-        status: emailResult.success ? 'SENT' : 'FAILED',
-        sentAt: emailResult.success ? new Date() : null,
+        status: deliveryResult.success ? 'SENT' : 'FAILED',
+        sentAt: deliveryResult.success ? new Date() : null,
+        deliveredAt: data.messageType === 'IN_APP' && deliveryResult.success ? new Date() : null,
         threadId: threadId || null,
         replyTo: data.replyToMessageId || null,
         attachments: data.attachments ? data.attachments : Prisma.JsonNull,
@@ -182,12 +238,14 @@ export async function POST(request: Request) {
     // Audit log
     await logAudit(session, 'created', 'message', message.id, undefined, request);
 
-    if (!emailResult.success) {
+    if (!deliveryResult.success) {
+      const deliveryError =
+        'error' in deliveryResult ? deliveryResult.error : 'Unknown delivery error';
       return NextResponse.json(
         {
           error: 'Failed to send email',
           message,
-          details: emailResult.error,
+          details: deliveryError,
         },
         { status: 500 }
       );
@@ -196,7 +254,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message,
-      messageId: emailResult.messageId,
+      messageId: deliveryResult.messageId || message.id,
     });
   } catch (error) {
     console.error('Error sending message:', error);

@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
 
+const supportedTemplateTypes = ['EMAIL', 'IN_APP'] as const;
+
 // GET /api/templates - Get all templates for the user
 export async function GET(request: Request) {
   try {
@@ -17,10 +19,20 @@ export async function GET(request: Request) {
     const messageType = searchParams.get('messageType');
     const isActive = searchParams.get('isActive');
 
+    if (
+      messageType &&
+      !supportedTemplateTypes.includes(messageType as (typeof supportedTemplateTypes)[number])
+    ) {
+      return NextResponse.json(
+        { error: 'SMS and WhatsApp are temporarily unavailable. Use Email or In-App.' },
+        { status: 400 }
+      );
+    }
+
     const where = {
       userId: session.user.id,
       ...(category && { category }),
-      ...(messageType && { messageType: messageType as 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP' }),
+      ...(messageType && { messageType: messageType as 'EMAIL' | 'IN_APP' }),
       ...(isActive !== null && { isActive: isActive === 'true' }),
     };
 
@@ -49,6 +61,13 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!data.name || !data.subject || !data.body) {
       return NextResponse.json({ error: 'Name, subject, and body are required' }, { status: 400 });
+    }
+
+    if (data.messageType && !supportedTemplateTypes.includes(data.messageType)) {
+      return NextResponse.json(
+        { error: 'SMS and WhatsApp are temporarily unavailable. Use Email or In-App.' },
+        { status: 400 }
+      );
     }
 
     // Extract variables from the template body (e.g., {{variableName}})

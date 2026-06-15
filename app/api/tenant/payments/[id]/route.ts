@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { getBankingDetails } from '@/lib/services/banking-encryption.service';
 import { getPaymentSettings } from '@/lib/services/system-settings.service';
-import { getTenantBySessionEmail } from '@/lib/tenant-session';
+import { getTenantForPortalSession } from '@/lib/tenant-session';
 import { allowMockTenantPayments } from '@/lib/features/payments/utils/mock-payments';
 
 /**
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Find tenant record for this user
-    const tenant = await getTenantBySessionEmail(session.user.email);
+    const tenant = await getTenantForPortalSession(session.user.id, session.user.email);
 
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant record not found' }, { status: 404 });

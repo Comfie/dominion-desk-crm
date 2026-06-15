@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, Grid3X3, List, Building2 } from 'lucide-react';
+import { Plus, Search, Filter, Grid3X3, List, Building2, Download, Loader2 } from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';
 import { PropertyCard } from '@/components/properties/property-card';
@@ -31,6 +31,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  downloadPropertyExport,
+  type ExportableProperty,
+} from '@/lib/features/properties/utils/property-export';
 
 async function fetchProperties(
   search?: string,
@@ -64,6 +68,28 @@ async function fetchSubscriptionStatus() {
   const response = await fetch('/api/subscription/status');
   if (!response.ok) throw new Error('Failed to fetch subscription status');
   return response.json();
+}
+
+async function fetchPropertiesForExport(filters: {
+  search?: string;
+  status?: string;
+  type?: string;
+  occupied?: boolean;
+}) {
+  const params = new URLSearchParams();
+
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.type) params.set('type', filters.type);
+  if (filters.occupied) params.set('occupied', 'true');
+
+  const response = await fetch(`/api/properties/export?${params.toString()}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to export properties');
+  }
+
+  return response.json() as Promise<{ properties: ExportableProperty[]; count: number }>;
 }
 
 export default function PropertiesPage() {
@@ -103,6 +129,30 @@ export default function PropertiesPage() {
     onError: (error: Error) => {
       toast({
         title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () =>
+      fetchPropertiesForExport({
+        search,
+        status: statusFilter.join(','),
+        type: typeFilter.join(','),
+        occupied: occupiedOnly,
+      }),
+    onSuccess: (data) => {
+      downloadPropertyExport(data.properties as ExportableProperty[]);
+      toast({
+        title: 'Export started',
+        description: `Downloaded ${data.count} properties to Excel.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Export failed',
         description: error.message,
         variant: 'destructive',
       });
@@ -153,6 +203,23 @@ export default function PropertiesPage() {
       <PageHeader title="Properties" description="Manage your rental properties">
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
+            >
+              {exportMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Properties
+                </>
+              )}
+            </Button>
             <ImportPropertiesDialog
               disabled={!canAddProperties}
               disabledMessage={propertyLimitMessage || undefined}

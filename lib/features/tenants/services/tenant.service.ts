@@ -88,6 +88,18 @@ export class TenantService {
         data.lastName,
         data.phone
       );
+
+      const portalUser = await prisma.user.findUnique({
+        where: { email: data.email },
+        select: { id: true },
+      });
+
+      if (portalUser) {
+        await prisma.tenant.update({
+          where: { id: tenant.id },
+          data: { portalUserId: portalUser.id },
+        });
+      }
     }
 
     // Assign property if requested
