@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireSuperAdmin } from '@/lib/auth-helpers';
 import prisma from '@/lib/db';
+import { getPropertyLimitForTier } from '@/lib/services/subscription.service';
 
 const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
+  accountType: z.enum(['INDIVIDUAL', 'COMPANY', 'AGENCY']).optional(),
   subscriptionTier: z.enum(['FREE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE']).optional(),
   subscriptionStatus: z.enum(['TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED']).optional(),
   subscriptionEndsAt: z.string().optional().nullable(),
@@ -134,24 +136,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       updateData.isActive = validatedData.isActive;
     }
 
+    if (validatedData.accountType) {
+      updateData.accountType = validatedData.accountType;
+    }
+
     if (validatedData.subscriptionTier) {
       updateData.subscriptionTier = validatedData.subscriptionTier;
-
-      // Update property limit based on tier
-      switch (validatedData.subscriptionTier) {
-        case 'FREE':
-          updateData.propertyLimit = 1;
-          break;
-        case 'STARTER':
-          updateData.propertyLimit = 5;
-          break;
-        case 'PROFESSIONAL':
-          updateData.propertyLimit = 20;
-          break;
-        case 'ENTERPRISE':
-          updateData.propertyLimit = 999999; // Unlimited
-          break;
-      }
+      updateData.propertyLimit = getPropertyLimitForTier(validatedData.subscriptionTier);
     }
 
     if (validatedData.subscriptionStatus) {
@@ -185,6 +176,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         changes: {
           before: {
             isActive: existingUser.isActive,
+            accountType: existingUser.accountType,
             subscriptionTier: existingUser.subscriptionTier,
             subscriptionStatus: existingUser.subscriptionStatus,
           },

@@ -1,4 +1,76 @@
 import { prisma } from '@/lib/db';
+import { emailTemplates, sendEmail } from '@/lib/email';
+
+export const FREE_TIER_PROPERTY_LIMIT = 2;
+
+export function getPropertyLimitForTier(tier: string): number {
+  switch (tier) {
+    case 'FREE':
+      return FREE_TIER_PROPERTY_LIMIT;
+    case 'STARTER':
+      return 5;
+    case 'PROFESSIONAL':
+      return 20;
+    case 'ENTERPRISE':
+      return 999999;
+    default:
+      return FREE_TIER_PROPERTY_LIMIT;
+  }
+}
+
+export interface SubscriptionCancellationResult {
+  status: 'CANCELLED';
+  previousTier: string;
+  currentTier: string;
+  scheduledDowngradeTier: 'FREE';
+  propertyLimit: number;
+  freeTierPropertyLimit: number;
+  propertyCount: number;
+  activePropertyCount: number;
+  propertiesAboveFreeTierCount: number;
+  cancelledAt: Date;
+  accessUntil: Date | null;
+  downgradeEffectiveAt: Date | null;
+  emails: {
+    userConfirmationSent: boolean;
+    adminNotificationSent: boolean;
+    adminRecipientCount: number;
+  };
+}
+
+function getUserDisplayName(user: { firstName: string; lastName: string; email: string }): string {
+  const name = `${user.firstName} ${user.lastName}`.trim();
+  return name || user.email;
+}
+
+function formatDateTime(value: Date): string {
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Africa/Johannesburg',
+  }).format(value);
+}
+
+async function getSuperAdminNotificationEmails(): Promise<string[]> {
+  const superAdmins = await prisma.user.findMany({
+    where: {
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    },
+    select: {
+      email: true,
+    },
+  });
+
+  const recipients = new Set<string>();
+  superAdmins.forEach((admin) => recipients.add(admin.email));
+
+  if (process.env.OWNER_EMAIL) {
+    recipients.add(process.env.OWNER_EMAIL);
+  }
+
+  return Array.from(recipients);
+}
 
 /**
  * Subscription restriction levels based on days after trial expiry
@@ -12,6 +84,7 @@ export enum RestrictionLevel {
 }
 
 export interface PropertyBillingItem {
+  leaseId: string;
   propertyId: string;
   propertyName: string;
   tenantName: string;
@@ -35,6 +108,8 @@ export interface SubscriptionStatus {
   isOnTrial: boolean;
   trialEndsAt: Date | null;
   trialDaysRemaining: number | null;
+  subscriptionEndsAt: Date | null;
+  nextBillingDate: Date | null;
   subscriptionStatus: string;
   restrictionLevel: RestrictionLevel;
   restrictionMessage: string | null;
@@ -199,6 +274,7 @@ export async function calculateSubscriptionBilling(
     }
 
     breakdown.push({
+      leaseId: lease.id,
       propertyId: lease.property.id,
       propertyName: lease.property.name,
       tenantName: `${lease.tenant.firstName} ${lease.tenant.lastName}`,
@@ -224,12 +300,20 @@ export async function calculateSubscriptionBilling(
  * Get complete subscription status for a user
  */
 export async function getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
+  await syncSubscriptionStatus(userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       subscriptionStatus: true,
       trialEndsAt: true,
+      subscriptionEndsAt: true,
       propertyLimit: true,
+      payfastSubscription: {
+        select: {
+          nextBillingDate: true,
+        },
+      },
     },
   });
 
@@ -277,6 +361,8 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
     isOnTrial,
     trialEndsAt,
     trialDaysRemaining,
+    subscriptionEndsAt: user.subscriptionEndsAt,
+    nextBillingDate: user.payfastSubscription?.nextBillingDate || null,
     subscriptionStatus: user.subscriptionStatus,
     restrictionLevel: level,
     restrictionMessage,
@@ -438,49 +524,167 @@ export async function handleFailedPayment(userId: string, reason?: string): Prom
 
 /**
  * Cancel subscription
- * User can cancel anytime but retains access until end of billing period
+ * Cancels paid billing and moves the account back to the free tier.
  */
 export async function cancelSubscription(
   userId: string,
   reason?: string,
   cancelledBy?: string
-): Promise<void> {
-  // Update user subscription status
-  await prisma.user.update({
+): Promise<SubscriptionCancellationResult> {
+  const cancelledAt = new Date();
+  const freePropertyLimit = getPropertyLimitForTier('FREE');
+  const cancellationReason = reason || 'Subscription cancelled by user';
+
+  const user = await prisma.user.findUnique({
     where: { id: userId },
-    data: {
-      subscriptionStatus: 'CANCELLED',
+    select: {
+      email: true,
+      firstName: true,
+      lastName: true,
+      subscriptionTier: true,
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+      propertyLimit: true,
+      _count: {
+        select: {
+          properties: true,
+          propertyTenants: {
+            where: { isActive: true },
+          },
+        },
+      },
     },
   });
 
-  // Update PayFast subscription status
-  const payfastSub = await prisma.payFastSubscription.findUnique({
-    where: { userId },
-  });
+  if (!user) {
+    throw new Error('User not found');
+  }
 
-  if (payfastSub) {
-    await prisma.payFastSubscription.update({
+  const propertyCount = user._count.properties;
+  const activePropertyCount = user._count.propertyTenants;
+  const propertiesAboveFreeTierCount = Math.max(0, propertyCount - freePropertyLimit);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        subscriptionStatus: 'CANCELLED',
+      },
+    });
+
+    await tx.payFastSubscription.updateMany({
       where: { userId },
       data: {
         status: 'CANCELLED',
-        cancelledAt: new Date(),
+        cancelledAt,
       },
+    });
+
+    await tx.subscriptionHistory.create({
+      data: {
+        userId,
+        action: 'SUBSCRIPTION_CANCELLED',
+        fromStatus: user.subscriptionStatus,
+        toStatus: 'CANCELLED',
+        fromTier: user.subscriptionTier,
+        toTier: user.subscriptionTier,
+        changedBy: cancelledBy,
+        reason: cancellationReason,
+      },
+    });
+  });
+
+  const recipientName = getUserDisplayName(user);
+  const cancelledAtFormatted = formatDateTime(cancelledAt);
+  const accessUntilFormatted = user.subscriptionEndsAt
+    ? formatDateTime(user.subscriptionEndsAt)
+    : null;
+  const userEmail = emailTemplates.subscriptionCancellationConfirmation({
+    recipientName,
+    cancelledAt: cancelledAtFormatted,
+    reason: cancellationReason,
+    previousTier: user.subscriptionTier,
+    newTier: user.subscriptionTier,
+    propertyLimit: user.propertyLimit,
+    freeTierPropertyLimit: freePropertyLimit,
+    propertyCount,
+    chargeablePropertyCount: propertiesAboveFreeTierCount,
+    accessUntil: accessUntilFormatted,
+  });
+
+  const adminRecipients = await getSuperAdminNotificationEmails();
+  const adminEmail =
+    adminRecipients.length > 0
+      ? emailTemplates.subscriptionCancellationAdminAlert({
+          userName: recipientName,
+          userEmail: user.email,
+          cancelledAt: cancelledAtFormatted,
+          reason: cancellationReason,
+          previousTier: user.subscriptionTier,
+          newTier: user.subscriptionTier,
+          propertyLimit: user.propertyLimit,
+          freeTierPropertyLimit: freePropertyLimit,
+          propertyCount,
+          activePropertyCount,
+          chargeablePropertyCount: propertiesAboveFreeTierCount,
+          cancelledBy: cancelledBy || userId,
+          accessUntil: accessUntilFormatted,
+        })
+      : null;
+
+  const [userEmailResult, adminEmailResult] = await Promise.all([
+    sendEmail({
+      to: user.email,
+      subject: userEmail.subject,
+      html: userEmail.html,
+      text: userEmail.text,
+    }),
+    adminEmail
+      ? sendEmail({
+          to: adminRecipients,
+          subject: adminEmail.subject,
+          html: adminEmail.html,
+          text: adminEmail.text,
+        })
+      : Promise.resolve<{ success: boolean; messageId?: string; error?: string }>({
+          success: false,
+        }),
+  ]);
+
+  if (!userEmailResult.success) {
+    console.error('Failed to send subscription cancellation confirmation email', {
+      userId,
+      error: userEmailResult.error,
     });
   }
 
-  // Create subscription history entry
-  await prisma.subscriptionHistory.create({
-    data: {
+  if (adminEmail && !adminEmailResult.success) {
+    console.error('Failed to send subscription cancellation admin notification email', {
       userId,
-      action: 'SUBSCRIPTION_CANCELLED',
-      fromStatus: 'ACTIVE',
-      toStatus: 'CANCELLED',
-      changedBy: cancelledBy,
-      reason: reason || 'Subscription cancelled by user',
-    },
-  });
+      recipients: adminRecipients,
+      error: adminEmailResult.error,
+    });
+  }
 
-  // TODO: Send cancellation confirmation email
+  return {
+    status: 'CANCELLED',
+    previousTier: user.subscriptionTier,
+    currentTier: user.subscriptionTier,
+    scheduledDowngradeTier: 'FREE',
+    propertyLimit: user.propertyLimit,
+    freeTierPropertyLimit: freePropertyLimit,
+    propertyCount,
+    activePropertyCount,
+    propertiesAboveFreeTierCount,
+    cancelledAt,
+    accessUntil: user.subscriptionEndsAt,
+    downgradeEffectiveAt: user.subscriptionEndsAt,
+    emails: {
+      userConfirmationSent: userEmailResult.success,
+      adminNotificationSent: adminEmailResult.success,
+      adminRecipientCount: adminRecipients.length,
+    },
+  };
 }
 
 /**
@@ -495,11 +699,48 @@ export async function syncSubscriptionStatus(userId: string): Promise<void> {
     },
   });
 
-  if (!user || !user.payfastSubscription) {
+  if (!user) {
     return;
   }
 
   const now = new Date();
+
+  if (
+    user.subscriptionStatus === 'CANCELLED' &&
+    user.subscriptionTier !== 'FREE' &&
+    user.subscriptionEndsAt &&
+    user.subscriptionEndsAt <= now
+  ) {
+    const freePropertyLimit = getPropertyLimitForTier('FREE');
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        subscriptionTier: 'FREE',
+        propertyLimit: freePropertyLimit,
+        freePropertyCount: freePropertyLimit,
+      },
+    });
+
+    await prisma.subscriptionHistory.create({
+      data: {
+        userId,
+        action: 'SUBSCRIPTION_DOWNGRADED_TO_FREE',
+        fromTier: user.subscriptionTier,
+        toTier: 'FREE',
+        fromStatus: user.subscriptionStatus,
+        toStatus: user.subscriptionStatus,
+        reason: 'Cancelled subscription reached the end of the paid access period',
+      },
+    });
+
+    return;
+  }
+
+  if (!user.payfastSubscription) {
+    return;
+  }
+
   const nextBillingDate = user.payfastSubscription.nextBillingDate;
 
   // If past billing date and status is still ACTIVE, check for payment
