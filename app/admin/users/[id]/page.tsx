@@ -102,6 +102,7 @@ export default function UserDetailsPage({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState({
+    accountType: '',
     subscriptionTier: '',
     subscriptionStatus: '',
     subscriptionEndsAt: '',
@@ -136,6 +137,7 @@ export default function UserDetailsPage({
       const data = await response.json();
       setUser(data);
       setSubscriptionData({
+        accountType: data.accountType,
         subscriptionTier: data.subscriptionTier,
         subscriptionStatus: data.subscriptionStatus,
         subscriptionEndsAt: data.subscriptionEndsAt
@@ -156,6 +158,19 @@ export default function UserDetailsPage({
 
   const handleUpdateSubscription = async () => {
     try {
+      if (subscriptionData.accountType && subscriptionData.accountType !== user?.accountType) {
+        const accountResponse = await fetch(`/api/admin/users/${resolvedParams.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountType: subscriptionData.accountType }),
+        });
+
+        if (!accountResponse.ok) {
+          const errorData = await accountResponse.json();
+          throw new Error(errorData.error || 'Failed to update account type');
+        }
+      }
+
       const response = await fetch(`/api/admin/subscriptions`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -174,7 +189,7 @@ export default function UserDetailsPage({
 
       toast({
         title: 'Success',
-        description: `Subscription updated to ${subscriptionData.subscriptionTier} (${subscriptionData.subscriptionStatus})`,
+        description: `Account updated: ${subscriptionData.accountType}, ${subscriptionData.subscriptionTier} (${subscriptionData.subscriptionStatus})`,
       });
       setEditDialogOpen(false);
 
@@ -295,7 +310,7 @@ export default function UserDetailsPage({
           </Button>
           <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
-            Edit Subscription
+            Edit Account
           </Button>
           <Button variant={user.isActive ? 'destructive' : 'default'} onClick={handleToggleActive}>
             {user.isActive ? (
@@ -542,14 +557,35 @@ export default function UserDetailsPage({
         </Card>
       )}
 
-      {/* Edit Subscription Dialog */}
+      {/* Edit Account Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Subscription</DialogTitle>
-            <DialogDescription>Update the user's subscription tier and status</DialogDescription>
+            <DialogTitle>Edit Account</DialogTitle>
+            <DialogDescription>
+              Update the landlord's account type and subscription
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="accountType">Account Type</Label>
+              <Select
+                value={subscriptionData.accountType}
+                onValueChange={(value) =>
+                  setSubscriptionData({ ...subscriptionData, accountType: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INDIVIDUAL">Individual</SelectItem>
+                  <SelectItem value="COMPANY">Company</SelectItem>
+                  <SelectItem value="AGENCY">Property Agency</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label htmlFor="tier">Subscription Tier</Label>
               <Select

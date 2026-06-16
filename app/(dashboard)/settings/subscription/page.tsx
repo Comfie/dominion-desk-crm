@@ -20,6 +20,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,8 +40,10 @@ import {
 } from '@/components/ui/table';
 import { SubscribeModal } from '@/components/subscription/subscribe-modal';
 import { useToast } from '@/hooks/use-toast';
+import { getBillingBreakdownKey } from '@/lib/subscription-billing-key';
 
 interface PropertyBillingItem {
+  leaseId?: string;
   propertyId: string;
   propertyName: string;
   tenantName: string;
@@ -54,6 +67,8 @@ interface SubscriptionStatusData {
   isOnTrial: boolean;
   trialEndsAt: string | null;
   trialDaysRemaining: number | null;
+  subscriptionEndsAt: string | null;
+  nextBillingDate: string | null;
   subscriptionStatus: string;
   restrictionLevel: 'NONE' | 'WARNING' | 'LIMITED' | 'READONLY' | 'SUSPENDED';
   restrictionMessage: string | null;
@@ -84,7 +99,9 @@ interface BillingHistoryResponse {
 export default function SubscriptionPage() {
   const queryClient = useQueryClient();
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancelConfirmation, setCancelConfirmation] = useState('');
   const { toast } = useToast();
 
   const { data, isLoading } = useQuery<SubscriptionStatusData>({
@@ -107,9 +124,11 @@ export default function SubscriptionPage() {
   });
 
   const cancelSubscription = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (reason: string) => {
       const response = await fetch('/api/subscription/cancel', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -117,12 +136,21 @@ export default function SubscriptionPage() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const propertiesAboveFreeTierCount = result?.details?.propertiesAboveFreeTierCount ?? 0;
+
       toast({
         title: 'Subscription cancelled',
-        description: 'Your subscription will remain active until the end of the billing period.',
+        description:
+          propertiesAboveFreeTierCount > 0
+            ? `Your paid plan remains active until the end date. After that, ${propertiesAboveFreeTierCount} properties will be above the free tier limit.`
+            : 'Your paid plan remains active until the end date and will not renew.',
       });
       queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-history', 1] });
+      setShowCancelDialog(false);
+      setCancellationReason('');
+      setCancelConfirmation('');
     },
     onError: (error: Error) => {
       toast({
@@ -134,18 +162,12 @@ export default function SubscriptionPage() {
   });
 
   const handleCancelSubscription = async () => {
-    if (
-      window.confirm(
-        'Are you sure you want to cancel your subscription? You will retain access until the end of your current billing period.'
-      )
-    ) {
-      setIsCancelling(true);
-      try {
-        await cancelSubscription.mutateAsync();
-      } finally {
-        setIsCancelling(false);
-      }
+    const reason = cancellationReason.trim();
+    if (!reason || cancelConfirmation !== 'CANCEL') {
+      return;
     }
+
+    await cancelSubscription.mutateAsync(reason);
   };
 
   if (isLoading) {
@@ -159,6 +181,22 @@ export default function SubscriptionPage() {
 
   const status = data?.subscriptionStatus || 'TRIAL';
   const billing = data?.currentBilling;
+  const subscriptionDateLabel =
+    status === 'ACTIVE'
+      ? 'Next billing date'
+      : status === 'CANCELLED'
+        ? 'Paid access expires'
+        : data?.isOnTrial
+          ? 'Trial ends'
+          : 'Subscription expiry';
+  const subscriptionDate =
+    status === 'ACTIVE'
+      ? data?.nextBillingDate || data?.subscriptionEndsAt
+      : status === 'CANCELLED'
+        ? data?.subscriptionEndsAt
+        : data?.isOnTrial
+          ? data?.trialEndsAt
+          : data?.subscriptionEndsAt;
 
   return (
     <div className="space-y-6">
@@ -192,26 +230,44 @@ export default function SubscriptionPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Status Row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Badge
-                variant={
-                  status === 'ACTIVE' ? 'default' : status === 'TRIAL' ? 'secondary' : 'destructive'
-                }
-                className="text-sm"
-              >
-                {status}
-              </Badge>
-              {data?.isOnTrial && data.trialDaysRemaining !== null && (
-                <span className="text-muted-foreground text-sm">
-                  {data.trialDaysRemaining} days remaining in trial
-                </span>
-              )}
-              {data?.trialEndsAt && data.isOnTrial && (
-                <span className="text-muted-foreground text-xs">
-                  (ends {formatDate(data.trialEndsAt)})
-                </span>
-              )}
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge
+                  variant={
+                    status === 'ACTIVE'
+                      ? 'default'
+                      : status === 'TRIAL'
+                        ? 'secondary'
+                        : 'destructive'
+                  }
+                  className="text-sm"
+                >
+                  {status}
+                </Badge>
+                {data?.isOnTrial && data.trialDaysRemaining !== null && (
+                  <span className="text-muted-foreground text-sm">
+                    {data.trialDaysRemaining} days remaining in trial
+                  </span>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="bg-background rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {subscriptionDateLabel}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {subscriptionDate ? formatDate(subscriptionDate) : 'Not scheduled'}
+                  </p>
+                </div>
+                {status === 'CANCELLED' && (
+                  <div className="rounded-lg border bg-amber-50 p-3 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                    <p className="text-xs font-medium">Renewal status</p>
+                    <p className="mt-1 text-sm font-semibold">Will not renew</p>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2">
               {status !== 'ACTIVE' && (
@@ -220,10 +276,10 @@ export default function SubscriptionPage() {
               {status === 'ACTIVE' && (
                 <Button
                   variant="outline"
-                  onClick={handleCancelSubscription}
-                  disabled={isCancelling}
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={cancelSubscription.isPending}
                 >
-                  {isCancelling ? (
+                  {cancelSubscription.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Cancelling...
@@ -321,7 +377,7 @@ export default function SubscriptionPage() {
                 </TableHeader>
                 <TableBody>
                   {billing.breakdown.map((item, index) => (
-                    <TableRow key={item.propertyId}>
+                    <TableRow key={getBillingBreakdownKey(item, index)}>
                       <TableCell className="font-medium">
                         {item.propertyName}
                         {item.isFreeProperty && (
@@ -441,6 +497,104 @@ export default function SubscriptionPage() {
           currentBilling={billing}
         />
       )}
+
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Cancel Subscription</DialogTitle>
+            <DialogDescription>
+              Review what happens next before cancelling your active subscription.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Cancellation details</AlertTitle>
+              <AlertDescription>
+                Your paid subscription will be cancelled and will not renew. You keep your current
+                paid access until the subscription end date, then the account moves to the free
+                tier.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid gap-3 rounded-lg border p-4 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Current status</span>
+                <Badge variant="default">{status}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Estimated monthly billing</span>
+                <span className="font-medium">
+                  {formatCurrency(billing?.totalMonthlyFee || 299)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Active properties</span>
+                <span className="font-medium">{billing?.activePropertyCount || 0}</span>
+              </div>
+              {data?.trialEndsAt && data.isOnTrial && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Trial ends</span>
+                  <span className="font-medium">{formatDate(data.trialEndsAt)}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cancellationReason">Reason for cancelling</Label>
+              <Textarea
+                id="cancellationReason"
+                value={cancellationReason}
+                onChange={(event) => setCancellationReason(event.target.value)}
+                placeholder="Tell us why you are cancelling..."
+                rows={4}
+              />
+              <p className="text-muted-foreground text-xs">
+                This is required and helps the administrator understand the cancellation.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cancelConfirmation">Type CANCEL to confirm</Label>
+              <Input
+                id="cancelConfirmation"
+                value={cancelConfirmation}
+                onChange={(event) => setCancelConfirmation(event.target.value)}
+                placeholder="CANCEL"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelDialog(false)}
+              disabled={cancelSubscription.isPending}
+            >
+              Keep Subscription
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelSubscription}
+              disabled={
+                cancelSubscription.isPending ||
+                cancellationReason.trim().length === 0 ||
+                cancelConfirmation !== 'CANCEL'
+              }
+            >
+              {cancelSubscription.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                'Confirm Cancellation'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -27,7 +27,6 @@ const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   phone: z.string().optional(),
-  accountType: z.enum(['INDIVIDUAL', 'COMPANY', 'AGENCY']),
   companyName: z.string().optional(),
   timezone: z.string(),
   currency: z.string(),
@@ -99,8 +98,6 @@ export default function ProfileSettingsPage() {
     register,
     handleSubmit,
     control,
-    setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<ProfileFormData>({
@@ -109,7 +106,6 @@ export default function ProfileSettingsPage() {
       firstName: '',
       lastName: '',
       phone: '',
-      accountType: 'INDIVIDUAL',
       companyName: '',
       timezone: 'Africa/Johannesburg',
       currency: 'ZAR',
@@ -125,7 +121,6 @@ export default function ProfileSettingsPage() {
         firstName: data.user.firstName,
         lastName: data.user.lastName,
         phone: data.user.phone || '',
-        accountType: data.user.accountType as 'INDIVIDUAL' | 'COMPANY' | 'AGENCY',
         companyName: data.user.companyName || '',
         timezone: data.user.timezone,
         currency: data.user.currency,
@@ -135,7 +130,7 @@ export default function ProfileSettingsPage() {
     }
   }, [data, isLoading, reset]);
 
-  const accountType = watch('accountType');
+  const accountType = data?.user.accountType || 'INDIVIDUAL';
 
   const updateMutation = useMutation({
     mutationFn: async (formData: ProfileFormData) => {
@@ -252,29 +247,21 @@ export default function ProfileSettingsPage() {
               <Building2 className="h-5 w-5" />
               Business Information
             </CardTitle>
-            <CardDescription>Configure your account type</CardDescription>
+            <CardDescription>Account type is managed by platform administrators</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="accountType">Account Type</Label>
-              <Select
-                value={accountType}
-                onValueChange={(value) =>
-                  setValue('accountType', value as 'INDIVIDUAL' | 'COMPANY' | 'AGENCY', {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INDIVIDUAL">Individual</SelectItem>
-                  <SelectItem value="COMPANY">Company</SelectItem>
-                  <SelectItem value="AGENCY">Property Agency</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Account Type</Label>
+              <div className="border-input bg-muted text-muted-foreground flex h-10 items-center rounded-md border px-3 text-sm">
+                {accountType === 'AGENCY'
+                  ? 'Property Agency'
+                  : accountType === 'COMPANY'
+                    ? 'Company'
+                    : 'Individual'}
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Contact your platform administrator if you need to change your account type.
+              </p>
             </div>
             {(accountType === 'COMPANY' || accountType === 'AGENCY') && (
               <div className="space-y-2">

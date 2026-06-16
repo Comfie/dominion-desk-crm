@@ -6,6 +6,25 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // Default sender email
 const DEFAULT_FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@dominiondesk.com';
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => {
+    switch (char) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#39;';
+      default:
+        return char;
+    }
+  });
+}
+
 interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -703,6 +722,148 @@ DominionDesk Team
       </p>
     </div>
   `,
+
+  subscriptionCancellationConfirmation: (data: {
+    recipientName: string;
+    cancelledAt: string;
+    reason: string;
+    previousTier: string;
+    newTier: string;
+    propertyLimit: number;
+    propertyCount: number;
+    chargeablePropertyCount: number;
+    accessUntil?: string | null;
+    freeTierPropertyLimit?: number;
+  }) => {
+    const safeReason = escapeHtml(data.reason);
+
+    return {
+      subject: 'Subscription Cancelled - DominionDesk',
+      html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Subscription Cancelled</h2>
+        <p>Dear ${escapeHtml(data.recipientName)},</p>
+        <p>Your DominionDesk subscription has been cancelled and will not renew.</p>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Cancelled on:</strong> ${escapeHtml(data.cancelledAt)}</p>
+          <p><strong>Current plan:</strong> ${escapeHtml(data.previousTier)}</p>
+          ${data.accessUntil ? `<p><strong>Paid access until:</strong> ${escapeHtml(data.accessUntil)}</p>` : ''}
+          <p><strong>Current property limit:</strong> ${data.propertyLimit}</p>
+          ${data.freeTierPropertyLimit ? `<p><strong>Free tier property limit after expiry:</strong> ${data.freeTierPropertyLimit}</p>` : ''}
+          <p><strong>Properties on account:</strong> ${data.propertyCount}</p>
+        </div>
+        ${
+          data.chargeablePropertyCount > 0
+            ? `
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
+          <p style="margin: 0; font-size: 14px;">
+            After your paid access ends, you will have ${data.chargeablePropertyCount} properties above the free tier limit. Your existing records remain saved, but paid capacity will no longer renew.
+          </p>
+        </div>
+        `
+            : ''
+        }
+        <div style="background: #fafafa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 8px 0;"><strong>Cancellation reason:</strong></p>
+          <p style="margin: 0; white-space: pre-wrap;">${safeReason}</p>
+        </div>
+        <p>If this was a mistake or you need help changing your plan, please contact the administrator.</p>
+        <p style="margin-top: 30px;">Best regards,<br>DominionDesk Team</p>
+      </div>
+    `,
+      text: `
+Subscription Cancelled
+
+Dear ${data.recipientName},
+
+Your DominionDesk subscription has been cancelled and will not renew.
+
+Cancelled on: ${data.cancelledAt}
+Current plan: ${data.previousTier}
+${data.accessUntil ? `Paid access until: ${data.accessUntil}` : ''}
+Current property limit: ${data.propertyLimit}
+${data.freeTierPropertyLimit ? `Free tier property limit after expiry: ${data.freeTierPropertyLimit}` : ''}
+Properties on account: ${data.propertyCount}
+Properties above free tier limit after expiry: ${data.chargeablePropertyCount}
+
+Cancellation reason:
+${data.reason}
+
+If this was a mistake or you need help changing your plan, please contact the administrator.
+
+Best regards,
+DominionDesk Team
+    `.trim(),
+    };
+  },
+
+  subscriptionCancellationAdminAlert: (data: {
+    userName: string;
+    userEmail: string;
+    cancelledAt: string;
+    reason: string;
+    previousTier: string;
+    newTier: string;
+    propertyLimit: number;
+    propertyCount: number;
+    activePropertyCount: number;
+    chargeablePropertyCount: number;
+    cancelledBy: string;
+    accessUntil?: string | null;
+    freeTierPropertyLimit?: number;
+  }) => {
+    const safeReason = escapeHtml(data.reason);
+
+    return {
+      subject: `Subscription Cancelled - ${data.userName}`,
+      html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Subscription Cancellation Alert</h2>
+        <p>A landlord cancelled their DominionDesk subscription. Their paid plan remains active until the subscription end date and will not renew.</p>
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Landlord:</strong> ${escapeHtml(data.userName)}</p>
+          <p><strong>Email:</strong> ${escapeHtml(data.userEmail)}</p>
+          <p><strong>Cancelled on:</strong> ${escapeHtml(data.cancelledAt)}</p>
+          <p><strong>Cancelled by:</strong> ${escapeHtml(data.cancelledBy)}</p>
+          <p><strong>Current plan:</strong> ${escapeHtml(data.previousTier)}</p>
+          ${data.accessUntil ? `<p><strong>Paid access until:</strong> ${escapeHtml(data.accessUntil)}</p>` : ''}
+          <p><strong>Current property limit:</strong> ${data.propertyLimit}</p>
+          ${data.freeTierPropertyLimit ? `<p><strong>Free tier property limit after expiry:</strong> ${data.freeTierPropertyLimit}</p>` : ''}
+          <p><strong>Total properties:</strong> ${data.propertyCount}</p>
+          <p><strong>Active rented properties:</strong> ${data.activePropertyCount}</p>
+          <p><strong>Properties above free tier limit after expiry:</strong> ${data.chargeablePropertyCount}</p>
+        </div>
+        <div style="background: #fafafa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 8px 0;"><strong>Cancellation reason:</strong></p>
+          <p style="margin: 0; white-space: pre-wrap;">${safeReason}</p>
+        </div>
+        <p>The account is scheduled to move to the free tier after the paid access period ends. Review the landlord if follow-up is needed.</p>
+      </div>
+    `,
+      text: `
+Subscription Cancellation Alert
+
+A landlord cancelled their DominionDesk subscription. Their paid plan remains active until the subscription end date and will not renew.
+
+Landlord: ${data.userName}
+Email: ${data.userEmail}
+Cancelled on: ${data.cancelledAt}
+Cancelled by: ${data.cancelledBy}
+Current plan: ${data.previousTier}
+${data.accessUntil ? `Paid access until: ${data.accessUntil}` : ''}
+Current property limit: ${data.propertyLimit}
+${data.freeTierPropertyLimit ? `Free tier property limit after expiry: ${data.freeTierPropertyLimit}` : ''}
+Total properties: ${data.propertyCount}
+Active rented properties: ${data.activePropertyCount}
+Properties above free tier limit after expiry: ${data.chargeablePropertyCount}
+
+Cancellation reason:
+${data.reason}
+
+The account is scheduled to move to the free tier after the paid access period ends. Review the landlord if follow-up is needed.
+    `.trim(),
+    };
+  },
 
   generic: (data: { recipientName: string; subject: string; body: string }) => ({
     subject: data.subject,
