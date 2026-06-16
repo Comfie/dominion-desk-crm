@@ -8,7 +8,7 @@ import { logger } from '@/lib/shared/logger';
 /**
  * POST /api/subscription/cancel
  * Allows users to cancel their active subscription
- * User retains access until end of billing period
+ * Cancels paid billing and moves the account to the free tier
  */
 export async function POST(req: Request) {
   try {
@@ -22,6 +22,11 @@ export async function POST(req: Request) {
     // Parse request body for optional cancellation reason
     const body = await req.json().catch(() => ({}));
     const { reason } = body;
+    const cancellationReason = typeof reason === 'string' ? reason.trim() : '';
+
+    if (!cancellationReason) {
+      return NextResponse.json({ error: 'Cancellation reason is required' }, { status: 400 });
+    }
 
     // Get user's subscription status
     const user = await prisma.user.findUnique({
@@ -49,22 +54,40 @@ export async function POST(req: Request) {
     }
 
     // Cancel the subscription
-    await cancelSubscription(userId, reason, userId);
+    const cancellation = await cancelSubscription(userId, cancellationReason, userId);
 
     logger.info('Subscription cancelled by user', {
       userId,
-      reason: reason || 'No reason provided',
+      reason: cancellationReason,
       subscriptionEndsAt: user.subscriptionEndsAt,
+      currentTier: cancellation.currentTier,
+      scheduledDowngradeTier: cancellation.scheduledDowngradeTier,
+      propertyLimit: cancellation.propertyLimit,
+      propertyCount: cancellation.propertyCount,
+      propertiesAboveFreeTierCount: cancellation.propertiesAboveFreeTierCount,
+      userConfirmationSent: cancellation.emails.userConfirmationSent,
+      adminNotificationSent: cancellation.emails.adminNotificationSent,
     });
 
     // Return cancellation details
     return NextResponse.json({
       success: true,
       message: 'Subscription cancelled successfully',
-      accessUntil: user.subscriptionEndsAt,
+      accessUntil: cancellation.accessUntil,
       details: {
         status: 'CANCELLED',
-        note: 'You will retain access until the end of your current billing period',
+        tier: cancellation.currentTier,
+        scheduledDowngradeTier: cancellation.scheduledDowngradeTier,
+        propertyLimit: cancellation.propertyLimit,
+        freeTierPropertyLimit: cancellation.freeTierPropertyLimit,
+        propertyCount: cancellation.propertyCount,
+        propertiesAboveFreeTierCount: cancellation.propertiesAboveFreeTierCount,
+        downgradeEffectiveAt: cancellation.downgradeEffectiveAt,
+        confirmationEmailSent: cancellation.emails.userConfirmationSent,
+        note:
+          cancellation.propertiesAboveFreeTierCount > 0
+            ? `Your paid plan remains active until your subscription end date. After that, ${cancellation.propertiesAboveFreeTierCount} properties will be above the free tier limit.`
+            : 'Your paid plan remains active until your subscription end date and will not renew.',
       },
     });
   } catch (error) {

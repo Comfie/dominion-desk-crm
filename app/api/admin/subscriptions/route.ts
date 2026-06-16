@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireSuperAdmin } from '@/lib/auth-helpers';
 import prisma from '@/lib/db';
-import { calculateSubscriptionBilling } from '@/lib/services/subscription.service';
+import {
+  calculateSubscriptionBilling,
+  getPropertyLimitForTier,
+} from '@/lib/services/subscription.service';
 
 const updateSubscriptionSchema = z.object({
   userId: z.string(),
@@ -261,22 +264,7 @@ export async function PUT(request: Request) {
     // Handle tier change
     if (validatedData.subscriptionTier) {
       updateData.subscriptionTier = validatedData.subscriptionTier;
-
-      // Update property limit based on tier
-      switch (validatedData.subscriptionTier) {
-        case 'FREE':
-          updateData.propertyLimit = 1;
-          break;
-        case 'STARTER':
-          updateData.propertyLimit = 5;
-          break;
-        case 'PROFESSIONAL':
-          updateData.propertyLimit = 20;
-          break;
-        case 'ENTERPRISE':
-          updateData.propertyLimit = 999999;
-          break;
-      }
+      updateData.propertyLimit = getPropertyLimitForTier(validatedData.subscriptionTier);
     }
 
     // Handle status change
