@@ -1079,8 +1079,11 @@ describe('LandingPageClient product page', () => {
         name: /run the rental lifecycle from mandate to monthly rent/i,
       })
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /start free/i })).toHaveAttribute('href', '/register');
-    expect(screen.getByRole('link', { name: /see product walkthrough/i })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /start free/i })[0]).toHaveAttribute(
+      'href',
+      '/register'
+    );
+    expect(screen.getAllByRole('link', { name: /see product walkthrough/i })[0]).toHaveAttribute(
       'href',
       '/demo'
     );
