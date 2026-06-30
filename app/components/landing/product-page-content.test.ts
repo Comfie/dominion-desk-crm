@@ -74,6 +74,17 @@ describe('product landing page content', () => {
     expect(agencyPlan?.features).toContain('Mandates, applications, screening, and portal handoff');
   });
 
+  it('keeps pricing CTAs on register or demo paths only', () => {
+    expect(pricingPlans.every((plan) => ['/register', '/demo'].includes(plan.cta.href))).toBe(true);
+    expect(pricingPlans.find((plan) => plan.id === 'agency')?.cta.href).toBe('/demo');
+  });
+
+  it('does not publish unsupported public pricing amounts', () => {
+    expect(
+      pricingPlans.every((plan) => !plan.price.includes('R299') && !plan.price.includes('R0'))
+    ).toBe(true);
+  });
+
   it('keeps unsupported external integrations out of production claims', () => {
     const visibleCopy = [
       productHero.headline,
