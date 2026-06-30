@@ -116,7 +116,7 @@ export function AudiencePathGrid({ paths }: { paths: AudiencePath[] }) {
             <h3 className="text-xl font-semibold text-slate-950">{path.title}</h3>
             <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">{path.promise}</p>
             <ul className="mt-5 space-y-2 text-sm text-slate-700">
-              {path.features.slice(0, 8).map((feature) => (
+              {path.features.map((feature) => (
                 <li key={feature} className="flex gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                   <span>{feature}</span>

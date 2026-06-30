@@ -39,6 +39,9 @@ describe('product page sections', () => {
     expect(screen.getByText('Private landlords')).toBeInTheDocument();
     expect(screen.getByText('Property companies')).toBeInTheDocument();
     expect(screen.getByText('Rental agents')).toBeInTheDocument();
+    expect(screen.getByText('Placement completion')).toBeInTheDocument();
+    expect(screen.getByText('Lease assignment')).toBeInTheDocument();
+    expect(screen.getByText('Tenant portal handoff')).toBeInTheDocument();
   });
 
   it('renders every lifecycle stage', () => {
