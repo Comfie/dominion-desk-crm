@@ -20,6 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.organizationId || session.user.id;
     const { id } = await params;
     const body = await request.json();
     const validatedData = portalAccessSchema.parse(body);
@@ -28,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const tenant = await prisma.tenant.findFirst({
       where: {
         id,
-        userId: session.user.id, // Tenant must be owned by this property manager
+        userId,
       },
     });
 
@@ -51,6 +52,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     switch (validatedData.action) {
       case 'create': {
         if (hasPortalAccess) {
+          if (!tenant.portalUserId && existingTenantUser) {
+            await prisma.tenant.update({
+              where: { id: tenant.id },
+              data: { portalUserId: existingTenantUser.id },
+            });
+
+            return NextResponse.json({
+              success: true,
+              message: 'Existing portal access linked successfully',
+            });
+          }
+
           return NextResponse.json({ error: 'Tenant already has portal access' }, { status: 400 });
         }
 
@@ -99,7 +112,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         try {
           // Fetch landlord information
           const landlord = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: userId },
             select: {
               firstName: true,
               lastName: true,
@@ -282,13 +295,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.organizationId || session.user.id;
     const { id } = await params;
 
     // Find the tenant (owned by property manager)
     const tenant = await prisma.tenant.findFirst({
       where: {
         id,
-        userId: session.user.id, // Tenant must be owned by this property manager
+        userId,
       },
     });
 

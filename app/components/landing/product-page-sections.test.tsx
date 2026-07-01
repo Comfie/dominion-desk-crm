@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import {
   audiencePaths,
   faqItems,
@@ -45,28 +46,54 @@ describe('product page sections', () => {
   });
 
   it('renders every lifecycle stage', () => {
-    render(<LifecycleRail stages={lifecycleStages} />);
+    const { container } = render(<LifecycleRail stages={lifecycleStages} />);
 
     for (const stage of lifecycleStages) {
       expect(screen.getByText(stage.label)).toBeInTheDocument();
     }
+
+    const rail = container.querySelector('[data-testid="lifecycle-rail"]');
+    expect(rail).toHaveClass('lg:grid-cols-3');
+    expect(rail).not.toHaveClass('lg:grid-cols-9');
   });
 
   it('renders a feature suite with its feature inventory', () => {
     const placementSuite = featureSuites.find((suite) => suite.id === 'placement');
     expect(placementSuite).toBeDefined();
 
-    render(<FeatureSuiteSection suite={placementSuite!} />);
+    const { container } = render(<FeatureSuiteSection suite={placementSuite!} />);
 
     expect(screen.getByText('From landlord mandate to tenant handoff')).toBeInTheDocument();
     expect(screen.getByText('Tenant portal activation handoff')).toBeInTheDocument();
+
+    const shell = container.querySelector('[data-testid="feature-suite-shell"]');
+    expect(shell).toHaveClass('rounded-2xl');
+    expect(shell).toHaveClass('bg-gradient-to-br');
+
+    expect(screen.getByText('Workflow panel')).toBeInTheDocument();
+    expect(screen.getAllByText('Active workflow').length).toBeGreaterThan(0);
+    expect(container.innerHTML).not.toContain('/mockups/');
   });
 
   it('renders pricing with agency early access', () => {
-    render(<PricingSection plans={pricingPlans} />);
+    const { container } = render(<PricingSection plans={pricingPlans} />);
 
     expect(screen.getByText('Agency early access')).toBeInTheDocument();
     expect(screen.getAllByText('Talk to us').length).toBeGreaterThan(0);
+
+    const planSummaries = container.querySelectorAll('[data-testid="pricing-plan-summary"]');
+    expect(planSummaries).toHaveLength(pricingPlans.length);
+
+    for (const summary of planSummaries) {
+      expect(summary).toHaveClass('h-[13.5rem]');
+    }
+
+    const priceLabels = container.querySelectorAll('[data-testid="pricing-plan-price"]');
+    expect(priceLabels).toHaveLength(pricingPlans.length);
+
+    for (const label of priceLabels) {
+      expect(label).toHaveClass('whitespace-nowrap');
+    }
   });
 
   it('renders FAQ content without hiding answers by default', () => {

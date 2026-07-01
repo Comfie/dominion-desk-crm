@@ -7,6 +7,7 @@ import { getSubscriptionSettings } from '@/lib/services/system-settings.service'
 
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_SCORE_THRESHOLD = 0.5;
+const LOCAL_DEVELOPMENT_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 const registerSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -55,19 +56,29 @@ async function verifyRecaptcha(
   }
 }
 
+function canBypassRecaptcha(request: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+
+  const hostname = new URL(request.url).hostname;
+  return LOCAL_DEVELOPMENT_HOSTS.has(hostname);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validatedData = registerSchema.parse(body);
 
-    // Verify reCAPTCHA token
-    const recaptchaResult = await verifyRecaptcha(validatedData.recaptchaToken);
-    if (!recaptchaResult.success) {
-      console.warn('reCAPTCHA failed:', recaptchaResult.error, 'Score:', recaptchaResult.score);
-      return NextResponse.json(
-        { error: recaptchaResult.error || 'reCAPTCHA verification failed' },
-        { status: 400 }
-      );
+    if (!canBypassRecaptcha(request)) {
+      const recaptchaResult = await verifyRecaptcha(validatedData.recaptchaToken);
+      if (!recaptchaResult.success) {
+        console.warn('reCAPTCHA failed:', recaptchaResult.error, 'Score:', recaptchaResult.score);
+        return NextResponse.json(
+          { error: recaptchaResult.error || 'reCAPTCHA verification failed' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if user already exists

@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { LandingPageClient } from './components/LandingPageClient';
 
 export const metadata: Metadata = {
-  title: 'DominionDesk | Property Management Software for SA Landlords',
+  title: 'DominionDesk | Rental Operations OS for South Africa',
   description:
-    'Stop chasing rent. DominionDesk is the all-in-one property management platform built specifically for South Africa. Automate rent reminders, manage tenants, and generate tax-ready reports.',
+    'Run placement, tenant management, rent collection, maintenance, documents, and reports from one South African rental operations platform.',
   openGraph: {
-    title: 'DominionDesk | Property Management Software for SA Landlords',
+    title: 'DominionDesk | Rental Operations OS for South Africa',
     description:
-      'The all-in-one property management platform built specifically for South African landlords.',
+      'A South African rental operations platform for landlords, property companies, and rental agents.',
     url: 'https://dominiondesk.com',
     siteName: 'DominionDesk',
     locale: 'en_ZA',
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DominionDesk | Property Management Software for SA Landlords',
+    title: 'DominionDesk | Rental Operations OS for South Africa',
     description:
-      'Automate rent reminders, manage tenants, and track maintenance from one dashboard.',
+      'Manage placement, tenants, rent, maintenance, documents, and reports from one product.',
   },
 };
 

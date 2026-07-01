@@ -1,8 +1,8 @@
 # Property CRM - Project Status
 
-**Last Updated**: February 8, 2026
+**Last Updated**: June 30, 2026
 **Project Start**: November 2025
-**Status**: ✅ Core Features Implemented | ✅ PayFast Subscription Billing | ✅ Cron Scheduling Configured | ✅ Team Member Management | ✅ Messaging Automation UI Complete | ✅ Multi-Tenant Properties Support
+**Status**: ✅ Core Features Implemented | ✅ PayFast Subscription Billing | ✅ Cron Scheduling Configured | ✅ Team Member Management | ✅ Messaging Automation UI Complete | ✅ Multi-Tenant Properties Support | 🚧 Agent Placement Journey Started
 
 ---
 
@@ -13,19 +13,24 @@
 - ✅ Messaging automation UI fully implemented with automation management, scheduled messages queue, and variable suggestions.
 - ✅ Automation triggers wired for bookings (CREATED, CONFIRMED, CHECK_IN, COMPLETED, REVIEW_REQUEST), payments (RECEIVED), and maintenance (SCHEDULED, COMPLETED).
 - ✅ Multi-tenant per property support implemented with optional unit labels, per-lease payment generation, and updated UI.
+- ✅ Account-type capability foundation started: placement features are now agency-only while individual/company accounts keep standard management workflows.
+- ✅ Rental agent placement data foundation added for landlord owners, mandates, viewings, rental applications, and applicant screening.
+- ✅ Agency-only placement shell added at `/placement`, `/placement/applications`, `/placement/viewings`, and `/placement/landlords`.
+- ✅ Landlord and mandate management added with agency-only create/edit flows and fee tracking.
 - ✅ CSV export wired on all 9 report pages + rent collection + tenant payment ledger via shared client-side utility (`lib/utils/export-csv.ts`).
 - Calendar export references `/api/calendar/public/[propertyId]`, but that route does not exist.
 - Integration sync endpoints for Airbnb/Booking.com/Google Calendar/Paystack/Stripe are placeholders (mock results).
 - Paystack/Stripe payment endpoints are mocked; PayFast subscription billing is the only real payment gateway flow.
 - Several API routes still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin), so service-layer migration is incomplete.
 - Public API endpoints exist (`/api/public/*`), but there are no public pages consuming them.
-- TODOs remain for booking email notifications, calendar sync updates, subscription failure/cancellation emails, and some UI actions (e.g., bulk tenant document delete).
+- Subscription billing is implemented, but PayFast sandbox testing, webhook validation, production credentials, subscription event emails, and failed-payment recovery remain launch-readiness work.
+- TODOs remain for booking email notifications, calendar sync updates, and some UI actions (e.g., bulk tenant document delete).
 
 ## Executive Summary
 
 A modern, full-stack Property Management CRM system designed for the South African market. The system enables landlords to manage long-term rentals and short-term Airbnb properties with automated calendar synchronization, inquiry management, payment tracking, and tenant communication.
 
-**Current State**: Core property/booking/tenant/payment/maintenance/expense/document workflows are implemented with working dashboards and APIs. PayFast subscription billing is implemented. Cron scheduling is now configured in Vercel for automated payment reminders, maintenance follow-ups, and message delivery. Integrations (Airbnb/Booking.com/Google Calendar/Paystack/Stripe) and messaging automation are partially implemented with placeholder syncs.
+**Current State**: Core property/booking/tenant/payment/maintenance/expense/document workflows are implemented with working dashboards and APIs. PayFast subscription billing, customer billing pages, cancellation, invoice history, and admin subscription monitoring are implemented. Launch readiness still needs PayFast sandbox/webhook validation, production credential setup, subscription event emails, and failed-payment recovery. Cron scheduling is configured in Vercel for automated payment reminders, maintenance follow-ups, and message delivery. The public product page now positions DominionDesk around the full rental lifecycle from mandate and application through tenant portal, rent collection, maintenance, documents, and reports. The rental agent placement journey has agency-only access rules, application intake, viewings, landlord/mandate management, applicant screening, transactional tenant placement, and a mandatory tenant portal activation handoff. Integrations (Airbnb/Booking.com/Google Calendar/Paystack/Stripe) remain partially implemented with placeholder syncs.
 
 ---
 
@@ -850,7 +855,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Automatic invoice generation on payment
 - ✅ Invoice number generation (format: INV-YYYYMMDD-XXXXX)
 
-#### Subscription Management
+#### Completed Subscription Management
 
 - ✅ Subscribe modal component with billing breakdown
 - ✅ Subscription status page with current billing display
@@ -858,6 +863,7 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ Full billing history page with pagination
 - ✅ Cancel subscription button for active users
 - ✅ Payment status tracking (CURRENT, OVERDUE, DUE_SOON, TRIAL_EXPIRED)
+- ✅ Data model supports PAUSED subscription status; admin pause/resume workflow remains future work
 
 #### Admin Monitoring Dashboard
 
@@ -922,6 +928,14 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ✅ PAYFAST_PASSPHRASE - Signature passphrase
 - ✅ PAYFAST_SANDBOX - Environment toggle (true/false)
 - ✅ NEXT_PUBLIC_APP_URL - Application URL for callbacks
+
+#### Launch Readiness Gaps
+
+- ⏭️ Test PayFast subscription initiation and ITN handling in sandbox
+- ⏭️ Validate webhooks through ngrok or an equivalent public tunnel
+- ⏭️ Configure and verify PayFast production credentials
+- ⏭️ Add subscription event emails for activation, cancellation, and failed payments
+- ⏭️ Add dunning automation for failed recurring payments
 
 ---
 
@@ -1058,6 +1072,120 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 
 ---
 
+### 🚧 Phase 23: Rental Agent Placement Journey (Started June 22, 2026)
+
+#### Completed Foundation
+
+- ✅ Account-type capability helper (`lib/account-capabilities.ts`)
+  - `AGENCY` accounts can access placement features
+  - `INDIVIDUAL` and `COMPANY` accounts remain focused on property-management workflows
+  - `TENANT` accounts remain non-customer/portal-only accounts
+- ✅ Account-aware dashboard navigation (`components/dashboard/navigation.ts`)
+  - Placement navigation only appears for agency accounts
+  - Private and company users do not see the placement section
+- ✅ Agency-only placement route guard (`/placement/layout.tsx`)
+  - Non-agency users are redirected to `/dashboard`
+- ✅ Placement data foundation in Prisma schema and migration
+  - `LandlordOwner`
+  - `RentalMandate`
+  - `Viewing`
+  - `RentalApplication`
+  - `ApplicantScreening`
+- ✅ Initial agency placement pages
+  - `/placement` - Placement dashboard counts
+  - `/placement/applications` - Application queue
+  - `/placement/applications/new` - Application intake form
+  - `/placement/viewings` - Viewing schedule
+  - `/placement/viewings/new` - Viewing scheduling form
+  - `/placement/landlords` - Landlord/owner register
+  - `/placement/landlords/new` - Landlord owner capture form
+  - `/placement/landlords/[id]/edit` - Landlord owner edit form
+  - `/placement/mandates` - Mandate register
+  - `/placement/mandates/new` - Mandate capture form
+  - `/placement/mandates/[id]/edit` - Mandate edit form
+- ✅ Application intake workflow
+  - DTO validation for applicant, property, offer, and lease dates
+  - Service/repository layer for workspace ownership checks
+  - Inquiry-to-application creation with automatic screening row
+  - Agency-only API route (`/api/placement/applications`)
+- ✅ Viewing workflow
+  - DTO validation for scheduling and attendee contact details
+  - Service/repository layer for ownership checks and schedule conflicts
+  - Inquiry/application-to-viewing scheduling
+  - Agency-only API routes (`/api/placement/viewings`, `/api/placement/viewings/[id]`)
+  - Quick viewing status updates from the schedule
+- ✅ Landlord and mandate management
+  - DTO validation for landlord owner records, mandate dates, mandate type, exclusivity, status, and fee percentages
+  - Service/repository layer for workspace ownership checks before mandate creation/update
+  - Agency-only API routes (`/api/placement/landlords`, `/api/placement/landlords/[id]`, `/api/placement/mandates`, `/api/placement/mandates/[id]`)
+  - Create/edit UI for landlord owners and mandates
+  - Placement fee, management fee, VAT applicability, and mandate document URL captured
+- ✅ Applicant screening checklist
+  - Derived overall status for not started, pending, passed, failed, and needs-review outcomes
+  - Credit, affordability, employer reference, landlord reference, and FICA tracking
+  - Declared income, rent-to-income ratio, risk score, POPIA consent timestamp, and screening notes
+  - Agency-only API route (`/api/placement/applications/[id]/screening`)
+  - Checklist dialog with links to tenant or property supporting documents
+- ✅ Placement completion and tenant portal handoff
+  - Screening must pass before an application can be placed
+  - Linked tenants are reused first, followed by case-insensitive workspace email matches
+  - New applicants are converted into active long-term tenants when no match exists
+  - Tenant resolution, lease assignment, and the `PLACED` application transition run in one transaction
+  - Single-tenant property capacity and duplicate property/unit leases are enforced
+  - Agency-only API route (`/api/placement/applications/[id]/complete`)
+  - Application queue shows `Portal pending` until explicit tenant portal activation
+  - Portal activation creates credentials and sends the existing welcome email
+  - Tenant portal ownership checks now support organization workspaces for agency team members
+- ✅ Focused tests added
+  - `lib/account-capabilities.test.ts`
+  - `components/dashboard/navigation.test.ts`
+  - `lib/features/placement/__tests__/rental-application.dto.test.ts`
+  - `lib/features/placement/__tests__/rental-application.service.test.ts`
+  - `lib/features/placement/__tests__/viewing.dto.test.ts`
+  - `lib/features/placement/__tests__/viewing.service.test.ts`
+  - `lib/features/placement/__tests__/mandate.dto.test.ts`
+  - `lib/features/placement/__tests__/mandate.service.test.ts`
+  - `lib/features/placement/__tests__/screening.dto.test.ts`
+  - `lib/features/placement/__tests__/screening.service.test.ts`
+  - `lib/features/placement/__tests__/placement-completion.dto.test.ts`
+  - `lib/features/placement/__tests__/placement-completion.repository.test.ts`
+  - `lib/features/placement/__tests__/placement-completion.service.test.ts`
+  - `app/api/placement/applications/[id]/complete/route.test.ts`
+  - `app/api/tenants/[id]/portal-access/route.test.ts`
+
+#### Placement Roadmap
+
+- ✅ Application intake API and UI
+  - Convert inquiries into rental applications
+  - Capture applicant details, requested move-in date, proposed rent/deposit, and assignment
+- ✅ Viewing workflow API and UI
+  - Schedule viewings from inquiries/applications
+  - Track confirmations, attendance, no-shows, feedback, and follow-up
+- ✅ Landlord and mandate management
+  - Create/edit landlord owners
+  - Link properties to owners
+  - Track placement-only vs managed-rental mandates
+  - Track sole/dual/open mandate status and expiry
+- ✅ Applicant screening checklist
+  - Credit check status
+  - Affordability status
+  - Employer reference
+  - Landlord reference
+  - FICA status
+  - POPIA/consent record
+- ✅ Placement completion and portal handoff
+  - Convert or link the approved applicant to a tenant
+  - Create the property lease and mark the application placed atomically
+  - Require explicit portal activation and welcome email delivery as the next action
+- ⏸️ Commission and fee reporting (deferred)
+  - Placement fee percentages
+  - Management fee percentages
+  - VAT applicability
+  - Agent performance and earnings metrics
+- 📄 Implementation plan: `docs/superpowers/plans/2026-06-22-agent-placement-journey.md`
+
+---
+
 ## 🆕 Additional Implemented Features (Not Previously Documented)
 
 - ✅ Integrations management UI + API (`/settings/integrations`, `/api/integrations/*`) with connect/disconnect/toggle sync
@@ -1139,6 +1267,24 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - 🚧 Multi-channel messaging (Email live; SMS/WhatsApp stubs)
 - ⏭️ SMS payment reminders
 
+#### Rental Agent Placement
+
+- ✅ Public landing page redesigned as a product-led DominionDesk page for private landlords, property companies, and rental agents, including the new placement journey and tenant portal handoff.
+- ✅ Account-type capability foundation
+- ✅ Agency-only placement navigation and route guard
+- ✅ Placement data foundation for owners, mandates, viewings, applications, and screening
+- ✅ Initial placement dashboard pages
+- ✅ Application intake forms and API routes
+- ✅ Viewing create/update workflow
+- ✅ Landlord owner create/edit workflow
+- ✅ Mandate create/edit workflow
+- ✅ Placement and management fee capture with VAT flag
+- ✅ Applicant screening checklist and derived outcome status
+- ✅ Inquiry-to-application conversion
+- ✅ Transactional placement completion and tenant lease assignment
+- ✅ Mandatory portal activation handoff with portal status
+- ⏸️ Commission and placement fee reporting (deferred)
+
 #### Advanced Features
 
 - ⏭️ Review system for properties
@@ -1149,23 +1295,29 @@ A modern, full-stack Property Management CRM system designed for the South Afric
 - ⏭️ Mobile app (React Native)
 - ⏭️ Multi-language support
 
-#### Subscription Management
+#### Subscription Roadmap
 
-- ⏭️ Subscription tier management (basic, professional, enterprise)
-- ⏭️ Pause/resume subscriptions
-- ⏭️ Proration for mid-month changes
-- ⏭️ Upgrade/downgrade flows
-- ⏭️ Free trial extensions
-- ⏭️ Usage-based billing
-- ⏭️ Subscription analytics and churn tracking
+- **Next focus**:
+  - ⏭️ Subscription event emails (activation, cancellation, failed payments)
+  - ⏭️ Dunning automation for failed recurring payments
+  - ⏭️ Admin lifecycle controls (pause, resume, manual activation)
+- **After launch readiness**:
+  - ⏭️ Export subscription data to CSV
+  - ⏭️ Subscription analytics, MRR trends, and churn tracking
+  - ⏭️ Free trial extensions
+- **Later product expansion**:
+  - ⏭️ Subscription tier management (basic, professional, enterprise)
+  - ⏭️ Upgrade/downgrade flows
+  - ⏭️ Proration for mid-month changes
+  - ⏭️ Usage-based billing
 
 #### Admin Features
 
 - ✅ Admin subscription monitoring dashboard - COMPLETED
-- ✅ Payment status tracking (OVERDUE, DUE_SOON, CURRENT) - COMPLETED
+- ✅ Payment status tracking (OVERDUE, DUE_SOON, CURRENT, TRIAL_EXPIRED) - COMPLETED
 - ✅ MRR and revenue tracking - COMPLETED
-- ⏭️ Bulk actions (email overdue users, manual activation)
-- ⏭️ Subscription lifecycle management for admins
+- ⏭️ Bulk actions (email overdue users)
+- ⏭️ Subscription lifecycle management for admins (pause, resume, manual activation)
 - ⏭️ Custom payment schedules
 - ⏭️ Export subscription data to CSV
 
@@ -1217,13 +1369,13 @@ property-crm/
 
 ### Codebase
 
-- **Total API Endpoints (`route.ts`)**: 136
-- **Database Models**: 36
-- **Service Files**: 15
-- **Repository Files**: 10
-- **DTO/Validator Files**: 10
-- **Frontend Pages (`page.tsx`)**: 82
-- **Components (`components/`)**: 78
+- **Total API Endpoints (`route.ts`)**: 158
+- **Database Models**: 41
+- **Service Files**: 24
+- **Repository Files**: 16
+- **DTO/Validator Files**: 16
+- **Frontend Pages (`page.tsx`)**: 107
+- **Components (`components/`)**: 89
 
 ### Architecture
 
@@ -1231,7 +1383,7 @@ property-crm/
 - **TypeScript Errors**: Not audited in this pass
 - **Test Coverage**: Manual testing (automated tests pending)
 
-### Features Completed (22 major phases)
+### Features Completed (23 major phases)
 
 - **Properties**: ✅ Full CRUD + Import (no export) + Valuations + Documents + Multi-Tenant Support
 - **Bookings**: ✅ Full CRUD + Availability + Pricing
@@ -1255,6 +1407,7 @@ property-crm/
 - **Admin Dashboard**: ✅ Subscription monitoring + MRR tracking + Payment alerts
 - **Billing**: ✅ Dynamic pricing + Invoice generation + Payment history
 - **Multi-Tenant Properties**: ✅ Unit labels + Per-lease payments + Multiple tenants per property
+- **Agent Placement**: 🚧 Account-type gating + Placement models + Applications + Viewings + Mandates
 
 ---
 
@@ -1270,6 +1423,11 @@ property-crm/
 - Expense (property costs)
 - MaintenanceRequest (repairs/issues)
 - Inquiry (leads and inquiries)
+- RentalApplication (agency rental placement applications)
+- Viewing (rental viewing schedule and attendance)
+- LandlordOwner (agency-managed property owners)
+- RentalMandate (placement and management mandates)
+- ApplicantScreening (application screening checklist)
 - Task (tasks and reminders)
 - Inspection (inspections and items)
 - Message (communications)
@@ -1343,27 +1501,31 @@ UPLOADTHING_APP_ID
 
 ## Next Priorities
 
-### Immediate (Next Sprint)
+### Completed Subscription Foundations
 
 1. ✅ PayFast recurring billing system (COMPLETED)
 2. ✅ Admin subscription monitoring dashboard (COMPLETED)
-3. ✅ Vercel cron schedules configured (COMPLETED)
-4. ✅ Team member management system (COMPLETED)
-5. ✅ Messaging automation UI (COMPLETED)
-6. Test PayFast integration with sandbox environment
-7. Set up ngrok for webhook testing
-8. Configure PayFast production credentials
-9. Improve mobile responsiveness across all pages
-10. Complete automated testing setup
+3. ✅ Customer subscription status, cancellation, and billing history pages (COMPLETED)
+4. ✅ Invoice generation and PayFast webhook processing (COMPLETED)
+
+### Immediate Subscription Focus (Next Sprint)
+
+1. Test PayFast integration with sandbox environment
+2. Set up ngrok or equivalent tunnel for webhook testing
+3. Configure and verify PayFast production credentials
+4. Add subscription event emails for activation, cancellation, and failed payments
+5. Add dunning automation for failed recurring payments
+6. Add admin lifecycle controls for pause, resume, and manual activation
 
 ### Short-term (1-2 months)
 
-1. Email notifications for subscription events (activation, cancellation, failed payments)
-2. Dunning automation for failed payments (retry logic)
-3. Subscription management for admins (pause, resume, manual activation)
+1. Export subscription data to CSV
+2. Enhanced subscription reporting (MRR trends, churn rate)
+3. Free trial extension workflow
 4. Calendar sync (Airbnb API)
 5. SMS notifications (Twilio)
-6. Enhanced financial reporting (MRR trends, churn rate)
+6. Improve mobile responsiveness across all pages
+7. Complete automated testing setup
 
 ### Long-term (3-6 months)
 

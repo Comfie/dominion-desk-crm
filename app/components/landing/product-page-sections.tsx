@@ -55,6 +55,24 @@ const suiteIcons = {
   'south-african-trust': FileText,
 } as const;
 
+const suiteWorkflowRows: Record<FeatureSuite['id'], string[]> = {
+  placement: ['Mandate active', 'Application in screening', 'Portal handoff ready'],
+  management: ['Property record updated', 'Lease assignment visible', 'Maintenance queue open'],
+  'tenant-portal': ['Invoice viewed', 'Proof of payment uploaded', 'Maintenance photo attached'],
+  'financial-control': [
+    'Rent collection reviewed',
+    'Expense marked deductible',
+    'CSV export ready',
+  ],
+  operations: ['Team access controlled', 'Message queued', 'Audit trail updated'],
+  'bookings-inquiries': ['Inquiry captured', 'Booking conflict checked', 'Guest status updated'],
+  'south-african-trust': [
+    'ZAR ledger active',
+    'EFT proof captured',
+    'POPIA-aware access controlled',
+  ],
+};
+
 export function HeroProductSurface({ hero }: { hero: ProductHero }) {
   return (
     <div className="rounded-lg border border-white/15 bg-white/10 p-3 shadow-2xl shadow-slate-950/30 backdrop-blur md:p-4">
@@ -136,19 +154,27 @@ export function AudiencePathGrid({ paths }: { paths: AudiencePath[] }) {
 
 export function LifecycleRail({ stages }: { stages: LifecycleStage[] }) {
   return (
-    <ol className="grid gap-3 lg:grid-cols-9">
+    <ol data-testid="lifecycle-rail" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {stages.map((stage, index) => (
         <li
           key={stage.label}
-          className="relative rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+          className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
         >
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-950 text-xs font-bold text-white">
-              {index + 1}
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-emerald-500 to-amber-500" />
+          <div className="flex gap-4">
+            <span className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">
+              {String(index + 1).padStart(2, '0')}
             </span>
-            <h3 className="text-sm font-semibold text-slate-950">{stage.label}</h3>
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.18em] text-sky-700 uppercase">
+                Stage {index + 1}
+              </p>
+              <h3 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">
+                {stage.label}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{stage.description}</p>
+            </div>
           </div>
-          <p className="text-xs leading-5 text-slate-600">{stage.description}</p>
         </li>
       ))}
     </ol>
@@ -157,29 +183,91 @@ export function LifecycleRail({ stages }: { stages: LifecycleStage[] }) {
 
 export function FeatureSuiteSection({ suite }: { suite: FeatureSuite }) {
   const Icon = suiteIcons[suite.id];
+  const workflowRows = suiteWorkflowRows[suite.id];
 
   return (
-    <section id={suite.id} className="scroll-mt-24 border-t border-slate-200 py-16">
-      <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
-        <div>
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-md bg-slate-950 text-white">
-            <Icon className="h-5 w-5" />
-          </div>
-          <p className="text-xs font-bold tracking-[0.24em] text-sky-700 uppercase">
-            {suite.label}
-          </p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{suite.title}</h2>
-          <p className="mt-4 text-base leading-7 text-slate-600">{suite.summary}</p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {suite.features.map((feature) => (
-            <div
-              key={feature}
-              className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
-            >
-              {feature}
+    <section id={suite.id} className="scroll-mt-24 py-10">
+      <div
+        data-testid="feature-suite-shell"
+        className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-sky-50/70 p-5 shadow-xl shadow-slate-200/50 lg:p-8"
+      >
+        <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-stretch">
+          <div className="flex flex-col justify-between">
+            <div>
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-md bg-slate-950 text-white shadow-lg shadow-slate-900/15">
+                <Icon className="h-5 w-5" />
+              </div>
+              <p className="text-xs font-bold tracking-[0.24em] text-sky-700 uppercase">
+                {suite.label}
+              </p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+                {suite.title}
+              </h2>
+              <p className="mt-4 text-base leading-7 text-slate-600">{suite.summary}</p>
             </div>
-          ))}
+            <div className="mt-8 grid grid-cols-3 gap-2 border-t border-slate-200 pt-5">
+              <div>
+                <p className="text-[11px] font-bold tracking-[0.18em] text-slate-500 uppercase">
+                  Suite
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">{suite.label}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold tracking-[0.18em] text-slate-500 uppercase">
+                  Coverage
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {suite.features.length} tools
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold tracking-[0.18em] text-slate-500 uppercase">
+                  Status
+                </p>
+                <p className="mt-1 text-sm font-semibold text-emerald-700">Active workflow</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <p className="text-xs font-bold tracking-[0.2em] text-sky-700 uppercase">
+                  Workflow panel
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-950">Active workflow</h3>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Connected
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              {workflowRows.map((row, index) => (
+                <div key={row} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-xs font-bold text-white">
+                      {index + 1}
+                    </span>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <p className="text-sm leading-5 font-semibold text-slate-900">{row}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {suite.features.map((feature) => (
+                <div
+                  key={feature}
+                  className="flex items-start gap-2 rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700"
+                >
+                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -194,13 +282,23 @@ export function PricingSection({ plans }: { plans: PricingPlan[] }) {
         <h2 className="mt-3 text-3xl font-bold tracking-tight">Start free. Scale by workflow.</h2>
         <div className="mt-10 grid gap-4 lg:grid-cols-4">
           {plans.map((plan) => (
-            <div key={plan.id} className="rounded-lg border border-white/10 bg-white/[0.06] p-6">
-              <h3 className="text-lg font-semibold">{plan.name}</h3>
-              <p className="mt-3 text-3xl font-bold">{plan.price}</p>
-              <p className="mt-3 min-h-16 text-sm leading-6 text-slate-300">{plan.description}</p>
+            <div
+              key={plan.id}
+              className="flex h-full flex-col rounded-lg border border-white/10 bg-white/[0.06] p-6"
+            >
+              <div data-testid="pricing-plan-summary" className="h-[13.5rem]">
+                <h3 className="text-lg font-semibold">{plan.name}</h3>
+                <p
+                  data-testid="pricing-plan-price"
+                  className="mt-3 text-[2.45rem] leading-tight font-bold tracking-normal whitespace-nowrap"
+                >
+                  {plan.price}
+                </p>
+                <p className="mt-3 text-sm leading-6 text-slate-300">{plan.description}</p>
+              </div>
               <Link
                 href={plan.cta.href}
-                className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-md bg-white text-sm font-semibold text-slate-950 transition hover:bg-sky-100"
+                className="inline-flex h-10 w-full items-center justify-center rounded-md bg-white text-sm font-semibold text-slate-950 transition hover:bg-sky-100"
               >
                 {plan.cta.label}
               </Link>
