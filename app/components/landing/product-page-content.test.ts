@@ -13,7 +13,7 @@ import {
 
 describe('product landing page content', () => {
   it('positions DominionDesk as a rental operations platform for the three buying audiences', () => {
-    expect(productHero.headline).toBe('Run the rental lifecycle from mandate to monthly rent.');
+    expect(productHero.headline).toBe('Run rentals from one operating cockpit.');
     expect(productHero.primaryCta.href).toBe('/register');
     expect(productHero.secondaryCta.href).toBe('/demo');
     expect(audiencePaths.map((path) => path.title)).toEqual([

@@ -9,7 +9,7 @@ describe('LandingPageClient product page', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: /run the rental lifecycle from mandate to monthly rent/i,
+        name: /run rentals from one operating cockpit/i,
       })
     ).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /start free/i })[0]).toHaveAttribute(
@@ -55,5 +55,12 @@ describe('LandingPageClient product page', () => {
     const { container } = render(<LandingPageClient />);
 
     expect(container.innerHTML).not.toContain('/mockups/');
+  });
+
+  it('keeps the hero background treatment in the DominionDesk blue palette', () => {
+    const { container } = render(<LandingPageClient />);
+
+    expect(container.innerHTML).toContain('rgba(59,130,246,0.18)');
+    expect(container.innerHTML).not.toContain('rgba(225,181,106');
   });
 });

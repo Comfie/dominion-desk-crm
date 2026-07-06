@@ -4,14 +4,18 @@ import {
   audiencePaths,
   faqItems,
   featureSuites,
+  productCapabilities,
+  quickStartSteps,
   lifecycleStages,
   pricingPlans,
   productHero,
 } from './product-page-content';
 import {
   AudiencePathGrid,
+  CapabilityGrid,
   FaqSection,
   FeatureSuiteSection,
+  GettingStartedSection,
   HeroProductSurface,
   LifecycleRail,
   PricingSection,
@@ -19,12 +23,28 @@ import {
 
 describe('product page sections', () => {
   it('renders the hero product surface with placement, management, and portal lanes', () => {
-    render(<HeroProductSurface hero={productHero} />);
+    const { container } = render(<HeroProductSurface hero={productHero} />);
 
-    expect(screen.getByText('Placement')).toBeInTheDocument();
-    expect(screen.getByText('Management')).toBeInTheDocument();
-    expect(screen.getByText('Tenant Portal')).toBeInTheDocument();
-    expect(screen.getByText('Screening passed')).toBeInTheDocument();
+    expect(screen.getAllByText('Rental cockpit').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Operational view').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Placement').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Rent control').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Maintenance').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Tenant handoff ready').length).toBeGreaterThan(0);
+
+    const desktopGrid = container.querySelector('[data-testid="hero-cockpit-grid"]');
+    expect(desktopGrid).toHaveClass('lg:grid-cols-3');
+    expect(desktopGrid).toHaveClass('gap-4');
+  });
+
+  it('keeps the landing product visuals in the DominionDesk blue palette', () => {
+    const { container } = render(<HeroProductSurface hero={productHero} />);
+
+    expect(container.innerHTML).toContain('#08233F');
+    expect(container.innerHTML).toContain('#3B82F6');
+    expect(container.innerHTML).not.toContain('#F7F0E5');
+    expect(container.innerHTML).not.toContain('#E1B56A');
+    expect(container.innerHTML).not.toContain('#8A5A18');
   });
 
   it('does not render stale screenshot assets in product visuals', () => {
@@ -55,6 +75,15 @@ describe('product page sections', () => {
     const rail = container.querySelector('[data-testid="lifecycle-rail"]');
     expect(rail).toHaveClass('lg:grid-cols-3');
     expect(rail).not.toHaveClass('lg:grid-cols-9');
+  });
+
+  it('renders the getting started steps as product onboarding cards', () => {
+    render(<GettingStartedSection steps={quickStartSteps} />);
+
+    expect(screen.getByText('Your first live workflow is five minutes away.')).toBeInTheDocument();
+    expect(screen.getByText('Capture the rental')).toBeInTheDocument();
+    expect(screen.getByText('Invite the tenant')).toBeInTheDocument();
+    expect(screen.getByText('Run the month')).toBeInTheDocument();
   });
 
   it('renders a feature suite with its feature inventory', () => {
@@ -94,6 +123,19 @@ describe('product page sections', () => {
     for (const label of priceLabels) {
       expect(label).toHaveClass('whitespace-nowrap');
     }
+  });
+
+  it('renders a broad capability inventory without relying on screenshots', () => {
+    const { container } = render(<CapabilityGrid capabilities={productCapabilities} />);
+
+    expect(screen.getByText('Everything in the rental operations stack.')).toBeInTheDocument();
+    expect(screen.getByText('Placement')).toBeInTheDocument();
+    expect(screen.getByText('Tenant portal')).toBeInTheDocument();
+    expect(screen.getByText('South African workflows')).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-testid="capability-card"]').length).toBe(
+      productCapabilities.length
+    );
+    expect(container.innerHTML).not.toContain('/mockups/');
   });
 
   it('renders FAQ content without hiding answers by default', () => {

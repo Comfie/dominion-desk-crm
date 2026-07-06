@@ -41,6 +41,21 @@ export type FeatureSuite = {
   features: string[];
 };
 
+export type QuickStartStep = {
+  id: 'capture' | 'invite' | 'operate';
+  kicker: string;
+  title: string;
+  description: string;
+  metric: string;
+  rows: string[];
+};
+
+export type ProductCapability = {
+  title: string;
+  status: 'Live' | 'Agency' | 'Portal' | 'Reports' | 'Local';
+  description: string;
+};
+
 export type PricingPlan = {
   id: 'trial' | 'landlord' | 'portfolio' | 'agency';
   name: string;
@@ -57,9 +72,9 @@ export type FaqItem = {
 
 export const productHero: ProductHero = {
   eyebrow: 'Rental operations OS for South Africa',
-  headline: 'Run the rental lifecycle from mandate to monthly rent.',
+  headline: 'Run rentals from one operating cockpit.',
   subheadline:
-    'DominionDesk brings placement, tenant management, rent collection, maintenance, documents, and reporting into one South African property operations platform for landlords, property companies, and rental agents.',
+    'DominionDesk connects mandates, tenants, rent, maintenance, documents, and reports so landlords, companies, and agents can see what needs attention before it becomes a chase.',
   primaryCta: { label: 'Start free', href: '/register' },
   secondaryCta: { label: 'See product walkthrough', href: '/demo' },
   trustSignals: [
@@ -68,6 +83,36 @@ export const productHero: ProductHero = {
     'Tenant portal included',
   ],
 };
+
+export const quickStartSteps: QuickStartStep[] = [
+  {
+    id: 'capture',
+    kicker: '01 / Bring the rental in',
+    title: 'Capture the rental',
+    description:
+      'Add the property, owner, lease terms, mandate, or application context without building a spreadsheet first.',
+    metric: '5 min',
+    rows: ['Property record', 'Owner or landlord', 'Mandate or lease terms'],
+  },
+  {
+    id: 'invite',
+    kicker: '02 / Give access',
+    title: 'Invite the tenant',
+    description:
+      'Create or link the tenant, activate the portal, and keep invoices, documents, and maintenance in one place.',
+    metric: 'Portal ready',
+    rows: ['Tenant profile', 'Portal access', 'Document handoff'],
+  },
+  {
+    id: 'operate',
+    kicker: '03 / Run the month',
+    title: 'Run the month',
+    description:
+      'Track rent, proof of payment, maintenance, tasks, and reports from the same operational line.',
+    metric: 'Live ops',
+    rows: ['Rent status', 'Maintenance queue', 'Reports export'],
+  },
+];
 
 export const audiencePaths: AudiencePath[] = [
   {
@@ -328,6 +373,70 @@ export const featureSuites: FeatureSuite[] = [
       'Local rental terminology and workflows',
       'Built for landlords, companies, and agents operating in South Africa',
     ],
+  },
+];
+
+export const productCapabilities: ProductCapability[] = [
+  {
+    title: 'Placement',
+    status: 'Agency',
+    description: 'Mandates, applications, viewings, screening, and tenant handoff.',
+  },
+  {
+    title: 'Tenant portal',
+    status: 'Portal',
+    description: 'Invoices, EFT proof, maintenance requests, documents, and profile details.',
+  },
+  {
+    title: 'Rent collection',
+    status: 'Live',
+    description: 'Payment statuses, invoices, reminders, ledgers, and overdue visibility.',
+  },
+  {
+    title: 'Maintenance',
+    status: 'Live',
+    description: 'Tenant requests, photos, coordination, tasks, and status tracking.',
+  },
+  {
+    title: 'Documents',
+    status: 'Live',
+    description: 'Property, tenant, lease, FICA, and operating documents in context.',
+  },
+  {
+    title: 'Reports',
+    status: 'Reports',
+    description: 'Revenue, cash flow, rent collection, occupancy, tax, and tenant reports.',
+  },
+  {
+    title: 'Team access',
+    status: 'Live',
+    description: 'Private, company, agency, and tenant account rules with role-aware navigation.',
+  },
+  {
+    title: 'Bookings',
+    status: 'Live',
+    description: 'Short-term bookings, guests, pricing, inquiries, and calendar views.',
+  },
+  {
+    title: 'Tasks',
+    status: 'Live',
+    description: 'Operational follow-ups for maintenance, payments, inspections, and handoffs.',
+  },
+  {
+    title: 'Messaging',
+    status: 'Live',
+    description: 'Templates, automation screens, scheduled messages, and reminder workflows.',
+  },
+  {
+    title: 'CSV exports',
+    status: 'Reports',
+    description:
+      'Export operational and financial data when owners, accountants, or teams need it.',
+  },
+  {
+    title: 'South African workflows',
+    status: 'Local',
+    description: 'ZAR, EFT proof, FICA, POPIA-aware handling, and local rental language.',
   },
 ];
 
