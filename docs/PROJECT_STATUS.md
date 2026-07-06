@@ -1,1607 +1,199 @@
-# Property CRM - Project Status
+# Project Status
 
-**Last Updated**: June 30, 2026
-**Project Start**: November 2025
-**Status**: ✅ Core Features Implemented | ✅ PayFast Subscription Billing | ✅ Cron Scheduling Configured | ✅ Team Member Management | ✅ Messaging Automation UI Complete | ✅ Multi-Tenant Properties Support | 🚧 Agent Placement Journey Started
+Last updated: 2026-07-06
 
----
+Property CRM is a Next.js application for South African landlords, property managers, and rental agencies. It covers property operations, rent collection, tenants, maintenance, documents, reporting, subscriptions, and an agency rental placement workflow.
 
-## Audit Notes
+## Current Snapshot
 
-- ✅ `vercel.json` now has 6 cron schedules configured for payment/maintenance/messaging automation endpoints.
-- ✅ Team member management fully implemented with invitation system, role-based permissions, and complete UI.
-- ✅ Messaging automation UI fully implemented with automation management, scheduled messages queue, and variable suggestions.
-- ✅ Automation triggers wired for bookings (CREATED, CONFIRMED, CHECK_IN, COMPLETED, REVIEW_REQUEST), payments (RECEIVED), and maintenance (SCHEDULED, COMPLETED).
-- ✅ Multi-tenant per property support implemented with optional unit labels, per-lease payment generation, and updated UI.
-- ✅ Account-type capability foundation started: placement features are now agency-only while individual/company accounts keep standard management workflows.
-- ✅ Rental agent placement data foundation added for landlord owners, mandates, viewings, rental applications, and applicant screening.
-- ✅ Agency-only placement shell added at `/placement`, `/placement/applications`, `/placement/viewings`, and `/placement/landlords`.
-- ✅ Landlord and mandate management added with agency-only create/edit flows and fee tracking.
-- ✅ CSV export wired on all 9 report pages + rent collection + tenant payment ledger via shared client-side utility (`lib/utils/export-csv.ts`).
-- Calendar export references `/api/calendar/public/[propertyId]`, but that route does not exist.
-- Integration sync endpoints for Airbnb/Booking.com/Google Calendar/Paystack/Stripe are placeholders (mock results).
-- Paystack/Stripe payment endpoints are mocked; PayFast subscription billing is the only real payment gateway flow.
-- Several API routes still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin), so service-layer migration is incomplete.
-- Public API endpoints exist (`/api/public/*`), but there are no public pages consuming them.
-- Subscription billing is implemented, but PayFast sandbox testing, webhook validation, production credentials, subscription event emails, and failed-payment recovery remain launch-readiness work.
-- TODOs remain for booking email notifications, calendar sync updates, and some UI actions (e.g., bulk tenant document delete).
-
-## Executive Summary
-
-A modern, full-stack Property Management CRM system designed for the South African market. The system enables landlords to manage long-term rentals and short-term Airbnb properties with automated calendar synchronization, inquiry management, payment tracking, and tenant communication.
-
-**Current State**: Core property/booking/tenant/payment/maintenance/expense/document workflows are implemented with working dashboards and APIs. PayFast subscription billing, customer billing pages, cancellation, invoice history, and admin subscription monitoring are implemented. Launch readiness still needs PayFast sandbox/webhook validation, production credential setup, subscription event emails, and failed-payment recovery. Cron scheduling is configured in Vercel for automated payment reminders, maintenance follow-ups, and message delivery. The public product page now positions DominionDesk around the full rental lifecycle from mandate and application through tenant portal, rent collection, maintenance, documents, and reports. The rental agent placement journey has agency-only access rules, application intake, viewings, landlord/mandate management, applicant screening, transactional tenant placement, and a mandatory tenant portal activation handoff. Integrations (Airbnb/Booking.com/Google Calendar/Paystack/Stripe) remain partially implemented with placeholder syncs.
-
----
+- Core landlord workflows are implemented: properties, tenants, bookings, rent collection, maintenance, expenses, documents, inspections, reports, dashboard, and settings.
+- PayFast subscription billing is implemented in the app, including subscription initiation, ITN handling, cancellation, billing history, and admin subscription monitoring.
+- Team member management is implemented with invitations, roles, permission presets, and `/settings/team`.
+- Messaging automation UI and backend services exist, with email delivery implemented and SMS/WhatsApp left as future channels.
+- Multi-tenant property support is implemented with unit labels and per-lease payment generation.
+- Rental agency placement has an implemented foundation: agency-only access, landlord owners, mandates, viewings, applications, applicant screening, transactional placement completion, and tenant portal activation handoff.
+- Several integrations and payment providers are placeholders or partial, especially Airbnb, Booking.com, Google Calendar sync, Paystack, Stripe, SMS, and WhatsApp.
+- `vercel.json` currently has no active cron schedules. Automation endpoints exist, but production scheduling must be enabled before relying on automatic jobs.
 
 ## Tech Stack
 
-### Frontend
+- Next.js 16 App Router, React 19, TypeScript
+- PostgreSQL with Prisma 7
+- NextAuth.js
+- Tailwind CSS and shadcn-style Radix components
+- Vitest, Testing Library, jsdom
+- UploadThing for uploaded files
+- Nodemailer/SMTP for email
+- PayFast for subscription billing
+- Vercel hosting target
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **UI**: shadcn/ui + Tailwind CSS
-- **Forms**: React Hook Form + Zod validation
-- **State**: React Context + Zustand
+## Implemented Product Areas
 
-### Backend
+### Foundation
 
-- **Database**: PostgreSQL
-- **ORM**: Prisma
-- **Authentication**: NextAuth.js
-- **Email**: Nodemailer (SMTP)
-- **File Upload**: UploadThing
+- Authentication with roles: `SUPER_ADMIN`, `CUSTOMER`, and `TENANT`
+- Password reset and forced first-login password change
+- Workspace scoping through `organizationId`
+- Audit logging for mutations
+- Shared error classes and API error handler
+- Service/repository pattern for the main feature modules
 
-### Architecture
+### Property Management
 
-- **Pattern**: Three-layer architecture (API → Service → Repository)
-- **Multi-tenancy**: Workspace-per-user (session `organizationId`), team-member access hooks present (no dedicated Organization model/UI)
-- **Audit Trail**: Comprehensive logging for all mutations
+- Property CRUD, search, status, images, rental type, pricing, amenities, and import/export utilities
+- Multi-tenant property mode via `allowsMultipleTenants`
+- Optional unit labels on leases
+- Property valuation records and summary cards
+- Property-specific document folders and default folder templates
 
-### Deployment
+### Tenant And Lease Management
 
-- **Hosting**: Vercel (frontend + API)
-- **Database**: PostgreSQL (cloud-hosted)
-- **Cron Jobs**: ✅ Vercel cron schedules configured (6 jobs running automatically)
+- Tenant profiles, documents, emergency contacts, employment details, and portal access
+- Tenant-to-property assignments with lease start/end dates, rent, deposit, and unit label
+- Lease end date validation in API and UI flows
+- Tenant payment history pages and portal payment history
 
----
+### Financials
 
-## Completed Features
+- Payment tracking, invoice numbers, rent collection grid, tenant ledger, payment reminders, and payment proof flow
+- Manual invoice creation with line items
+- Expenses with categories, paid status, tax deductible tracking, and property linkage
+- Reports for tax summary, revenue, tenant payments, aging receivables, maintenance costs, occupancy, lease expiration, cash flow, and analytics
+- CSV export on reports, rent collection, and tenant payment ledger
 
-### ✅ Phase 1: Foundation & Core Infrastructure
+### Billing
 
-#### Database & Schema
+- PayFast recurring subscription billing
+- Dynamic subscription calculation
+- Subscription status, billing history, cancellation, and admin monitoring
+- PayFast transaction records and invoice records
 
-- ✅ Complete Prisma schema with 36 models
-- 🚧 Multi-tenancy support (session `organizationId` is userId; no separate Organization model)
-- ✅ Audit logging system
-- ✅ User management (Super Admin, Customer/Landlord, Tenant)
-- ✅ Team member support (full implementation with UI/API)
+### Maintenance, Inspections, Tasks
 
-#### Authentication & Authorization
+- Maintenance request CRUD, categories, priority, workflow status, photos, contractor assignment, cost tracking, and email notifications
+- Inspection list/detail/create flows and inspection items
+- Task management with status, priority, type, due dates, and related entities
 
-- ✅ NextAuth.js integration
-- ✅ Role-based access control (SUPER_ADMIN, CUSTOMER, TENANT)
-- ✅ Protected routes and API endpoints
-- ✅ Session management
-- ✅ Forgot password functionality
-- ✅ Password reset with secure tokens
-- ✅ Forced password change on first login
-- 🚧 Email verification (fields exist; no verification flow)
+### Messaging
 
-#### Architecture Implementation
+- Direct messages, read/unread state, search, and message records
+- Automation rules with 15 trigger types, property/rental filters, offsets, time-of-day scheduling, template variables, and scheduled queue UI
+- Email channel implemented; SMS/WhatsApp stubs remain future work
 
-- ✅ Three-layer architecture (API, Service, Repository)
-- ✅ Service layer for business logic
-- ✅ Repository pattern for data access
-- ✅ DTOs with Zod validation
-- ✅ Custom error classes
-- ✅ Global error handler
-- ✅ Consistent error responses
+### Admin And Team
 
-#### Service Layer Migration (January 30, 2026)
+- Super admin user management
+- System settings
+- Team member invitations, roles, permissions, and statistics
+- Admin subscription monitoring
 
-- ✅ Tenants API routes refactored (61% code reduction)
-- ✅ Properties API routes refactored (30% code reduction)
-- ✅ Payments API routes improved (12% code reduction)
-- ✅ Maintenance API routes refactored (45% code reduction)
-- ✅ Expenses API routes refactored (16% code reduction)
-- ✅ Tasks API routes improved with Zod validation
-- ✅ Bookings already using service layer pattern
-- 🚧 Service layer applied to core modules; many routes still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin)
-- ✅ ~700+ lines of code reduced across API routes
+### Agency Placement
 
----
-
-### ✅ Phase 2: Property Management
-
-#### Property Features
-
-- ✅ Create, read, update, delete properties
-- ✅ Property details (bedrooms, bathrooms, amenities)
-- ✅ Multiple property types (apartment, house, townhouse, etc.)
-- ✅ Rental type support (long-term, short-term, both)
-- ✅ Pricing configuration (monthly rent, daily rate, cleaning fee)
-- ✅ Property images upload
-- ✅ Property statistics and filtering
-- 🚧 Property import (Excel templates) implemented; export not found
-- ✅ Property status management (active, inactive, occupied, maintenance)
-
-#### Property Repository & Services
-
-- ✅ Property repository with 9 methods
-- ✅ Property service with business logic
-- ✅ Validation (at least one pricing field required)
-- ✅ Cannot delete property with active bookings
-- ✅ Ownership verification
-
----
-
-### ✅ Phase 3: Booking Management
-
-#### Booking Features
-
-- ✅ Create, read, update, delete bookings
-- ✅ Availability checking (prevents double-bookings)
-- ✅ Automatic pricing calculation
-- ✅ Guest information management
-- ✅ Check-in and check-out tracking
-- ✅ Booking status workflow (pending, confirmed, checked-in, completed, cancelled)
-- ✅ Payment status tracking
-- ✅ Booking calendar view
-- ✅ Conflicting bookings detection
-
-#### Booking Repository & Services
-
-- ✅ Booking repository with 12+ methods
-- ✅ Booking service with 13+ methods
-- ✅ Overlap detection algorithm
-- ✅ Pricing calculation service
-- ✅ Guest count validation
-- ✅ Date validation (check-in < check-out, not in past)
-- 🚧 Booking email notifications and calendar sync updates are TODOs
-
----
-
-### ✅ Phase 4: Tenant Management
-
-#### Tenant Features
-
-- ✅ Tenant profiles (personal info, contact, employment)
-- ✅ Tenant document upload (ID, proof of income, proof of address)
-- ✅ Long-term lease management
-- ✅ Tenant-property assignments
-- ✅ Tenant portal access
-- ✅ Tenant status management (active, inactive, blacklisted)
-- ✅ Emergency contact information
-
-#### Tenant Payment Configuration
-
-- ✅ Monthly rent amount configuration
-- ✅ Payment due day (1-28 of month)
-- ✅ Reminder days before due date
-- ✅ Auto-send reminder toggle
-
-#### Multi-Tenant per Property Support (February 8, 2026)
-
-- ✅ **Property-Level Toggle**: `allowsMultipleTenants` boolean field on Property model (default: false)
-- ✅ **Unit Labels**: Optional `unitLabel` field on PropertyTenant model (e.g., "Room A", "Unit 3", "Ground Floor")
-- ✅ **Database schema** updated with unique constraint on `[propertyId, tenantId, unitLabel]`
-- ✅ **Smart Validation**: Properties that don't allow multiple tenants can only have one active tenant
-- ✅ **Smart Filtering**: Available properties API shows:
-  - All properties that allow multiple tenants (allowsMultipleTenants = true)
-  - Only properties without tenants if allowsMultipleTenants = false
-- ✅ **Per-lease payment generation** - each active lease generates its own monthly payment
-- ✅ **Payment amounts** use lease-level `PropertyTenant.monthlyRent` instead of tenant-level rent
-- ✅ **Invoice generation** includes unit label in property details and description
-- ✅ **UI: Property Forms** - Checkbox in create/edit forms to enable multi-tenant support
-- ✅ **UI: Tenant assignment dialog** includes unit label input field
-- ✅ **UI: Property detail page** shows all active tenants with unit labels
-- ✅ **UI: Pricing card** displays total monthly rent when multiple tenants exist
-- ✅ **UI: Tenant detail page** displays unit labels for each property assignment
-- ✅ **UI: Property listing badges** - Distinct badges for occupied vs reserved tenants:
-  - "Occupied" badge (red) - for tenants who have moved in (moveInDate ≤ today)
-  - "Reserved" badge (orange) - for tenants assigned but not yet moved in (moveInDate > today)
-  - Shows count when multiple tenants in same status (e.g., "Occupied · 2")
-- ✅ **Backwards compatible** - existing properties default to single-tenant mode (allowsMultipleTenants = false)
-- ✅ **Flexible Use Cases**:
-  - Traditional single-tenant rentals (default)
-  - Dividing a house/building into multiple rooms or units
-  - Each tenant has separate lease, rent amount, and invoices
-  - Proper accounting per unit/tenant for financial tracking
-  - Clear visual indicators for current vs future occupancy
-
----
-
-### ✅ Phase 5: Payment & Financial Management
-
-#### Payment Features
-
-- ✅ Payment tracking (rent, deposits, utilities, other)
-- ✅ Payment status (pending, paid, partially paid, refunded, failed, overdue)
-- 🚧 Payment methods recorded (cash, EFT, credit/debit); Paystack/Stripe endpoints are mocked
-- ✅ Payment references and invoice numbers
-- ✅ Payment history per booking/tenant
-- ✅ Payment statistics and totals
-
-#### Payment Repository & Services
-
-- ✅ Payment repository with 10 methods
-- ✅ Payment service with 11+ methods
-- ✅ Payment validation (amount ≤ amount due)
-- ✅ Automatic booking payment status updates
-- ✅ Refund functionality (only PAID → REFUNDED)
-
-#### Automated Payment Reminders
-
-- 🚧 Automation endpoints exist; Vercel cron schedules are not configured
-- ✅ Monthly payment generation endpoint (25th of month)
-- ✅ Automated daily payment reminders endpoint (9 AM)
-- ✅ Automated overdue marking endpoint (midnight daily)
-- ✅ Manual payment reminder triggers
-- ✅ Bulk payment reminder API
-- ✅ Banking details configuration
-- ✅ Invoice generation with HTML templates
-- ✅ Email delivery with banking details
-
-#### Banking & Invoicing
-
-- ✅ Landlord banking details configuration
-- ✅ Invoice HTML templates
-- ✅ Unique invoice number generation
-- ✅ Invoice preview in admin panel
-- ✅ Tenant invoice viewing
-
-#### Tenant Payment Portal
-
-- ✅ View all payments
-- ✅ View invoices
-- ✅ Payment status badges
-- ✅ Overdue alerts
-- ✅ Landlord contact information
-- ✅ Payment history summary cards
-
----
-
-### ✅ Phase 6: Messaging & Communication
-
-#### Messaging System
-
-- 🚧 Message threads with participants (schema exists; UI uses flat messages)
-- ✅ Direct messages between landlord and tenants
-- ✅ Message read/unread tracking
-- ✅ Unread count badges
-- ✅ Message search and filtering
-
-#### Automated Messaging
-
-- ✅ Message automation rules engine (backend)
-- ✅ Automation triggers wired to bookings, payments, and maintenance
-- ✅ Complete automation management UI (create, edit, delete, toggle, test)
-- ✅ Template engine with variable replacement ({{guestName}}, {{propertyName}}, etc.)
-- ✅ Context-aware variable suggestions with click-to-insert
-- ✅ Multi-channel support (Email live; SMS/WhatsApp stubs)
-- ✅ Scheduled message queue with status tracking UI
-- ✅ Message scheduling service
-- ✅ Scheduled processor endpoint with cron configured (every 15 minutes)
-- ✅ Template testing UI with test automation modal
-- ✅ Analytics tracking (totalSent, totalOpened, totalClicked) displayed in UI
-- ✅ 15 automation trigger types available
-- ✅ Property and rental type filtering
-- ✅ Trigger offset and time-of-day scheduling
-- ✅ Automation list page at `/messages/automations`
-- ✅ Scheduled messages queue at `/messages/scheduled`
-
-#### Canned Responses
-
-- ❌ Quick reply/canned responses (schema + repository only)
-- ❌ Category-based organization (no API/UI)
-- ❌ Shortcut support (no API/UI)
-
-#### Email Integration
-
-- ✅ SMTP email configuration
-- ✅ Email templates for payments
-- ✅ Email templates for bookings
-- ✅ HTML email generation
-
----
-
-### ✅ Phase 7: User Management & Admin Portal
-
-#### Super Admin Features
-
-- ✅ Create landlord user accounts
-- ✅ Auto-generate passwords
-- ✅ Send account creation emails
-- ✅ Force password change on first login
-- ✅ User management dashboard
-
-#### User Roles
-
-- ✅ SUPER_ADMIN - Full system access
-- ✅ CUSTOMER (Landlord) - Manage properties, tenants, bookings
-- ✅ TENANT - View payments, documents, messages
-
-#### Team Member Support
-
-- ✅ Add team members to organization (full implementation)
-- ✅ Role-based permissions (OWNER, ADMIN, MANAGER, VIEWER)
-- ✅ Granular permission controls (Properties, Bookings, Tenants, Financials, Reports)
-- ✅ Invitation system with email delivery and 7-day expiry
-- ✅ Invitation status tracking (PENDING, ACCEPTED, DECLINED, EXPIRED)
-- ✅ Resend invitation functionality
-- ✅ Team member access control via auth helpers
-- ✅ Complete team management UI at `/settings/team`
-- ✅ Statistics dashboard (total, pending, active members)
-- ✅ Role presets with auto-permission assignment
-- ✅ Invitation email template with secure token generation
-
----
-
-### ✅ Phase 8: Dashboard & Analytics
-
-#### Landlord Dashboard
-
-- ✅ Key metrics (properties, bookings, revenue)
-- ✅ Upcoming check-ins and check-outs
-- ✅ Recent activity feed
-- ✅ Quick actions
-- ✅ Revenue charts
-
-#### Tenant Dashboard
-
-- ✅ Payment summary
-- ✅ Recent payments
-- ✅ Overdue alerts
-- ✅ Quick links to invoices
-
----
-
-### ✅ Phase 9: Configuration & Settings
-
-#### Landlord Settings
-
-- ✅ Profile management
-- ✅ Banking details configuration
-- ✅ Notification preferences
-- ✅ Team member management (full UI/API at `/settings/team`)
-
-#### System Configuration
-
-- ✅ Multi-tenancy setup (userId workspace + team-member access hooks)
-- ✅ Cron job configuration (6 schedules configured in vercel.json)
-- ✅ Email service configuration
-- ✅ Environment variables setup
-
----
-
-### ✅ Phase 10: Maintenance Management
-
-#### Maintenance Request Features
-
-- ✅ Create, read, update, delete maintenance requests
-- ✅ Maintenance categories (plumbing, electrical, HVAC, appliance, structural, painting, cleaning, landscaping, pest control, security, other)
-- ✅ Priority levels (low, normal, high, urgent)
-- ✅ Status workflow (pending, scheduled, in progress, completed, cancelled)
-- ✅ Photo upload for issues
-- ✅ Location within property tracking
-- ✅ Assignment to contractor/service provider
-- ✅ Scheduled date and completion date tracking
-- ✅ Cost tracking (estimated vs actual)
-- ✅ Resolution notes
-- ✅ Rating and feedback system (1-5 stars)
-
-#### Maintenance Management Page
-
-- ✅ Maintenance requests list with filtering
-- ✅ Search functionality
-- ✅ Filter by status, priority, category
-- ✅ Quick stats cards (pending, scheduled, in progress, completed)
-- ✅ Create new maintenance request
-- ✅ Maintenance card component
-- ✅ Delete maintenance request
-
-#### Maintenance Email Notifications
-
-- ✅ Email sent on maintenance request creation
-- ✅ Email sent on status change (SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED)
-- ✅ Follow-up emails for stale requests (5+ days pending/in-progress)
-- ✅ Comprehensive email templates with HTML and plain text
-- ✅ Automatic email triggering via service layer
-- 🚧 Follow-up processing endpoint exists; cron schedule not configured
-
-#### Maintenance Repository & Services
-
-- ✅ Maintenance repository with 11 methods
-- ✅ Find by ID, user, property
-- ✅ Filter by status, priority, category, search
-- ✅ Get statistics
-- ✅ Find urgent requests
-- ✅ Find pending requests
-- ✅ Full CRUD operations
-- ✅ Email notification integration
-- ✅ Follow-up email automation
-
----
-
-### ✅ Phase 11: Expense Tracking
-
-#### Expense Features
-
-- ✅ Create, read, update, delete expenses
-- ✅ Expense categories (maintenance, utilities, insurance, taxes, repairs, cleaning, supplies, mortgage, fees, other)
-- ✅ Expense date tracking
-- ✅ Amount and description
-- ✅ Property assignment
-- ✅ Maintenance request linking (optional)
-- ✅ Vendor tracking
-- ✅ Receipt upload
-- ✅ Notes field
-
-#### Expense Reports
-
-- ✅ Total expenses by property
-- ✅ Expenses by category
-- ✅ Expenses by date range
-- ✅ Expense statistics (total amount, count, by category)
-- ✅ Recent expenses
-- ✅ Expenses by maintenance request
-
-#### Expense Management Page
-
-- ✅ Expense list with filtering
-- ✅ Search functionality
-- ✅ Filter by property, maintenance request, category, date range
-- ✅ Create new expense
-- ✅ Expense statistics display
-
-#### Expense Repository & Services
-
-- ✅ Expense repository with 12 methods
-- ✅ Find by ID, user, property, category, maintenance request
-- ✅ Get statistics with date range support
-- ✅ Get recent expenses
-- ✅ Full CRUD operations
-- ✅ Maintenance request validation and linking
-
----
-
-### ✅ Phase 12: Document Management
-
-#### Document Features
-
-- ✅ Document upload with UploadThing
-- ✅ Document categories (lease, contract, receipt, inspection, certificate, insurance, other)
-- ✅ Document titles and descriptions
-- ✅ File storage with URL
-- ✅ File size and type tracking
-- ✅ Document viewing and downloading
-- ✅ Document search
-- ✅ Move documents between folders
-- ✅ Delete documents
-- 🚧 No service/repository layer (API uses Prisma directly)
-
-#### Folder Organization
-
-- ✅ Create folders and subfolders
-- ✅ Rename folders
-- ✅ Delete folders
-- ✅ Move documents between folders
-- ✅ Folder tree navigation
-- ✅ Document count per folder
-- ✅ Nested folder support (parent-child relationships)
-- ✅ "My Documents" for landlord personal files
-- ✅ Tenant-specific document folders
-
-#### Document Management Page
-
-- ✅ Full document manager UI
-- ✅ Folder tree sidebar
-- ✅ Document grid/list view toggle
-- ✅ Search documents
-- ✅ Upload dialog
-- ✅ Folder management dialogs
-- ✅ Bulk operations support
-- ✅ View, download, move, delete actions
-
-#### Document API Endpoints
-
-- ✅ GET/POST `/api/documents`
-- ✅ GET/PUT/DELETE `/api/documents/[id]`
-- ✅ POST `/api/documents/[id]/download`
-- ✅ GET/POST `/api/folders`
-- ✅ PUT/DELETE `/api/folders/[id]`
-
----
-
-### ✅ Phase 13: Inquiry Management
-
-#### Inquiry Features
-
-- ✅ Create, read, update, delete inquiries
-- ✅ Inquiry sources (direct, Airbnb, Booking.com, website, phone, email, WhatsApp, referral, other)
-- ✅ Inquiry types (booking, viewing, general, complaint, maintenance)
-- ✅ Status workflow (new, in progress, responded, converted, closed, spam)
-- ✅ Priority levels (low, normal, high, urgent)
-- ✅ Contact information (name, email, phone)
-- ✅ Message/inquiry content
-- ✅ Booking interest dates (check-in, check-out, number of guests)
-- ✅ Property assignment
-- ✅ Response tracking
-- ✅ Follow-up dates and notes
-- ✅ Convert to booking functionality
-- 🚧 No service/repository layer (API uses Prisma directly)
-
-#### Inquiry Management Page
-
-- ✅ Inquiry list with filtering
-- ✅ Search functionality
-- ✅ Filter by status, priority, source
-- ✅ Quick stats cards (new, in progress, responded, converted)
-- ✅ Create new inquiry
-- ✅ Inquiry card component
-- ✅ Delete inquiry
-
-#### Inquiry API Endpoints
-
-- ✅ GET/POST `/api/inquiries`
-- ✅ GET/PUT/DELETE `/api/inquiries/[id]`
-
----
-
-### ✅ Phase 14: Task Management
-
-#### Task Features
-
-- ✅ Create, read, update tasks
-- ✅ Task types (follow up, viewing, check-in, check-out, inspection, maintenance, payment reminder, lease renewal, other)
-- ✅ Priority levels (low, normal, high, urgent)
-- ✅ Status workflow (todo, in progress, completed, cancelled)
-- ✅ Due date tracking
-- ✅ Assignment support
-- ✅ Related entity linking (property, booking, tenant, etc.)
-- ✅ Task description and notes
-- 🚧 No service/repository layer (API uses Prisma directly)
-
-#### Task Management Page
-
-- ✅ Task list with tabs (all, to-do, in progress, completed)
-- ✅ Summary cards (total, to-do, in progress, completed, overdue)
-- ✅ Search functionality
-- ✅ Filter by priority and task type
-- ✅ Create new task
-- ✅ Task calendar view link
-- ✅ Task card component with status display
-
-#### Task Statistics
-
-- ✅ Total tasks count
-- ✅ Tasks by status
-- ✅ Overdue tasks tracking
-- ✅ Task completion tracking
-
-#### Task API Endpoints
-
-- ✅ GET/POST `/api/tasks`
-- ✅ GET/PUT/DELETE `/api/tasks/[id]`
-- ✅ Task statistics endpoint
-
----
-
-### ✅ Phase 15: Property Valuation Management
-
-#### Valuation Features
-
-- ✅ Create, read, update, delete property valuations
-- ✅ Multiple valuation types (Purchase, Market, Bank, Municipal, Insurance)
-- ✅ Valuation date tracking with same-day tiebreaking
-- ✅ Valued by (appraiser/source) tracking
-- ✅ Notes and document URL attachment
-- ✅ Automatic property value recalculation
-- ✅ Purchase price tracking from PURCHASE type valuations
-- ✅ Current valuation based on most recent date
-- 🚧 No service/repository layer (API uses Prisma directly)
-
-#### Valuation Summary Cards
-
-- ✅ Purchase Price with date
-- ✅ Current Value with last valuation date
-- ✅ Appreciation percentage and amount
-- ✅ Visual indicators (green for appreciation, red for depreciation)
-
-#### Valuation History
-
-- ✅ Full history list with timeline display
-- ✅ Edit valuation via dialog
-- ✅ Delete valuation with confirmation
-- ✅ Automatic property recalculation on edit/delete
-
-#### Valuation API Endpoints
-
-- ✅ GET/POST `/api/properties/[id]/valuations`
-- ✅ GET/PUT/DELETE `/api/properties/[id]/valuations/[valuationId]`
-- ✅ Property card with valuation summary on details page
-
----
-
-### ✅ Phase 16: Enhanced Expense Management & UI Improvements
-
-#### Enhanced Expense Features
-
-- ✅ New expense categories (Levies, Rates, Municipal Charges, Construction, Legal Fees, Capital Improvement)
-- ✅ Property pre-selection from URL query parameter
-- ✅ Expense detail modal (click to view instead of 404)
-- ✅ Mark expense as Paid functionality
-- ✅ Expense property linking with auto-population
-- ✅ Tax deductible tracking
-
-#### Expense Detail Modal
-
-- ✅ Full expense information display
-- ✅ Property linking display
-- ✅ Status badge with color coding
-- ✅ Mark as Paid action button
-- ✅ Edit and delete actions
-
-#### Sidebar Navigation Improvements
-
-- ✅ Financials submenu with nested navigation
-- ✅ Income & Payments sub-item
-- ✅ Expenses sub-item
-- ✅ Submenu expansion/collapse
-- ✅ Active state tracking for sub-items
-
-#### Property Detail Page Enhancements
-
-- ✅ Expenses tab showing property-specific expenses
-- ✅ Quick "Add Expense" button with property pre-selection
-- ✅ Valuation Card in sidebar (always visible)
-- ✅ Add Valuation link to full valuation page
-
----
-
-### ✅ Phase 17: Property Document Management
-
-#### Property Documents Tab
-
-- ✅ Documents tab added to property view page
-- ✅ Folder-based organization for property documents
-- ✅ Property-specific folder API endpoint (`/api/properties/[id]/folders`)
-- ✅ Default property folder templates (Title Deeds, Insurance, Inspection Reports, Maintenance Records, Tax Documents, Warranties & Manuals)
-- ✅ Document upload within property context
-- ✅ Folder create, edit, delete operations
-- 🚧 No service/repository layer (API uses Prisma directly)
-
-#### Folder Organization Improvements
-
-- ✅ Fixed duplicate folders appearing on main documents page
-- ✅ Separated personal folders from property-specific folders
-- ✅ Auto-create default personal folders for landlords
-- ✅ Proper filtering by tenantId and propertyId
-
-#### Property Document API Endpoints
-
-- ✅ GET/POST `/api/properties/[id]/folders`
-- ✅ Automatic folder creation for new properties
-
----
-
-### ✅ Phase 18: Inspections Module
-
-#### Inspection Features
-
-- ✅ Inspections list, detail, and create pages
-- ✅ Inspections API endpoint (`/api/inspections`)
-- ✅ Inspection items endpoint (`/api/inspections/[id]/items`)
-- ✅ Sidebar navigation for inspections
-- ✅ Database schema for inspections
-- 🚧 No service/repository layer (API uses Prisma directly)
-
-#### Inspection API Endpoints
-
-- ✅ GET/POST `/api/inspections`
-
----
-
-### ✅ Phase 19: Tax Summary Reporting
-
-#### Tax Summary Features
-
-- ✅ Tax summary report page (`/reports/tax-summary`)
-- ✅ Income vs expenses breakdown
-- ✅ Tax deductible expense categorization
-- ✅ Property-level tax summary
-- ✅ Report link added to analytics page
-- 🚧 No service/repository layer (API uses Prisma directly)
-
----
-
-### ✅ Phase 20: Advanced Reporting Module
-
-#### Comprehensive Report Suite
-
-- ✅ Tax Summary Report (`/reports/tax-summary`)
-  - Income vs expenses breakdown
-  - Tax deductible categorization
-  - Property-level tax analysis
-  - Period-based filtering
-
-- ✅ Revenue Report (`/reports/revenue`)
-  - Revenue by property
-  - Revenue by date range
-  - Revenue trends and analytics
-  - Revenue forecasting
-  - Booking revenue vs additional fees breakdown
-  - Occupancy-adjusted revenue
-
-- ✅ Tenant Payments Report (`/reports/tenant-payments`)
-  - Payment status breakdown
-  - Overdue payments tracking
-  - Payment collection rate
-  - Tenant payment history
-  - Outstanding balance tracking
-  - Payment methods analysis
-
-- ✅ Aging Receivables Report (`/reports/aging-receivables`)
-  - Outstanding amounts by age
-  - Aging brackets (0-30, 31-60, 61-90, 90+ days)
-  - Collection aging analysis
-  - Payment due tracking
-  - Risk assessment by age
-
-- ✅ Maintenance Costs Report (`/reports/maintenance-costs`)
-  - Maintenance expenses by category
-  - Maintenance costs by property
-  - Date range filtering
-  - Cost trend analysis
-  - Maintenance request linking
-  - Budget vs actual comparison
-
-- ✅ Occupancy Report (`/reports/occupancy`)
-  - Occupancy rate by property
-  - Occupancy trends over time
-  - Vacant days tracking
-  - Occupancy by date range
-  - Multi-property comparison
-  - Booking status breakdown
-
-- ✅ Lease Expiration Report (`/reports/lease-expiration`)
-  - Upcoming lease expirations
-  - Expiration date tracking
-  - Tenant lease status
-  - Lease renewal alerts
-  - Lease history per tenant
-  - Lease terms overview
-
-- ✅ Cash Flow Report (`/reports/cash-flow`)
-  - Cash inflows and outflows
-  - Net cash position
-  - Cash flow projections
-  - Monthly cash flow breakdown
-  - Outstanding invoices impact
-  - Cash flow trends
-
-- ✅ Analytics Report (`/reports/analytics`)
-  - Key performance indicators (KPIs)
-  - Dashboard with multiple metrics
-  - Booking analytics
-  - Revenue analytics
-  - Expense analytics
-  - Overall business metrics
-
-#### Report Features
-
-- ✅ Date range filtering across all reports
-- ✅ Property filtering and multi-property comparison
-- ✅ CSV export wired on all report pages via shared client-side utility (no PDF export yet)
-- ✅ Chart visualizations (line, bar, pie charts)
-- ✅ Responsive design for all reports
-- 🚧 Real-time data updates (data loads on request; no live push)
-- ✅ Print-friendly layouts
-
-#### Report API Endpoints
-
-- ✅ GET `/api/reports/tax-summary` - Tax calculations
-- ✅ GET `/api/reports/revenue` - Revenue analytics
-- ✅ GET `/api/reports/tenant-payments` - Payment tracking
-- ✅ GET `/api/reports/aging-receivables` - Receivables analysis
-- ✅ GET `/api/reports/maintenance-costs` - Maintenance tracking
-- ✅ GET `/api/reports/occupancy` - Occupancy metrics
-- ✅ GET `/api/reports/lease-expiration` - Lease management
-- ✅ GET `/api/reports/cash-flow` - Cash flow analysis
-- ✅ GET `/api/reports/analytics` - General analytics
-- ✅ GET `/api/reports/export` - Data export functionality
-- ✅ GET `/api/financials/reports` - Financials report hub
-- 🚧 Report APIs use Prisma directly (no service/repository layer)
-
-#### Reports Dashboard Hub
-
-- ✅ `/financials/reports` - Central reports hub
-- ✅ Quick links to all available reports
-- ✅ Report cards with descriptions
-- ✅ Quick filters and date pickers
-- ✅ Recent reports access
-- ✅ Scheduled reports setup (future enhancement)
-
----
-
-### ✅ Phase 21: PayFast Recurring Subscription Billing
-
-#### Subscription Features
-
-- ✅ PayFast payment gateway integration (South African market)
-- ✅ Recurring monthly subscription billing
-- ✅ Dynamic pricing model (R299 base + 4% per property, first 2 free)
-- ✅ Subscription status tracking (PENDING, ACTIVE, PAUSED, CANCELLED, SUSPENDED, EXPIRED)
-- ✅ Automatic subscription activation on payment
-- ✅ Subscription cancellation with access retention until billing period end
-
-#### PayFast Integration
-
-- ✅ MD5 signature generation and verification (timing-safe)
-- ✅ IP whitelisting for webhook security (PayFast IP ranges)
-- ✅ ITN (Instant Transaction Notification) webhook handler
-- ✅ Amount verification to prevent tampering
-- ✅ Sandbox and production environment support
-- ✅ Merchant reference generation and tracking
-
-#### Payment Processing
-
-- ✅ Subscription initiation endpoint (`/api/payfast/initiate-subscription`)
-- ✅ PayFast webhook handler (`/api/webhooks/payfast`)
-- ✅ Subscription cancellation endpoint (`/api/subscription/cancel`)
-- ✅ Billing history endpoint (`/api/billing/history`)
-- ✅ Automatic invoice generation on payment
-- ✅ Invoice number generation (format: INV-YYYYMMDD-XXXXX)
-
-#### Completed Subscription Management
-
-- ✅ Subscribe modal component with billing breakdown
-- ✅ Subscription status page with current billing display
-- ✅ Billing history section (recent 5 invoices)
-- ✅ Full billing history page with pagination
-- ✅ Cancel subscription button for active users
-- ✅ Payment status tracking (CURRENT, OVERDUE, DUE_SOON, TRIAL_EXPIRED)
-- ✅ Data model supports PAUSED subscription status; admin pause/resume workflow remains future work
-
-#### Admin Monitoring Dashboard
-
-- ✅ Admin subscriptions management page (`/admin/subscriptions`)
-- ✅ Summary cards (Total MRR, Total Revenue, Overdue Payments, Due Soon)
-- ✅ Advanced filtering (subscription status, payment status, search)
-- ✅ Landlord subscription table with:
-  - Subscription and payment status badges
-  - Monthly recurring revenue (MRR) tracking
-  - Total revenue from all payments
-  - Next billing date with countdown
-  - Failed payment count
-  - Days overdue indicator
-- ✅ Detailed landlord view dialog with:
-  - Complete subscription information
-  - PayFast subscription details
-  - Recent invoice history (last 10)
-  - Payment statistics
-- ✅ Automatic payment status calculation:
-  - **OVERDUE**: Past subscription end date, marked PAST_DUE
-  - **TRIAL_EXPIRED**: Trial expired without subscription
-  - **DUE_SOON**: Payment due within 7 days
-  - **CURRENT**: All systems operational
-
-#### Database Models
-
-- ✅ PayFastSubscription model with merchant reference and token tracking
-- ✅ BillingInvoice model with period-based tracking and status
-- ✅ PayFastTransaction model for webhook audit trail
-- ✅ PayFastSubscriptionStatus enum (PENDING, ACTIVE, PAUSED, CANCELLED, SUSPENDED, EXPIRED)
-- ✅ InvoiceStatus enum (PENDING, PAID, FAILED, REFUNDED, CANCELLED)
-
-#### Security Implementation
-
-- ✅ Timing-safe signature comparison to prevent timing attacks
-- ✅ IP whitelisting against PayFast IP ranges
-- ✅ Amount verification to prevent payment tampering
-- ✅ Secure merchant reference generation
-- ✅ Session-based authentication for all endpoints
-
-#### Billing Service Features
-
-- ✅ calculateSubscriptionBilling() - Dynamic per-property fee calculation
-- ✅ generateInvoiceNumber() - Unique sequential invoice numbering
-- ✅ generateInvoice() - Create invoice records with billing breakdown
-- ✅ getBillingHistory() - Paginated invoice retrieval
-- ✅ markInvoicePaid() - Update invoice status on payment
-- ✅ findOrCreatePendingInvoice() - Ensure invoice exists for period
-
-#### API Endpoints Summary
-
-- ✅ POST `/api/payfast/initiate-subscription` - Start payment flow
-- ✅ POST `/api/webhooks/payfast` - PayFast ITN handler
-- ✅ POST `/api/subscription/cancel` - Cancel subscription
-- ✅ GET `/api/billing/history` - Get billing history
-- ✅ GET `/api/admin/subscriptions` - Admin subscription overview
-
-#### Environment Variables
-
-- ✅ PAYFAST_MERCHANT_ID - Merchant identifier
-- ✅ PAYFAST_MERCHANT_KEY - API key
-- ✅ PAYFAST_PASSPHRASE - Signature passphrase
-- ✅ PAYFAST_SANDBOX - Environment toggle (true/false)
-- ✅ NEXT_PUBLIC_APP_URL - Application URL for callbacks
-
-#### Launch Readiness Gaps
-
-- ⏭️ Test PayFast subscription initiation and ITN handling in sandbox
-- ⏭️ Validate webhooks through ngrok or an equivalent public tunnel
-- ⏭️ Configure and verify PayFast production credentials
-- ⏭️ Add subscription event emails for activation, cancellation, and failed payments
-- ⏭️ Add dunning automation for failed recurring payments
-
----
-
-### ✅ Phase 22: Payment Tracking & Invoicing Overhaul (February 8, 2026)
-
-#### Rent Collection Hub
-
-- ✅ **Central Payment Monitoring** (`/financials/rent-collection`)
-  - Monthly rent collection grid with property-by-property, tenant-by-tenant view
-  - Real-time payment status tracking (PAID, PENDING, OVERDUE, PENDING_VERIFICATION)
-  - Collection summary cards (Total Expected, Total Collected, Collection Rate %, Outstanding Amount)
-  - 6-month collection rate trend chart with visual analytics
-  - Month/year filtering with property and status filters
-  - Days overdue calculation for late payments
-
-- ✅ **Quick Actions from Grid**
-  - Record Payment: Pre-filled modal for quick payment entry
-  - Send Reminder: One-click reminder emails to pending/overdue tenants
-  - Verify Proof: Direct access to proof verification for uploaded payments
-  - View Invoice: Quick invoice access for paid payments
-
-- ✅ **Backend Infrastructure**
-  - `getRentCollectionGrid()` repository method with optimized joins
-  - `getCollectionRateTrend()` for 6-month trend analysis
-  - `getRentCollectionData()` service orchestrating grid + summary + trends
-  - `/api/rent-collection` endpoint with comprehensive filtering
-
-#### Manual Invoice Creation
-
-- ✅ **Custom Invoice Builder** (`/financials/invoices/new`)
-  - Create ad-hoc invoices for any charge type (utilities, late fees, repairs, etc.)
-  - Dynamic line item management (add/remove multiple charges)
-  - Tenant selection with auto-populated property data from active leases
-  - Support for multiple payment types (RENT, UTILITIES, LATE_FEE, DEPOSIT, MAINTENANCE, OTHER)
-  - Email invoice option with HTML template generation
-  - `/api/invoices/manual` endpoint for invoice creation
-
-- ✅ **Invoice Features**
-  - Automatic payment record generation with PENDING status
-  - Unique invoice number generation (INV-MANUAL-TIMESTAMP-TENANT)
-  - Line-by-line charge breakdown in description
-  - Optional email delivery to tenant
-
-#### Tenant Payment Ledger (Landlord View)
-
-- ✅ **Complete Payment History** (`/tenants/[id]/payments`)
-  - Chronological payment ledger with all historical records
-  - Payment behavior statistics:
-    - Total paid (all-time)
-    - On-time payment rate (%)
-    - Average days to pay
-    - Current outstanding balance
-  - Payment detail table: Date, Description, Property, Amount, Status, Days Late, Method
-  - Year-based filtering for historical analysis
-  - Invoice/receipt download links
-
-- ✅ **Payment Analytics**
-  - Visual indicators for payment performance (Excellent/Good/Needs Improvement)
-  - Days late tracking with color-coded warnings
-  - On-time payment trending
-  - Risk assessment based on payment behavior
-
-#### Property Card Enhancements
-
-- ✅ **Payment Health Badges**
-  - Green "All Paid" badge when all tenants current
-  - Yellow "X Pending" badge for pending payments
-  - Red "X Overdue" badge for overdue payments
-  - Real-time payment status synchronized with property cards
-
-- ✅ **Property API Enhancement**
-  - Extended `/api/properties` with `?includePaymentSummary=true` parameter
-  - Current month payment summary per property
-  - Lightweight join for dashboard performance
-
-#### Tenant Portal Enhancements
-
-- ✅ **Enhanced Payment History API** (`/api/portal/payment-history`)
-  - Paginated payment history with running balance calculation
-  - Payment summary statistics (total paid this year, on-time rate, next due)
-  - Outstanding balance tracking
-  - Year filtering and pagination support
-  - Downloadable invoice/receipt URLs included
-
-- ✅ **Payment Ledger View**
-  - Complete chronological payment history
-  - Running balance display at each transaction
-  - Payment method tracking
-  - Proof of payment upload status
-
-#### Navigation & UX
-
-- ✅ **Sidebar Navigation**
-  - "Rent Collection" added as first item under Financials submenu
-  - Direct access to payment tracking command center
-  - Integrated with existing financial workflows
-
-- ✅ **Tenant Detail Page**
-  - "Payment History" quick action card in sidebar
-  - Direct link to complete payment ledger
-  - Payment behavior at-a-glance
-
-#### Components & UI
-
-- ✅ `CollectionSummaryCards` - 4-stat dashboard with visual indicators
-- ✅ `CollectionTrendChart` - 6-month line chart with recharts
-- ✅ `RentCollectionGrid` - Expandable property/tenant table with quick actions
-- ✅ `QuickRecordPaymentModal` - Streamlined payment entry dialog
-- ✅ Manual invoice creation page with dynamic line items
-- ✅ Tenant payment ledger page with comprehensive analytics
-- ✅ CSV export utility (`lib/utils/export-csv.ts`) - Shared client-side CSV generation
-- ✅ CSV export wired on all 9 report pages + rent collection + tenant payment ledger
-
-#### Database & Repository Layer
-
-- ✅ **New Repository Methods**
-  - `getRentCollectionGrid(userId, month, year, propertyId?)` - Optimized grid data
-  - `getCollectionRateTrend(userId, months)` - Multi-month trend analysis
-  - `getTenantPaymentLedger(tenantId, userId, year?)` - Complete payment history with stats
-
-- ✅ **Service Layer Methods**
-  - `getRentCollectionData()` - Orchestrates grid, summary, and trends
-  - Payment behavior calculation with on-time rate and avg days to pay
-
-#### Key Features Summary
-
-- ✅ **Single-View Payment Monitoring**: Answer "Who has paid?" for entire portfolio
-- ✅ **Historical Payment Analysis**: 6-month trends with visual charts
-- ✅ **Flexible Invoicing**: Create custom invoices for any charge type
-- ✅ **Tenant Payment Insights**: Track payment behavior and reliability
-- ✅ **Multi-Tenant Support**: Handles properties with multiple units/tenants
-- ✅ **Quick Actions**: Record payments, send reminders, verify proofs from grid
-- ✅ **Payment Health Indicators**: Visual badges on property cards
-
----
-
-### 🚧 Phase 23: Rental Agent Placement Journey (Started June 22, 2026)
-
-#### Completed Foundation
-
-- ✅ Account-type capability helper (`lib/account-capabilities.ts`)
-  - `AGENCY` accounts can access placement features
-  - `INDIVIDUAL` and `COMPANY` accounts remain focused on property-management workflows
-  - `TENANT` accounts remain non-customer/portal-only accounts
-- ✅ Account-aware dashboard navigation (`components/dashboard/navigation.ts`)
-  - Placement navigation only appears for agency accounts
-  - Private and company users do not see the placement section
-- ✅ Agency-only placement route guard (`/placement/layout.tsx`)
-  - Non-agency users are redirected to `/dashboard`
-- ✅ Placement data foundation in Prisma schema and migration
+- Agency-only capability gating through account type checks, dashboard navigation, and placement route guard.
+- Placement data foundation in Prisma:
   - `LandlordOwner`
   - `RentalMandate`
   - `Viewing`
   - `RentalApplication`
   - `ApplicantScreening`
-- ✅ Initial agency placement pages
-  - `/placement` - Placement dashboard counts
-  - `/placement/applications` - Application queue
-  - `/placement/applications/new` - Application intake form
-  - `/placement/viewings` - Viewing schedule
-  - `/placement/viewings/new` - Viewing scheduling form
-  - `/placement/landlords` - Landlord/owner register
-  - `/placement/landlords/new` - Landlord owner capture form
-  - `/placement/landlords/[id]/edit` - Landlord owner edit form
-  - `/placement/mandates` - Mandate register
-  - `/placement/mandates/new` - Mandate capture form
-  - `/placement/mandates/[id]/edit` - Mandate edit form
-- ✅ Application intake workflow
-  - DTO validation for applicant, property, offer, and lease dates
-  - Service/repository layer for workspace ownership checks
-  - Inquiry-to-application creation with automatic screening row
-  - Agency-only API route (`/api/placement/applications`)
-- ✅ Viewing workflow
-  - DTO validation for scheduling and attendee contact details
-  - Service/repository layer for ownership checks and schedule conflicts
-  - Inquiry/application-to-viewing scheduling
-  - Agency-only API routes (`/api/placement/viewings`, `/api/placement/viewings/[id]`)
-  - Quick viewing status updates from the schedule
-- ✅ Landlord and mandate management
-  - DTO validation for landlord owner records, mandate dates, mandate type, exclusivity, status, and fee percentages
-  - Service/repository layer for workspace ownership checks before mandate creation/update
-  - Agency-only API routes (`/api/placement/landlords`, `/api/placement/landlords/[id]`, `/api/placement/mandates`, `/api/placement/mandates/[id]`)
-  - Create/edit UI for landlord owners and mandates
-  - Placement fee, management fee, VAT applicability, and mandate document URL captured
-- ✅ Applicant screening checklist
-  - Derived overall status for not started, pending, passed, failed, and needs-review outcomes
-  - Credit, affordability, employer reference, landlord reference, and FICA tracking
-  - Declared income, rent-to-income ratio, risk score, POPIA consent timestamp, and screening notes
-  - Agency-only API route (`/api/placement/applications/[id]/screening`)
-  - Checklist dialog with links to tenant or property supporting documents
-- ✅ Placement completion and tenant portal handoff
-  - Screening must pass before an application can be placed
-  - Linked tenants are reused first, followed by case-insensitive workspace email matches
-  - New applicants are converted into active long-term tenants when no match exists
-  - Tenant resolution, lease assignment, and the `PLACED` application transition run in one transaction
-  - Single-tenant property capacity and duplicate property/unit leases are enforced
-  - Agency-only API route (`/api/placement/applications/[id]/complete`)
-  - Application queue shows `Portal pending` until explicit tenant portal activation
-  - Portal activation creates credentials and sends the existing welcome email
-  - Tenant portal ownership checks now support organization workspaces for agency team members
-- ✅ Focused tests added
-  - `lib/account-capabilities.test.ts`
-  - `components/dashboard/navigation.test.ts`
-  - `lib/features/placement/__tests__/rental-application.dto.test.ts`
-  - `lib/features/placement/__tests__/rental-application.service.test.ts`
-  - `lib/features/placement/__tests__/viewing.dto.test.ts`
-  - `lib/features/placement/__tests__/viewing.service.test.ts`
-  - `lib/features/placement/__tests__/mandate.dto.test.ts`
-  - `lib/features/placement/__tests__/mandate.service.test.ts`
-  - `lib/features/placement/__tests__/screening.dto.test.ts`
-  - `lib/features/placement/__tests__/screening.service.test.ts`
-  - `lib/features/placement/__tests__/placement-completion.dto.test.ts`
-  - `lib/features/placement/__tests__/placement-completion.repository.test.ts`
-  - `lib/features/placement/__tests__/placement-completion.service.test.ts`
-  - `app/api/placement/applications/[id]/complete/route.test.ts`
-  - `app/api/tenants/[id]/portal-access/route.test.ts`
-
-#### Placement Roadmap
-
-- ✅ Application intake API and UI
-  - Convert inquiries into rental applications
-  - Capture applicant details, requested move-in date, proposed rent/deposit, and assignment
-- ✅ Viewing workflow API and UI
-  - Schedule viewings from inquiries/applications
-  - Track confirmations, attendance, no-shows, feedback, and follow-up
-- ✅ Landlord and mandate management
-  - Create/edit landlord owners
-  - Link properties to owners
-  - Track placement-only vs managed-rental mandates
-  - Track sole/dual/open mandate status and expiry
-- ✅ Applicant screening checklist
-  - Credit check status
-  - Affordability status
-  - Employer reference
-  - Landlord reference
-  - FICA status
-  - POPIA/consent record
-- ✅ Placement completion and portal handoff
-  - Convert or link the approved applicant to a tenant
-  - Create the property lease and mark the application placed atomically
-  - Require explicit portal activation and welcome email delivery as the next action
-- ⏸️ Commission and fee reporting (deferred)
-  - Placement fee percentages
-  - Management fee percentages
-  - VAT applicability
-  - Agent performance and earnings metrics
-- 📄 Implementation plan: `docs/superpowers/plans/2026-06-22-agent-placement-journey.md`
-
----
-
-## 🆕 Additional Implemented Features (Not Previously Documented)
-
-- ✅ Integrations management UI + API (`/settings/integrations`, `/api/integrations/*`) with connect/disconnect/toggle sync
-- ✅ Notifications center (`/notifications`, `/api/notifications/*`)
-- ✅ Admin analytics dashboard (`/admin/analytics`, `/api/admin/analytics`)
-- ✅ Task templates and checklist endpoints (`/api/tasks/templates`, `/api/tasks/[id]/checklist`)
-- ✅ Tenant payment proof upload + landlord verification (`/api/tenant/payments/*`, `/api/payments/[id]/verify`)
-- ✅ iCal export/import flow surfaced in property detail UI (`/api/calendar/export`, `/api/calendar/sync`)
-- ✅ Tenant portal dashboard + maintenance endpoints (`/api/portal/*`)
-- 🚧 Public API endpoints exist (`/api/public/*`) but no public UI
-
-## Automated Jobs (Vercel Cron)
-
-✅ **All cron schedules are now configured in `vercel.json` and will run automatically on deployment.**
-
-| Job                        | Schedule       | Endpoint                               | Purpose                              |
-| -------------------------- | -------------- | -------------------------------------- | ------------------------------------ |
-| Generate Monthly Payments  | `0 0 25 * *`   | `/api/payments/generate-monthly`       | Create next month's rent payments    |
-| Send Payment Reminders     | `0 9 * * *`    | `/api/payments/send-reminders`         | Send daily payment reminders         |
-| Mark Overdue Payments      | `0 0 * * *`    | `/api/payments/mark-overdue`           | Update overdue payment status        |
-| Send Overdue Reminders     | `0 10 * * *`   | `/api/payments/send-overdue-reminders` | Send overdue payment reminders       |
-| Maintenance Follow-ups     | `0 10 * * *`   | `/api/maintenance/send-follow-ups`     | Send maintenance follow-up emails    |
-| Process Scheduled Messages | `*/15 * * * *` | `/api/messaging/scheduled/process`     | Deliver scheduled automated messages |
-
----
-
-## Pending Features (Not Yet Implemented)
-
-### 🚧 In Progress / Future Enhancements
-
-#### Calendar Integration
-
-- ✅ iCal import/sync from external calendar URLs (Airbnb/Booking.com/other)
-- ✅ iCal export per property (`/api/calendar/export`)
-- 🚧 Shareable public calendar URL generation references missing route
-- ⏭️ Direct Airbnb API sync
-- ⏭️ Booking.com API integration
-- ⏭️ Google Calendar API integration
-- ⏭️ Multi-platform synchronization with real-time updates
-
-#### Advanced Reporting
-
-- ✅ Tax Summary Report (implemented)
-- ✅ Tax deductible expense categorization (implemented)
-- ✅ Income vs expenses breakdown (implemented)
-- ✅ Property-level tax summary (implemented)
-- ✅ Occupancy reports (implemented)
-- ✅ Revenue analytics with trends (implemented)
-- ✅ Tenant payment history reports (implemented)
-- ✅ Aging Receivables report (implemented)
-- ✅ Maintenance Costs report (implemented)
-- ✅ Lease Expiration report (implemented)
-- ✅ Cash Flow report (implemented)
-- ✅ Analytics dashboard (implemented)
-- ✅ Data export functionality (implemented)
-- ⏭️ Financial forecasting
-- ⏭️ MRR trend analysis
-- ⏭️ Scheduled reports (email delivery)
-- ⏭️ Custom report builder
-
-#### Payment Gateway Integration
-
-- ✅ PayFast integration (South African recurring subscriptions) - COMPLETED
-- ✅ Recurring subscription billing system - COMPLETED
-- ✅ Invoice generation and tracking - COMPLETED
-- ✅ Payment processing with webhooks - COMPLETED
-- ✅ Admin subscription monitoring - COMPLETED
-- 🚧 PayStack integration (mock endpoints only)
-- 🚧 Stripe integration (mock endpoints only)
-- ⏭️ Online payment processing for individual transactions
-- ✅ Payment proof upload and landlord verification
-- ⏭️ Dunning automation for failed payments
-- ⏭️ Multiple subscription tiers
-
-#### SMS & WhatsApp
-
-- 🚧 Twilio SMS integration (stubbed delivery provider)
-- 🚧 WhatsApp Business API (stubbed delivery provider)
-- 🚧 Multi-channel messaging (Email live; SMS/WhatsApp stubs)
-- ⏭️ SMS payment reminders
-
-#### Rental Agent Placement
-
-- ✅ Public landing page redesigned as a product-led DominionDesk page for private landlords, property companies, and rental agents, including the new placement journey and tenant portal handoff.
-- ✅ Account-type capability foundation
-- ✅ Agency-only placement navigation and route guard
-- ✅ Placement data foundation for owners, mandates, viewings, applications, and screening
-- ✅ Initial placement dashboard pages
-- ✅ Application intake forms and API routes
-- ✅ Viewing create/update workflow
-- ✅ Landlord owner create/edit workflow
-- ✅ Mandate create/edit workflow
-- ✅ Placement and management fee capture with VAT flag
-- ✅ Applicant screening checklist and derived outcome status
-- ✅ Inquiry-to-application conversion
-- ✅ Transactional placement completion and tenant lease assignment
-- ✅ Mandatory portal activation handoff with portal status
-- ⏸️ Commission and placement fee reporting (deferred)
-
-#### Advanced Features
-
-- ⏭️ Review system for properties
-- ⏭️ Public booking portal
-- ⏭️ Website widget
-- ⏭️ Lease agreement templates
-- ⏭️ E-signature support (DocuSign/HelloSign)
-- ⏭️ Mobile app (React Native)
-- ⏭️ Multi-language support
-
-#### Subscription Roadmap
-
-- **Next focus**:
-  - ⏭️ Subscription event emails (activation, cancellation, failed payments)
-  - ⏭️ Dunning automation for failed recurring payments
-  - ⏭️ Admin lifecycle controls (pause, resume, manual activation)
-- **After launch readiness**:
-  - ⏭️ Export subscription data to CSV
-  - ⏭️ Subscription analytics, MRR trends, and churn tracking
-  - ⏭️ Free trial extensions
-- **Later product expansion**:
-  - ⏭️ Subscription tier management (basic, professional, enterprise)
-  - ⏭️ Upgrade/downgrade flows
-  - ⏭️ Proration for mid-month changes
-  - ⏭️ Usage-based billing
-
-#### Admin Features
-
-- ✅ Admin subscription monitoring dashboard - COMPLETED
-- ✅ Payment status tracking (OVERDUE, DUE_SOON, CURRENT, TRIAL_EXPIRED) - COMPLETED
-- ✅ MRR and revenue tracking - COMPLETED
-- ⏭️ Bulk actions (email overdue users)
-- ⏭️ Subscription lifecycle management for admins (pause, resume, manual activation)
-- ⏭️ Custom payment schedules
-- ⏭️ Export subscription data to CSV
-
----
-
-## File Structure Summary
-
-```
-property-crm/
-├── app/
-│   ├── (auth)/                   # Auth pages (login, register, forgot-password)
-│   ├── (dashboard)/              # Landlord dashboard and features
-│   ├── portal/                   # Tenant portal
-│   ├── admin/                    # Super admin UI
-│   ├── api/                      # API routes (136 endpoints)
-│   └── layout.tsx
-│
-├── components/
-│   ├── ui/                       # shadcn/ui components
-│   ├── dashboard/                # Dashboard components
-│   ├── properties/               # Property components
-│   ├── bookings/                 # Booking components
-│   ├── financials/               # Payment components
-│   └── shared/                   # Shared components
-│
-├── lib/
-│   ├── features/                 # Feature modules (service + repository)
-│   │   ├── bookings/
-│   │   ├── properties/
-│   │   ├── payments/
-│   │   └── messaging/
-│   ├── shared/                   # Shared utilities
-│   │   ├── errors/
-│   │   └── audit.ts
-│   ├── auth.ts                   # NextAuth configuration
-│   ├── auth-helpers.ts           # Auth helper functions
-│   └── db.ts                     # Prisma client
-│
-├── prisma/
-│   ├── schema.prisma             # Database schema (36 models)
-│   └── migrations/               # Database migrations
-│
-└── docs/                         # Documentation
-```
-
----
-
-## Key Statistics
-
-### Codebase
-
-- **Total API Endpoints (`route.ts`)**: 158
-- **Database Models**: 41
-- **Service Files**: 24
-- **Repository Files**: 16
-- **DTO/Validator Files**: 16
-- **Frontend Pages (`page.tsx`)**: 107
-- **Components (`components/`)**: 89
-
-### Architecture
-
-- **Lines of Code (new architecture)**: Not audited in this pass
-- **TypeScript Errors**: Not audited in this pass
-- **Test Coverage**: Manual testing (automated tests pending)
-
-### Features Completed (23 major phases)
-
-- **Properties**: ✅ Full CRUD + Import (no export) + Valuations + Documents + Multi-Tenant Support
-- **Bookings**: ✅ Full CRUD + Availability + Pricing
-- **Tenants**: ✅ Full CRUD + Documents + Portal + Multi-Property Per Tenant
-- **Payments**: ✅ Full CRUD + Reminder endpoints + PayFast Recurring + Per-Lease Generation
-- **Messaging**: ✅ Automation backend + Templates + Queue + Complete UI + Cron configured
-- **Auth**: ✅ Multi-role + Password Management
-- **Admin**: ✅ User Creation + Management + Subscription Monitoring
-- **Maintenance**: ✅ Full CRUD + Status Workflow + Cost Tracking + Email Automation (cron not scheduled)
-- **Expenses**: ✅ Full CRUD + Categories + Reports + Detail Modal
-- **Documents**: ✅ Full CRUD + Folders + Upload
-- **Inquiries**: ✅ Full CRUD + Status + Conversion
-- **Tasks**: ✅ Full CRUD + Status + Due Dates
-- **Valuations**: ✅ Full CRUD + Edit/Delete + Auto-recalculation
-- **UI/UX**: ✅ Nested Sidebar + Expense Modal + Valuation Card
-- **Property Docs**: ✅ Folder-based organization + Auto-creation
-- **Inspections**: ✅ Listing/detail/create pages + items API
-- **Tax Reports**: ✅ Tax summary report page
-- **Reports**: ✅ 9 reports + CSV export wired on all pages
-- **Subscriptions**: ✅ PayFast recurring billing + Invoice tracking
-- **Admin Dashboard**: ✅ Subscription monitoring + MRR tracking + Payment alerts
-- **Billing**: ✅ Dynamic pricing + Invoice generation + Payment history
-- **Multi-Tenant Properties**: ✅ Unit labels + Per-lease payments + Multiple tenants per property
-- **Agent Placement**: 🚧 Account-type gating + Placement models + Applications + Viewings + Mandates
-
----
-
-## Database Schema Overview
-
-### Core Models
-
-- User (landlords, admins, tenants)
-- Property (rental properties)
-- Booking (reservations)
-- Tenant (long-term tenants)
-- Payment (rent, deposits, fees)
-- Expense (property costs)
-- MaintenanceRequest (repairs/issues)
-- Inquiry (leads and inquiries)
-- RentalApplication (agency rental placement applications)
-- Viewing (rental viewing schedule and attendance)
-- LandlordOwner (agency-managed property owners)
-- RentalMandate (placement and management mandates)
-- ApplicantScreening (application screening checklist)
-- Task (tasks and reminders)
-- Inspection (inspections and items)
-- Message (communications)
-- MessageAutomation (automation rules)
-- ScheduledMessage (message queue)
-
-### Supporting Models
-
-- PropertyTenant (lease assignments with optional unit labels for multi-tenant properties)
-- PropertyValuation (property value history)
-- TeamMember (organization members)
-- Document (file storage)
-- DocumentFolder (folder organization)
-- AuditLog (change tracking)
-- PasswordResetToken (password recovery)
-- Notification (user notifications)
-- Integration (external integrations)
-- PayFastSubscription (billing subscriptions)
-- BillingInvoice (subscription invoices)
-- PayFastTransaction (webhook audit)
-
----
-
-## Deployment Status
-
-### Production Environment
-
-- ✅ Vercel deployment configured
-- ✅ Database migrations applied
-- ✅ Environment variables set
-- ✅ Cron jobs configured (6 schedules in vercel.json)
-- ✅ Email service operational
-- ✅ File uploads working
-
-### Required Environment Variables
-
-```
-DATABASE_URL
-NEXTAUTH_SECRET
-NEXTAUTH_URL
-CRON_SECRET
-SMTP_HOST
-SMTP_PORT
-SMTP_USER
-SMTP_PASS
-SMTP_FROM
-UPLOADTHING_SECRET
-UPLOADTHING_APP_ID
-```
-
----
-
-## Known Issues & Limitations
-
-### Current Limitations
-
-1. No automated tests (manual testing only)
-2. No SMS/WhatsApp implementation (stubs only)
-3. Online payment processing for individual transactions not implemented (Paystack/Stripe are mocked; PayFast is subscription-only)
-4. Calendar sync is iCal-based only; direct Airbnb/Booking.com/Google Calendar APIs not implemented, and `/api/calendar/public/[id]` is missing
-5. Limited mobile optimization on some pages
-
-### Technical Debt
-
-1. Some old API routes not yet migrated to service layer
-2. Frontend components could use more refactoring
-3. Limited mobile optimization on some pages
-4. No PWA support
-
----
-
-## Next Priorities
-
-### Completed Subscription Foundations
-
-1. ✅ PayFast recurring billing system (COMPLETED)
-2. ✅ Admin subscription monitoring dashboard (COMPLETED)
-3. ✅ Customer subscription status, cancellation, and billing history pages (COMPLETED)
-4. ✅ Invoice generation and PayFast webhook processing (COMPLETED)
-
-### Immediate Subscription Focus (Next Sprint)
-
-1. Test PayFast integration with sandbox environment
-2. Set up ngrok or equivalent tunnel for webhook testing
-3. Configure and verify PayFast production credentials
-4. Add subscription event emails for activation, cancellation, and failed payments
-5. Add dunning automation for failed recurring payments
-6. Add admin lifecycle controls for pause, resume, and manual activation
-
-### Short-term (1-2 months)
-
-1. Export subscription data to CSV
-2. Enhanced subscription reporting (MRR trends, churn rate)
-3. Free trial extension workflow
-4. Calendar sync (Airbnb API)
-5. SMS notifications (Twilio)
-6. Improve mobile responsiveness across all pages
-7. Complete automated testing setup
-
-### Long-term (3-6 months)
-
-1. Multiple subscription tiers (different property limits, features)
-2. Usage-based billing (per-property overages)
-3. Proration for mid-month subscription changes
-4. Public booking portal
-5. Website widgets
-6. Mobile app (React Native)
-7. Multi-language support
-
----
-
-## Success Criteria Achieved
-
-✅ Core property management functionality working
-✅ Automated payment reminders running on schedule (configured in vercel.json)
-✅ Automated maintenance email notifications running on schedule (configured in vercel.json)
-✅ Tenant portal provides self-service
-✅ Multi-tenancy implemented as user workspace with team-member management
-✅ Team member invitation system with role-based permissions
-✅ Clean architecture established
-🚧 Type-safe codebase (TypeScript errors not audited in this pass)
-✅ Audit trail for compliance
-✅ Email notifications working
-✅ Cron jobs running automatically (6 schedules configured)
-✅ Role-based access control functional
-✅ Message automation UI complete with scheduled message queue
-✅ Expense-maintenance linking implemented
-✅ Property valuation tracking with appreciation calculations
-✅ Enhanced UI with nested navigation and detail modals
-✅ Property document management with folder organization
-✅ Inspections module foundation implemented
-✅ **9 comprehensive reports implemented** (Tax, Revenue, Payments, Aging, Maintenance, Occupancy, Leases, Cash Flow, Analytics)
-✅ **Advanced reporting with date filtering and CSV export on all report pages**
-✅ **PayFast recurring subscription billing implemented**
-✅ **Secure payment processing with MD5 signatures and IP whitelisting**
-✅ **Admin subscription monitoring dashboard operational**
-✅ **Real-time payment status tracking and alerts**
-✅ **Dynamic pricing model with per-property fees**
-✅ **Invoice generation and billing history management**
-✅ **MRR and revenue tracking for all subscriptions**
-
----
-
-## Documentation
-
-### Available Documentation
-
-- `PROJECT_STATUS.md` - This file (comprehensive project overview)
-- `PAYMENT_FEATURES_SUMMARY.md` - Payment features (transaction fees, banking encryption, PayFast recurring billing, admin monitoring)
-- `ARCHITECTURE_GUIDE.md` - Technical architecture patterns
-- `IMPLEMENTATION_SUMMARY.md` - Messaging system implementation
-- `PAYMENT_MODULE_COMPLETE.md` - Payment reminder system
-- `PHASE_1_IMPLEMENTATION.md` - Phase 1 completion summary
-- `PHASE_2_COMPLETE_SUMMARY.md` - Phase 2 completion summary
-- `FEATURES_IMPLEMENTATION_COMPLETE.md` - Feature implementation summary
-- Archive folder with 30+ additional docs
-
----
-
-**Project Status**: ✅ **CORE FLOWS OPERATIONAL WITH PAYFAST BILLING** | 🚧 **INTEGRATIONS/AUTOMATION PARTIAL**
-
-The system is operational for core workflows:
-
-- **Property Management**: Full CRUD, valuations, document management
-- **Booking System**: Availability checking, pricing calculation, status tracking
-- **Payment Processing**: Reminder endpoints, PayFast recurring subscriptions, invoice generation
-- **Financial Reporting**: 9 reports (tax, revenue, payments, aging, maintenance, occupancy, leases, cash flow, analytics)
-- **Admin Tools**: Subscription monitoring, revenue tracking, payment status alerts
-- **Tenant Portal**: Self-service payments, document access, communication
-
-Areas still in progress:
-
-- **Integrations**: Sync endpoints are placeholders for Airbnb/Booking.com/Google/Paystack/Stripe
-- **SMS/WhatsApp**: Delivery providers are stubbed, need Twilio integration
-- **Service Layer**: Some modules still use Prisma directly (reports, tasks, inspections, inquiries, documents, templates, integrations, admin)
-
-PayFast recurring subscriptions are implemented and ready for sandbox testing. Admin monitoring dashboard provides real-time visibility into all subscription, payment, and revenue metrics. Advanced features (calendar sync, multiple payment gateways, SMS notifications) are planned for future iterations.
+- Placement UI pages:
+  - `/placement`
+  - `/placement/applications`
+  - `/placement/applications/new`
+  - `/placement/viewings`
+  - `/placement/viewings/new`
+  - `/placement/landlords`
+  - `/placement/landlords/new`
+  - `/placement/landlords/[id]/edit`
+  - `/placement/mandates`
+  - `/placement/mandates/new`
+  - `/placement/mandates/[id]/edit`
+- Placement APIs:
+  - `/api/placement/applications`
+  - `/api/placement/applications/[id]/screening`
+  - `/api/placement/applications/[id]/complete`
+  - `/api/placement/viewings`
+  - `/api/placement/viewings/[id]`
+  - `/api/placement/landlords`
+  - `/api/placement/landlords/[id]`
+  - `/api/placement/mandates`
+  - `/api/placement/mandates/[id]`
+- Landlord owner and mandate management includes owner details, mandate type, exclusivity, status, start/end dates, placement fee percentage, management fee percentage, VAT flag, notes, and mandate document URL.
+- Viewing workflow supports inquiry/application-linked scheduling, status updates, attendee contact details, assignment, feedback, and follow-up notes.
+- Application workflow supports applicant intake, inquiry-to-application conversion, requested/proposed lease details, assignment, and workflow statuses from new application through placed/withdrawn.
+- Applicant screening checklist tracks credit, affordability, employer reference, landlord reference, FICA, income, rent-to-income ratio, risk score, consent, and notes.
+- Placement completion is transactional: screening must pass, the applicant is linked to an existing tenant or converted into a tenant, the lease assignment is created, and the application moves to `PLACED`.
+- Tenant portal activation is an explicit post-placement handoff through the existing tenant portal access flow.
+- Focused tests exist for account capabilities, dashboard navigation, placement DTOs/services/repositories, placement completion API, and tenant portal activation.
+- Remaining placement work:
+  - Commission and placement fee reporting
+  - Placement analytics and agent performance reporting
+  - End-to-end QA with real agency users, tenant portal activation, and sample placement data
+  - Optional notification automation for viewing confirmations, screening updates, approval/rejection, and placement completion
+
+## Partial Or Risky Areas
+
+- `vercel.json` has an empty `crons` array, so scheduled jobs are not active in deployment until configured.
+- Paystack and Stripe payment endpoints are mocked or placeholder-style flows.
+- Airbnb, Booking.com, Google Calendar, and other integration syncs are not production-grade.
+- Calendar export routes exist under `/api/calendar/*`, but real external sync should be treated as incomplete.
+- SMS and WhatsApp automation delivery are not implemented.
+- AI message enhancement has UI/model support but no complete processing flow.
+- Several API routes still use Prisma directly instead of feature services/repositories, including reports, documents, inquiries, tasks, inspections, integrations, templates, and some admin routes.
+- Public API endpoints exist under `/api/public/*`; public-facing consumers should be verified before launch.
+- PayFast needs real sandbox/production validation before billing is treated as launch-ready.
+- Agency placement should be treated as a beta/preview workflow until full end-to-end QA, sample data review, and commission/fee reporting are complete.
+
+## Beta Launch Scope
+
+Position the beta as an operations-first landlord CRM for long-term rentals:
+
+- Rent collection
+- Arrears visibility
+- Lease tracking
+- Tenant self-service
+- Maintenance coordination
+- Documents and inspections
+
+Do not position beta around these until they are production-ready:
+
+- Agency placement as a primary promise outside a controlled agency preview
+- Live online card payments outside PayFast subscriptions
+- Airbnb or Booking.com direct sync
+- SMS or WhatsApp automation
+- Mock/demo payment flows
+
+## P0 Before Inviting Testers
+
+- Remove demo and mock exposure from production flows.
+- Decide whether cron jobs should be enabled in `vercel.json`; if yes, add schedules and verify `CRON_SECRET`.
+- Validate tenant portal identity resolution end to end.
+- Validate the agency placement journey end to end with an `AGENCY` account, including owner, mandate, viewing, application, screening, placement completion, tenant lease assignment, and portal activation.
+- Validate rent generation, proof upload, landlord verification, reminders, and invoice viewing with one landlord and one tenant.
+- Run type-check, tests, and production build.
+- Validate PayFast subscription initiation and ITN handling in sandbox.
+- Configure production environment variables and secrets.
+
+## P1 First Tester Cohort
+
+- 3 to 5 landlords
+- 1 to 20 properties each
+- Primarily long-term rental workflows
+- Concierge onboarding and data import support
+- Weekly feedback calls
+
+## Success Metrics
+
+- 80% of testers use rent collection weekly.
+- 60% of testers use tenant portal features.
+- 50% of testers log or track maintenance inside the system.
+- At least 3 testers say they would be materially worse off without the product.
+
+## Product Direction
+
+Focus near-term roadmap work on:
+
+- Late fee rules, promise-to-pay tracking, arrears escalation, and notice templates
+- Lease renewal pipeline, vacancy planning, deposit reconciliation, and move-in/move-out inspection comparison
+- Vendor directory, quote capture, completion evidence, and maintenance SLA tracking
+- Landlord command center for today’s collections, overdue tenants, expiring leases, vacancies, and unresolved maintenance
