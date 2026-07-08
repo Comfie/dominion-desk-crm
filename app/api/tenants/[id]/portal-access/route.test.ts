@@ -98,15 +98,16 @@ describe('/api/tenants/[id]/portal-access workspace ownership', () => {
       phone: '0821234567',
       portalUserId: null,
     } as never);
+    // 1st lookup: email-in-use check (none). 2nd lookup: landlord info for email.
     vi.mocked(prisma.user.findUnique)
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: 'portal-1' } as never)
       .mockResolvedValueOnce({
         firstName: 'Agency',
         lastName: 'Owner',
         email: 'agency@example.com',
         phone: '0111234567',
       } as never);
+    vi.mocked(prisma.user.create).mockResolvedValue({ id: 'portal-1' } as never);
     vi.mocked(prisma.propertyTenant.findFirst).mockResolvedValue(null);
 
     const response = await POST(
@@ -132,19 +133,21 @@ describe('/api/tenants/[id]/portal-access workspace ownership', () => {
     });
   });
 
-  it('relinks an existing tenant user account when the tenant link is missing', async () => {
+  it('refuses to link a pre-existing account by email (cross-account takeover guard)', async () => {
+    // Tenant has no portal link, but a User with this email already exists
+    // somewhere in the system (potentially another workspace's tenant).
     vi.mocked(prisma.tenant.findFirst).mockResolvedValue({
       id: 'tenant-1',
       userId: 'agency-1',
       firstName: 'Lerato',
       lastName: 'Mokoena',
-      email: 'tenant@example.com',
+      email: 'victim@example.com',
       phone: '0821234567',
       portalUserId: null,
     } as never);
+    // portalUserId is null, so the only lookup is the email-in-use guard.
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'portal-existing',
-      accountType: 'TENANT',
     } as never);
 
     const response = await POST(
@@ -155,10 +158,52 @@ describe('/api/tenants/[id]/portal-access workspace ownership', () => {
       { params: Promise.resolve({ id: 'tenant-1' }) }
     );
 
-    expect(response.status).toBe(200);
-    expect(prisma.tenant.update).toHaveBeenCalledWith({
-      where: { id: 'tenant-1' },
-      data: { portalUserId: 'portal-existing' },
-    });
+    // Must NOT link or create against the foreign account.
+    expect(response.status).toBe(400);
+    expect(prisma.tenant.update).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('will not reset or revoke when the tenant has no portal link', async () => {
+    // Even if a User exists with the tenant's email, an unlinked tenant
+    // (portalUserId null) must never resolve to that account.
+    vi.mocked(prisma.tenant.findFirst).mockResolvedValue({
+      id: 'tenant-1',
+      userId: 'agency-1',
+      firstName: 'Lerato',
+      lastName: 'Mokoena',
+      email: 'victim@example.com',
+      phone: '0821234567',
+      portalUserId: null,
+    } as never);
+
+    for (const action of ['reset', 'revoke']) {
+      vi.clearAllMocks();
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'member-1', organizationId: 'agency-1', accountType: 'AGENCY' },
+      } as never);
+      vi.mocked(prisma.tenant.findFirst).mockResolvedValue({
+        id: 'tenant-1',
+        userId: 'agency-1',
+        firstName: 'Lerato',
+        lastName: 'Mokoena',
+        email: 'victim@example.com',
+        phone: '0821234567',
+        portalUserId: null,
+      } as never);
+
+      const response = await POST(
+        new Request('http://localhost/api/tenants/tenant-1/portal-access', {
+          method: 'POST',
+          body: JSON.stringify({ action }),
+        }),
+        { params: Promise.resolve({ id: 'tenant-1' }) }
+      );
+
+      expect(response.status).toBe(400);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.user.delete).not.toHaveBeenCalled();
+    }
   });
 });
