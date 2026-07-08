@@ -23,6 +23,7 @@
     "db:reset": "rm -rf prisma/migrations && npx prisma migrate dev --name init && npx prisma migrate reset --force",
     "seed:production": "npx tsx prisma/seed-production.ts",
     "seed:payment-features": "npx tsx prisma/seed-payment-features.ts",
+    "seed:symons-admins": "npx tsx prisma/seed-symons-admins.ts",
     "prepare": "husky"
   },
   "dependencies": {
