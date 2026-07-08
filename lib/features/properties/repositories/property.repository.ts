@@ -1,4 +1,10 @@
-import { Prisma, PropertyStatus, PropertyType, RentalType } from '@prisma/client';
+import type {
+  Prisma,
+  PropertyStatus,
+  PropertyType,
+  RentalType,
+  ValuationType,
+} from '@prisma/client';
 import { prisma } from '@/lib/db';
 
 /**
@@ -106,6 +112,39 @@ export class PropertyRepository {
   async create(data: Prisma.PropertyCreateInput) {
     return prisma.property.create({
       data,
+    });
+  }
+
+  /**
+   * Create a property and, if valuation details are supplied, a linked
+   * PropertyValuation record in the same transaction (e.g. for imports that
+   * carry a current valuation figure).
+   */
+  async createWithValuation(
+    data: Prisma.PropertyCreateInput,
+    valuation?: {
+      valuationAmount: number;
+      valuationDate: Date;
+      valuedBy?: string;
+      valuationType: ValuationType;
+    }
+  ) {
+    if (!valuation) {
+      return this.create(data);
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const property = await tx.property.create({ data });
+      await tx.propertyValuation.create({
+        data: {
+          propertyId: property.id,
+          valuationAmount: valuation.valuationAmount,
+          valuationType: valuation.valuationType,
+          valuedBy: valuation.valuedBy,
+          valuationDate: valuation.valuationDate,
+        },
+      });
+      return property;
     });
   }
 
