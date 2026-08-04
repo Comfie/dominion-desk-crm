@@ -1,8 +1,19 @@
-import { PropertyStatus, PropertyType, RentalType } from '@prisma/client';
+import type { PropertyStatus, PropertyType, RentalType, ValuationType } from '@prisma/client';
 import { propertyRepository } from '@/lib/features/properties/repositories/property.repository';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/shared/logger';
 import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/shared/errors/app-error';
+
+/**
+ * Municipal valuations (the common case for imported rates/assessment data)
+ * are distinguished from generic market valuations by the valuer's name.
+ */
+function inferValuationType(valuedBy?: string): ValuationType {
+  if (valuedBy && /city|municipal/i.test(valuedBy)) {
+    return 'MUNICIPAL';
+  }
+  return 'MARKET';
+}
 
 /**
  * Property Service
@@ -46,6 +57,9 @@ export class PropertyService {
       checkInTime?: string;
       checkOutTime?: string;
       houseRules?: string;
+      currentValuation?: number;
+      lastValuationDate?: Date;
+      valuedBy?: string;
     }
   ) {
     // Validation: At least one pricing field required
@@ -55,41 +69,56 @@ export class PropertyService {
       });
     }
 
-    const property = await propertyRepository.create({
-      user: { connect: { id: userId } },
-      name: data.name,
-      description: data.description,
-      propertyType: data.propertyType,
-      address: data.address,
-      city: data.city,
-      province: data.province,
-      postalCode: data.postalCode,
-      country: data.country || 'South Africa',
-      bedrooms: data.bedrooms,
-      bathrooms: data.bathrooms,
-      size: data.size,
-      furnished: data.furnished ?? false,
-      parkingSpaces: data.parkingSpaces ?? 0,
-      amenities: data.amenities || undefined,
-      primaryImageUrl: data.primaryImageUrl,
-      rentalType: data.rentalType || 'LONG_TERM',
-      monthlyRent: data.monthlyRent,
-      dailyRate: data.dailyRate,
-      weeklyRate: data.weeklyRate,
-      monthlyRate: data.monthlyRate,
-      cleaningFee: data.cleaningFee,
-      securityDeposit: data.securityDeposit,
-      isAvailable: data.isAvailable ?? true,
-      availableFrom: data.availableFrom,
-      minimumStay: data.minimumStay,
-      maximumStay: data.maximumStay,
-      petsAllowed: data.petsAllowed ?? false,
-      smokingAllowed: data.smokingAllowed ?? false,
-      checkInTime: data.checkInTime,
-      checkOutTime: data.checkOutTime,
-      houseRules: data.houseRules,
-      status: 'ACTIVE',
-    });
+    const valuation =
+      data.currentValuation !== undefined && data.lastValuationDate !== undefined
+        ? {
+            valuationAmount: data.currentValuation,
+            valuationDate: data.lastValuationDate,
+            valuedBy: data.valuedBy,
+            valuationType: inferValuationType(data.valuedBy),
+          }
+        : undefined;
+
+    const property = await propertyRepository.createWithValuation(
+      {
+        user: { connect: { id: userId } },
+        name: data.name,
+        description: data.description,
+        propertyType: data.propertyType,
+        address: data.address,
+        city: data.city,
+        province: data.province,
+        postalCode: data.postalCode,
+        country: data.country || 'South Africa',
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        size: data.size,
+        furnished: data.furnished ?? false,
+        parkingSpaces: data.parkingSpaces ?? 0,
+        amenities: data.amenities || undefined,
+        primaryImageUrl: data.primaryImageUrl,
+        rentalType: data.rentalType || 'LONG_TERM',
+        monthlyRent: data.monthlyRent,
+        dailyRate: data.dailyRate,
+        weeklyRate: data.weeklyRate,
+        monthlyRate: data.monthlyRate,
+        cleaningFee: data.cleaningFee,
+        securityDeposit: data.securityDeposit,
+        isAvailable: data.isAvailable ?? true,
+        availableFrom: data.availableFrom,
+        minimumStay: data.minimumStay,
+        maximumStay: data.maximumStay,
+        petsAllowed: data.petsAllowed ?? false,
+        smokingAllowed: data.smokingAllowed ?? false,
+        checkInTime: data.checkInTime,
+        checkOutTime: data.checkOutTime,
+        houseRules: data.houseRules,
+        currentValuation: data.currentValuation,
+        lastValuationDate: data.lastValuationDate,
+        status: 'ACTIVE',
+      },
+      valuation
+    );
 
     logger.info('Property created', {
       propertyId: property.id,

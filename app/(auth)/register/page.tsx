@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '';
+const RECAPTCHA_ENABLED = process.env.NODE_ENV === 'production';
 
 const registerSchema = z
   .object({
@@ -36,7 +37,7 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-function RegisterForm() {
+function RegisterForm({ recaptchaEnabled }: { recaptchaEnabled: boolean }) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,14 +65,17 @@ function RegisterForm() {
     async (data: RegisterFormData) => {
       setError(null);
 
-      // Get reCAPTCHA token
-      if (!executeRecaptcha) {
-        setError('reCAPTCHA not loaded. Please refresh the page.');
-        return;
-      }
-
       try {
-        const recaptchaToken = await executeRecaptcha('register');
+        let recaptchaToken = 'local-development';
+
+        if (recaptchaEnabled) {
+          if (!executeRecaptcha) {
+            setError('reCAPTCHA not loaded. Please refresh the page.');
+            return;
+          }
+
+          recaptchaToken = await executeRecaptcha('register');
+        }
 
         const response = await fetch('/api/auth/register', {
           method: 'POST',
@@ -99,7 +103,7 @@ function RegisterForm() {
         setError('An unexpected error occurred. Please try again.');
       }
     },
-    [executeRecaptcha, router]
+    [executeRecaptcha, recaptchaEnabled, router]
   );
 
   return (
@@ -248,9 +252,13 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
+  if (!RECAPTCHA_ENABLED) {
+    return <RegisterForm recaptchaEnabled={false} />;
+  }
+
   return (
     <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-      <RegisterForm />
+      <RegisterForm recaptchaEnabled />
     </GoogleReCaptchaProvider>
   );
 }

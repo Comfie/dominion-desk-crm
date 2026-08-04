@@ -3,170 +3,40 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  Building2,
-  Calendar,
-  Users,
-  Wrench,
-  ClipboardCheck,
-  DollarSign,
-  FileText,
-  Mail,
-  CheckSquare,
-  BarChart3,
-  Settings,
-  LayoutDashboard,
-  X,
-  ChevronDown,
-  Receipt,
-  PanelLeftClose,
-  PanelLeftOpen,
-  ArrowUpRight,
-} from 'lucide-react';
+import { X, ChevronDown, Receipt, PanelLeftClose, PanelLeftOpen, ArrowUpRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
+import {
+  getDashboardNavigationSections,
+  isNavigationChildActive,
+  isNavigationItemActive,
+} from './navigation';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isCollapsed?: boolean;
   toggleCollapse?: () => void;
+  accountType?: string | null;
 }
 
-interface NavItem {
-  name: string;
-  href?: string;
-  icon: React.ElementType;
-  children?: { name: string; href: string }[];
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
-}
-
-const navigationSections: NavSection[] = [
-  {
-    title: 'Overview',
-    items: [
-      {
-        name: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutDashboard,
-      },
-      {
-        name: 'Properties',
-        href: '/properties',
-        icon: Building2,
-      },
-      {
-        name: 'Tenants',
-        href: '/tenants',
-        icon: Users,
-      },
-      {
-        name: 'Bookings',
-        href: '/bookings',
-        icon: Calendar,
-      },
-    ],
-  },
-  {
-    title: 'Operations',
-    items: [
-      {
-        name: 'Maintenance',
-        href: '/maintenance',
-        icon: Wrench,
-      },
-      {
-        name: 'Inspections',
-        href: '/inspections',
-        icon: ClipboardCheck,
-      },
-      {
-        name: 'Tasks',
-        href: '/tasks',
-        icon: CheckSquare,
-      },
-      {
-        name: 'Documents',
-        href: '/documents',
-        icon: FileText,
-      },
-    ],
-  },
-  {
-    title: 'Finance',
-    items: [
-      {
-        name: 'Financials',
-        icon: DollarSign,
-        children: [
-          { name: 'Rent Collection', href: '/financials/rent-collection' },
-          { name: 'Income & Payments', href: '/financials/income' },
-          { name: 'Expenses', href: '/financials/expenses' },
-        ],
-      },
-      {
-        name: 'Reports',
-        href: '/reports/analytics',
-        icon: BarChart3,
-      },
-    ],
-  },
-  {
-    title: 'Communications',
-    items: [
-      {
-        name: 'Communications',
-        icon: Mail,
-        children: [
-          { name: 'Messages', href: '/messages' },
-          { name: 'Automations', href: '/messages/automations' },
-          { name: 'Scheduled', href: '/messages/scheduled' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Settings',
-    items: [
-      {
-        name: 'Settings',
-        icon: Settings,
-        children: [
-          { name: 'Profile', href: '/settings/profile' },
-          // { name: 'Integrations', href: '/settings/integrations' },
-        ],
-      },
-    ],
-  },
-];
-
-export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
+export function Sidebar({
+  isOpen,
+  onClose,
+  isCollapsed = false,
+  toggleCollapse,
+  accountType,
+}: SidebarProps) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Financials']);
+  const navigationSections = getDashboardNavigationSections(accountType);
 
   const toggleExpanded = (name: string) => {
     setExpandedItems((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     );
-  };
-
-  const isItemActive = (item: NavItem) => {
-    if (item.href) {
-      return (
-        pathname === item.href ||
-        pathname.startsWith(item.href.split('/').slice(0, 2).join('/') + '/')
-      );
-    }
-    if (item.children) {
-      return item.children.some((child) => pathname.startsWith(child.href));
-    }
-    return false;
   };
 
   return (
@@ -270,7 +140,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
                 </div>
                 <ul className="space-y-1">
                   {section.items.map((item) => {
-                    const isActive = isItemActive(item);
+                    const isActive = isNavigationItemActive(item, pathname, section.items);
                     const isExpanded = expandedItems.includes(item.name);
                     const hasChildren = item.children && item.children.length > 0;
                     const showExpanded = isExpanded || isActive;
@@ -319,7 +189,11 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, toggleCollapse }
                             >
                               <ul className="bg-primary/5 space-y-1 rounded-2xl border p-2">
                                 {item.children!.map((child) => {
-                                  const isChildActive = pathname.startsWith(child.href);
+                                  const isChildActive = isNavigationChildActive(
+                                    child,
+                                    pathname,
+                                    item.children!
+                                  );
 
                                   return (
                                     <li key={child.href}>

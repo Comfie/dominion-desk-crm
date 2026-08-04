@@ -3,10 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, Grid3X3, List, Building2, Download, Loader2 } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Filter,
+  Grid3X3,
+  List,
+  Table as TableIcon,
+  Building2,
+  Download,
+  Loader2,
+} from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';
 import { PropertyCard } from '@/components/properties/property-card';
+import { PropertyTable } from '@/components/properties/property-table';
 import { ImportPropertiesDialog } from '@/components/properties/import-properties-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +107,7 @@ export default function PropertiesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('grid');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [occupiedOnly, setOccupiedOnly] = useState(false);
@@ -351,6 +362,14 @@ export default function PropertiesPage() {
             >
               <List className="h-4 w-4" />
             </Button>
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setViewMode('table')}
+            >
+              <TableIcon className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -409,7 +428,7 @@ export default function PropertiesPage() {
             />
           )}
         </>
-      ) : (
+      ) : viewMode === 'list' ? (
         <>
           <div className="space-y-4">
             {properties.map((property: Parameters<typeof PropertyCard>[0]['property']) => (
@@ -420,6 +439,24 @@ export default function PropertiesPage() {
                 variant="list"
               />
             ))}
+          </div>
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={setPage}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <div className="rounded-lg border">
+            <PropertyTable
+              properties={properties as Parameters<typeof PropertyTable>[0]['properties']}
+              onDelete={handleDelete}
+            />
           </div>
           {pagination && pagination.totalPages > 1 && (
             <Pagination

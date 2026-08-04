@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 import { Sidebar } from './sidebar';
 import { Header } from './header';
@@ -11,6 +12,7 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -27,6 +29,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onClose={() => setSidebarOpen(false)}
         isCollapsed={isCollapsed}
         toggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        accountType={session?.user?.accountType}
       />
 
       {/* Main content area */}

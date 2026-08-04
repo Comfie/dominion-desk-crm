@@ -20,6 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.organizationId || session.user.id;
     const { id } = await params;
     const body = await request.json();
     const validatedData = portalAccessSchema.parse(body);
@@ -28,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const tenant = await prisma.tenant.findFirst({
       where: {
         id,
-        userId: session.user.id, // Tenant must be owned by this property manager
+        userId,
       },
     });
 
@@ -36,16 +37,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    // Check if tenant has portal access by looking for a User account with their email
-    const existingTenantUser = tenant.portalUserId
+    // Resolve the portal account strictly through the tenant's own link.
+    // Never resolve by email: the email is attacker-controlled on a tenant
+    // record, so a global email lookup would let one workspace link, reset, or
+    // revoke another workspace's portal user (cross-account takeover).
+    const portalUser = tenant.portalUserId
       ? await prisma.user.findUnique({
           where: { id: tenant.portalUserId },
         })
-      : await prisma.user.findUnique({
-          where: { email: tenant.email },
-        });
+      : null;
 
-    const hasPortalAccess = existingTenantUser?.accountType === 'TENANT';
+    const hasPortalAccess = portalUser?.accountType === 'TENANT';
 
     // Handle different actions
     switch (validatedData.action) {
@@ -54,8 +56,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           return NextResponse.json({ error: 'Tenant already has portal access' }, { status: 400 });
         }
 
-        // Check if user with this email already exists
-        if (existingTenantUser) {
+        // Refuse to attach to any pre-existing account with this email. Ownership
+        // of an unlinked account cannot be proven from the email alone, so linking
+        // it here would allow taking over another workspace's portal user.
+        const emailInUse = await prisma.user.findUnique({
+          where: { email: tenant.email },
+          select: { id: true },
+        });
+        if (emailInUse) {
           return NextResponse.json(
             { error: 'A user account with this email already exists' },
             { status: 400 }
@@ -66,8 +74,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const generatedPassword = generateTenantPassword(tenant.firstName, tenant.lastName);
         const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-        // Create tenant user account (but don't link it to tenant record)
-        await prisma.user.create({
+        // Create the tenant portal account and link it to this tenant record.
+        const createdPortalUser = await prisma.user.create({
           data: {
             email: tenant.email,
             password: hashedPassword,
@@ -83,23 +91,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           },
         });
 
-        const portalUser = await prisma.user.findUnique({
-          where: { email: tenant.email },
-          select: { id: true },
+        await prisma.tenant.update({
+          where: { id: tenant.id },
+          data: { portalUserId: createdPortalUser.id },
         });
-
-        if (portalUser) {
-          await prisma.tenant.update({
-            where: { id: tenant.id },
-            data: { portalUserId: portalUser.id },
-          });
-        }
 
         // Send welcome email with portal access
         try {
           // Fetch landlord information
           const landlord = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: userId },
             select: {
               firstName: true,
               lastName: true,
@@ -206,7 +207,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
 
       case 'reset': {
-        if (!hasPortalAccess || !existingTenantUser) {
+        if (!hasPortalAccess || !tenant.portalUserId) {
           return NextResponse.json(
             { error: 'Tenant does not have portal access' },
             { status: 400 }
@@ -217,10 +218,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const generatedPassword = generateTenantPassword(tenant.firstName, tenant.lastName);
         const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-        // Update password
+        // Update password (scoped to this tenant's own linked portal user)
         await prisma.user.update({
-          where: { id: tenant.portalUserId || existingTenantUser.id },
-          data: { password: hashedPassword },
+          where: { id: tenant.portalUserId },
+          data: { password: hashedPassword, requirePasswordChange: true },
         });
 
         // TODO: Send password reset email with new credentials
@@ -233,16 +234,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
 
       case 'revoke': {
-        if (!hasPortalAccess || !existingTenantUser) {
+        if (!hasPortalAccess || !tenant.portalUserId) {
           return NextResponse.json(
             { error: 'Tenant does not have portal access' },
             { status: 400 }
           );
         }
 
-        // Delete the tenant user account
+        // Delete the linked tenant portal account (scoped to this tenant)
         await prisma.user.delete({
-          where: { id: tenant.portalUserId || existingTenantUser.id },
+          where: { id: tenant.portalUserId },
         });
 
         await prisma.tenant.update({
@@ -282,13 +283,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = session.user.organizationId || session.user.id;
     const { id } = await params;
 
     // Find the tenant (owned by property manager)
     const tenant = await prisma.tenant.findFirst({
       where: {
         id,
-        userId: session.user.id, // Tenant must be owned by this property manager
+        userId,
       },
     });
 
@@ -296,14 +298,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    // Check if tenant has portal access by looking for a User account with their email
+    // Resolve strictly through the tenant's own link. Resolving by email would
+    // leak whether an arbitrary email has a portal account in another workspace.
     const tenantUser = tenant.portalUserId
       ? await prisma.user.findUnique({
           where: { id: tenant.portalUserId },
         })
-      : await prisma.user.findUnique({
-          where: { email: tenant.email },
-        });
+      : null;
 
     const hasPortalAccess = tenantUser?.accountType === 'TENANT';
 

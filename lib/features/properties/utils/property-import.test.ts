@@ -81,6 +81,129 @@ describe('property import parser', () => {
     ]);
   });
 
+  it('parses a real-world multi-unit sheet (unit codes, occupancy pricing, currency, valuation)', async () => {
+    const headers = [
+      'Property Name',
+      'Address',
+      'Location',
+      'Description',
+      'Unit Code',
+      'Occupancy Type',
+      'Rental Amount',
+      'Deposit Amount',
+      'Rooms',
+      'Specific Rules',
+      'Amenities Included',
+      'Free WiFi',
+      'Prepaid Electricity',
+      'Water/Sewerage/Refuse Included',
+      'Measurements m2',
+      'Image URL',
+      'Current Valuation',
+      'Valuer',
+      'Valuation Date',
+      'Stand Size',
+      'Available From',
+    ].join(',');
+
+    const singleRow = [
+      'RIVERLEA',
+      '"8 Arno Street, Riverlea, Johannesburg, Gauteng, 1709"',
+      '"Riverlea, Johannesburg, Gauteng"',
+      'Furnished Bachelor Unit.',
+      'M1',
+      'Single',
+      'R1850.00',
+      'R1850.00',
+      '1 Studio',
+      'No pets. No smoking.',
+      '"Air fryer, Blinds, Kettle"',
+      'Yes',
+      'Yes',
+      'Yes',
+      '18',
+      '',
+      'R1760000.00',
+      'City of Johannesburg',
+      '2023/07/01',
+      '428 m2',
+      '1 July 2026',
+    ].join(',');
+
+    const doubleRow = [
+      'RIVERLEA',
+      '"8 Arno Street, Riverlea, Johannesburg, Gauteng, 1709"',
+      '"Riverlea, Johannesburg, Gauteng"',
+      'Furnished Bachelor Unit.',
+      'M1',
+      'Double',
+      'R2850.00',
+      'R2850.00',
+      '1 Studio',
+      'No pets. No smoking.',
+      '"Air fryer, Blinds, Kettle"',
+      'Yes',
+      'Yes',
+      'Yes',
+      '18',
+      '',
+      'R1760000.00',
+      'City of Johannesburg',
+      '2023/07/01',
+      '428 m2',
+      '1 July 2026',
+    ].join(',');
+
+    const csv = [headers, singleRow, doubleRow].join('\n');
+    const file = new File([csv], 'riverlea.csv', { type: 'text/csv' });
+    const properties = await parsePropertyImportFile(file);
+
+    // The Single/Double rows for the same unit collapse into one property.
+    expect(properties).toHaveLength(1);
+    expect(properties[0]).toEqual(
+      expect.objectContaining({
+        name: 'RIVERLEA - M1',
+        city: 'Johannesburg',
+        province: 'Gauteng',
+        postalCode: '1709',
+        bedrooms: 1,
+        bathrooms: 1,
+        propertyType: 'STUDIO',
+        monthlyRent: 1850,
+        securityDeposit: 1850,
+        size: 18,
+        amenities: [
+          'Air fryer',
+          'Blinds',
+          'Kettle',
+          'Free WiFi',
+          'Prepaid Electricity',
+          'Water/Sewerage/Refuse Included',
+        ],
+        currentValuation: 1760000,
+        valuedBy: 'City of Johannesburg',
+      })
+    );
+    expect(properties[0].description as string).toContain('Stand size: 428 m2');
+    expect(properties[0].lastValuationDate).toBeInstanceOf(Date);
+    expect(properties[0].availableFrom).toBeInstanceOf(Date);
+  });
+
+  it('keeps the Double occupancy row when no Single row exists for a unit', async () => {
+    const csv = [
+      'Property Name,Unit Code,Occupancy Type,Rental Amount,Rooms,Address,Location',
+      'RIVERLEA,M4,Double,R2850.00,1 Studio,"8 Arno Street, Riverlea, Johannesburg, Gauteng, 1709","Riverlea, Johannesburg, Gauteng"',
+    ].join('\n');
+
+    const file = new File([csv], 'riverlea.csv', { type: 'text/csv' });
+    const properties = await parsePropertyImportFile(file);
+
+    expect(properties).toHaveLength(1);
+    expect(properties[0]).toEqual(
+      expect.objectContaining({ name: 'RIVERLEA - M4', monthlyRent: 2850 })
+    );
+  });
+
   it('builds an Excel template workbook with import fields', () => {
     const template = buildPropertyImportTemplate();
 

@@ -1,167 +1,74 @@
-# Property Management CRM
+# Property CRM
 
-**A modern, full-stack Property Management CRM system for South African landlords and property managers.**
+A full-stack property management CRM for South African landlords, property managers, and rental agencies.
 
-## 🎯 Overview
+## Overview
 
-Property Management CRM enables landlords to manage both long-term rentals and short-term Airbnb properties from a single platform. The system provides automated payment reminders, tenant communication, booking management, and comprehensive financial tracking.
+Property CRM supports long-term rental operations across properties, tenants, leases, rent collection, maintenance, documents, reporting, messaging, and billing. The current beta direction is operations-first: rent collection, arrears visibility, lease tracking, tenant self-service, maintenance coordination, documents, and inspections.
 
-**Status**: ✅ Core features complete and operational  
-**Version**: 1.0.0  
-**Tech Stack**: Next.js 15, TypeScript, PostgreSQL, Prisma, NextAuth.js
+## Current Status
 
-## 🚀 Quick Start
+Core landlord workflows are implemented. Some integrations and payment-provider flows are still partial or mocked, and cron schedules are not currently enabled in `vercel.json`.
+
+Read [Project Status](docs/PROJECT_STATUS.md) for the current feature and launch-readiness view.
+
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- PostgreSQL database
-- npm or yarn
+- Node.js 20+
+- PostgreSQL
+- npm
 
-### Installation
+### Setup
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd property-crm
-
-# Install dependencies
 npm install
-
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your configuration
-
-# Run database migrations
 npx prisma migrate dev
-
-# Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open [http://localhost:3000](http://localhost:3000).
 
-## ✨ Core Features
-
-### Completed ✅
-
-- **Property Management** - Full CRUD with import/export, multiple property types
-- **Booking Management** - Availability checking, automatic pricing, conflict prevention
-- **Tenant Management** - Profiles, documents, lease tracking, tenant portal
-- **Payment System** - Automated monthly generation, reminders, invoicing
-- **Messaging System** - Automated messaging with 15 triggers, template engine
-- **User Management** - Multi-role support (Admin, Landlord, Tenant), team members
-- **Analytics Dashboard** - Key metrics, upcoming events, revenue tracking
-- **Maintenance Management** - Work orders, status tracking, cost management
-- **Expense Tracking** - Categories, reports, property assignment
-- **Document Management** - Folder organization, upload/download, search
-- **Inquiry Management** - Lead tracking, status workflow, conversion
-- **Task Management** - To-do lists, priorities, due dates, assignment
-
-### In Progress 🚧
-
-- Calendar integration (Airbnb, Booking.com)
-- Payment gateway integration (PayStack, Stripe)
-- SMS notifications (Twilio)
-- Advanced reporting and analytics
-
-## 📚 Documentation
-
-- **[Project Status](docs/PROJECT_STATUS.md)** - Comprehensive project overview and feature status
-- **[Architecture Guide](ARCHITECTURE_GUIDE.md)** - Technical architecture and patterns
-- **[Master Plan](PROPERTY_MANAGEMENT_CRM_PLAN.md)** - Original project vision and roadmap
-- **[Archive](docs/archive/)** - Historical implementation documentation
-
-## 🏗️ Tech Stack
-
-**Frontend**: Next.js 15, TypeScript, shadcn/ui, Tailwind CSS  
-**Backend**: Next.js API Routes, PostgreSQL, Prisma ORM  
-**Auth**: NextAuth.js with role-based access control  
-**Email**: Nodemailer (SMTP)  
-**Files**: UploadThing  
-**Hosting**: Vercel
-
-**Architecture**: Three-layer (API → Service → Repository)  
-**Multi-tenancy**: Organization-based data isolation  
-**Automation**: Vercel Cron (3 active jobs)
-
-## 🔑 Environment Variables
-
-Required environment variables (see `.env.example` for complete list):
+## Useful Scripts
 
 ```bash
-DATABASE_URL=           # PostgreSQL connection string
-NEXTAUTH_SECRET=        # Session encryption secret
-NEXTAUTH_URL=           # Application URL
-CRON_SECRET=           # Cron job authentication
-SMTP_HOST=             # Email server
-SMTP_USER=             # Email username
-SMTP_PASS=             # Email password
-UPLOADTHING_SECRET=    # File upload secret
-```
-
-## 🤝 User Roles
-
-- **SUPER_ADMIN** - Full system access, user management
-- **CUSTOMER (Landlord)** - Manage properties, bookings, tenants, payments
-- **TENANT** - View payments, invoices, documents, messages
-
-## 📊 Key Statistics
-
-- **Database Models**: 25+
-- **API Endpoints**: 90+
-- **Frontend Pages**: 50+
-- **Completed Features**: 14 major phases
-- **Automated Jobs**: 3 (payment generation, reminders, overdue marking)
-
-## 🧪 Testing
-
-```bash
-# Type checking
+npm run dev
 npm run type-check
-
-# Build
+npm test -- --run
 npm run build
-
-# Production mode
-npm start
+npm run db:migrate
+npm run db:seed
 ```
 
-## 📝 License
+## Documentation
 
-Proprietary - All rights reserved
+- [Documentation Index](docs/README.md)
+- [Project Status](docs/PROJECT_STATUS.md)
+- [Architecture Guide](docs/ARCHITECTURE_GUIDE.md)
+- [Operations Guide](docs/OPERATIONS_GUIDE.md)
+- [Testing Guide](docs/TESTING_GUIDE.md)
+- [History](docs/HISTORY.md)
 
-## 🙏 Support
+## Tech Stack
 
-For questions or issues, refer to the [documentation](docs/PROJECT_STATUS.md) or contact the development team.
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- PostgreSQL and Prisma 7
+- NextAuth.js
+- Tailwind CSS and Radix UI components
+- Vitest and Testing Library
+- UploadThing
+- Nodemailer/SMTP
+- PayFast subscription billing
 
----
+## Roles
 
-**Built with ❤️ for South African property managers**
+- `SUPER_ADMIN`: platform administration and user management
+- `CUSTOMER`: landlord/property manager workspace
+- `TENANT`: tenant portal access
 
-// "crons": [
-// {
-// "path": "/api/payments/generate-monthly",
-// "schedule": "0 0 25 * *"
-// },
-// {
-// "path": "/api/payments/send-reminders",
-// "schedule": "0 9 * * *"
-// },
-// {
-// "path": "/api/payments/mark-overdue",
-// "schedule": "0 0 * * *"
-// },
-// {
-// "path": "/api/payments/send-overdue-reminders",
-// "schedule": "0 10 * * *"
-// },
-// {
-// "path": "/api/maintenance/send-follow-ups",
-// "schedule": "0 10 * * *"
-// },
-// {
-// "path": "/api/messaging/scheduled/process",
-// "schedule": "*/15 * * * *"
-// }
-// ]
+## License
+
+Proprietary. All rights reserved.

@@ -37,6 +37,11 @@ export const createPropertySchema = z.object({
   checkInTime: z.string().max(10).optional(),
   checkOutTime: z.string().max(10).optional(),
   houseRules: z.string().max(5000).optional(),
+  currentValuation: z.number().min(0).optional(),
+  lastValuationDate: z.coerce.date().optional(),
+  // Not stored on Property directly — used to populate the linked
+  // PropertyValuation record's valuedBy when currentValuation is supplied.
+  valuedBy: z.string().max(200).optional(),
 });
 
 export type CreatePropertyDTO = z.infer<typeof createPropertySchema>;

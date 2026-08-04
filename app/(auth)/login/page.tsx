@@ -7,7 +7,7 @@ import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const registered = searchParams.get('registered') === 'true';
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,11 +75,30 @@ function LoginForm() {
   return (
     <>
       <div className="space-y-2 text-center lg:text-left">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-        <p className="text-muted-foreground">Enter your credentials to access your account</p>
+        <p className="text-primary text-xs font-bold tracking-[0.22em] uppercase">
+          DominionDesk access
+        </p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Access your rental operations workspace
+        </h1>
+        <p className="text-muted-foreground">
+          Sign in to manage placement, rent, maintenance, documents, and tenant portal workflows.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {registered && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="flex gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Account created</p>
+                <p className="mt-1">Sign in to open your DominionDesk workspace.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">{error}</div>
         )}
@@ -119,6 +139,7 @@ function LoginForm() {
             />
             <button
               type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword(!showPassword)}
               className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
             >
@@ -140,12 +161,12 @@ function LoginForm() {
         </Button>
       </form>
 
-      {/* <div className="text-center text-sm">
+      <div className="text-center text-sm">
         <span className="text-muted-foreground">Don&apos;t have an account? </span>
         <Link href="/register" className="text-primary font-medium hover:underline">
           Create account
         </Link>
-      </div> */}
+      </div>
 
       {/* Demo credentials hint */}
       {/* <div className="bg-muted/50 space-y-3 rounded-lg border p-4 text-sm">
