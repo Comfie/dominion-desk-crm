@@ -17,11 +17,14 @@
   --text-3xl: 46px;
   --text-4xl: 57px;
 
-  /* Font Weights */
-  --font-light: 300;
-  --font-regular: 400;
-  --font-semibold: 600;
-  --font-bold: 700;
+  /* Font Weights
+   * Tailwind v4 reads weights from --font-weight-*. The --font-* namespace is
+   * for font FAMILIES, so the old --font-bold: 700 compiled to
+   * `.font-bold { font-family: 700 }` and every bold/semibold rendered regular. */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Line Heights */
   --leading-heading: 1.2;

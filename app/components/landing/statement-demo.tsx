@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Outcome = 'paid' | 'part' | 'review' | 'skip';
 
@@ -72,12 +72,51 @@ const BADGE = {
  * resolving into a paid / short / unpaid rent roll when they press the button.
  * Motion only runs on click and is disabled for prefers-reduced-motion.
  */
-export function StatementDemo() {
+export function StatementDemo({ autoPlay = false }: { autoPlay?: boolean }) {
   const [matched, setMatched] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const played = useRef(false);
+
+  // Play the match once when the card scrolls into view. Skipped for
+  // prefers-reduced-motion and in environments without IntersectionObserver.
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!autoPlay || !node || typeof IntersectionObserver === 'undefined') return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !played.current) {
+          played.current = true;
+          timer = setTimeout(() => setMatched(true), 1200);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.6 }
+    );
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [autoPlay]);
   const outstanding = TENANTS.reduce((sum, t) => sum + (t.rent - t.received), 0);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#D5DEEC] bg-white shadow-[0_24px_60px_-28px_rgba(10,45,103,0.45)]">
+    <div
+      ref={rootRef}
+      className="overflow-hidden rounded-2xl bg-white shadow-[0_40px_80px_-30px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
+    >
+      {/* Window chrome: reads as a product screenshot on the dark hero */}
+      <div className="flex items-center gap-1.5 border-b border-[#E6ECF5] bg-[#F6F8FC] px-4 py-2.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#F87171]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#FBBF24]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#34D399]" />
+        <span className="ml-3 text-xs text-[#5B6B82]">
+          dominiondesk.com/financials/reconciliation
+        </span>
+      </div>
       <div className="flex items-baseline justify-between gap-4 border-b border-[#E6ECF5] px-5 pt-4 pb-3">
         <p className="text-sm font-semibold text-[#0A2D67]">Cheque account, September</p>
         <p className="text-xs text-[#5B6B82]">statement.csv</p>
