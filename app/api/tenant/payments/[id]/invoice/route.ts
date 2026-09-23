@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { paymentRepository } from '@/lib/features/payments/repositories/payment.repository';
 import { invoiceService } from '@/lib/features/payments/services/invoice.service';
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Generate invoice HTML
-    const invoiceHTML = invoiceService.generateInvoiceHTML(payment);
+    const { html: invoiceHTML } = await invoiceService.buildInvoice(payment);
 
     // Return as HTML
     return new NextResponse(invoiceHTML, {

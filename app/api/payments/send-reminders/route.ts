@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { paymentService } from '@/lib/features/payments/services/payment.service';
 import { invoiceService } from '@/lib/features/payments/services/invoice.service';
@@ -78,8 +79,8 @@ export async function POST(request: NextRequest) {
           for (const payment of tenantPayments) {
             try {
               // Generate invoice HTML
-              const invoiceHTML = invoiceService.generateInvoiceHTML(payment);
-              const invoiceText = invoiceService.generateInvoiceText(payment);
+              const { html: invoiceHTML, text: invoiceText } =
+                await invoiceService.buildInvoice(payment);
 
               // Send email
               const emailResult = await sendEmail({

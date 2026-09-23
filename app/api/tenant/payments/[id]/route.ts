@@ -1,10 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { getBankingDetails } from '@/lib/services/banking-encryption.service';
 import { getPaymentSettings } from '@/lib/services/system-settings.service';
 import { getTenantForPortalSession } from '@/lib/tenant-session';
 import { allowMockTenantPayments } from '@/lib/features/payments/utils/mock-payments';
+import { reconciliationService } from '@/lib/features/reconciliation';
+import { BETA_MODE } from '@/lib/config/beta-scope';
 
 /**
  * GET /api/tenant/payments/[id]
@@ -76,8 +79,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get payment settings (transaction fee)
     const paymentSettings = await getPaymentSettings();
 
+    // Stable lease reference the tenant should use on every EFT
+    const eftReference = await reconciliationService.getReferenceForPayment(
+      payment.user.id,
+      payment.propertyId,
+      payment.tenantId
+    );
+
     // Combine payment with banking details and settings
     const response = {
+      eftReference: eftReference ?? payment.paymentReference,
       ...payment,
       user: {
         ...payment.user,
@@ -89,10 +100,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         paymentInstructions: bankingDetails?.paymentInstructions || null,
       },
       transactionFeePercentage: paymentSettings.onlineTransactionFeePercentage,
-      onlinePaymentAvailable: Boolean(
-        (paystackIntegration?.status === 'CONNECTED' && paystackIntegration.apiKey) ||
-        allowMockTenantPayments()
-      ),
+      onlinePaymentAvailable:
+        !BETA_MODE &&
+        Boolean(
+          (paystackIntegration?.status === 'CONNECTED' && paystackIntegration.apiKey) ||
+          allowMockTenantPayments()
+        ),
     };
 
     return NextResponse.json(response);

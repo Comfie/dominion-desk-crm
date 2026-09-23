@@ -1,4 +1,29 @@
-import { PaymentWithDetails } from '../repositories/payment.repository';
+import { reconciliationService } from '@/lib/features/reconciliation';
+import { getBankingDetails, type BankingDetails } from '@/lib/services/banking-encryption.service';
+import { logger } from '@/lib/shared/logger';
+
+import type { PaymentWithDetails } from '../repositories/payment.repository';
+
+/**
+ * Data an invoice needs that doesn't live on the payment row:
+ * - banking details are stored encrypted per landlord
+ * - the EFT reference lives on the lease (stable every month)
+ */
+export interface InvoiceExtras {
+  banking?: BankingDetails | null;
+  eftReference?: string | null;
+}
+
+/** The lease reference if we have one, else the per-invoice reference. */
+export function resolveEftReference(payment: PaymentWithDetails, extras?: InvoiceExtras): string {
+  if (extras?.eftReference) return extras.eftReference;
+  const propertyId = payment.propertyId ?? payment.property?.id;
+  const leases = payment.tenant?.properties ?? [];
+  const lease =
+    leases.find((pt) => pt.propertyId === propertyId && pt.isActive && pt.paymentReference) ??
+    leases.find((pt) => pt.propertyId === propertyId && pt.paymentReference);
+  return lease?.paymentReference ?? payment.paymentReference;
+}
 
 /**
  * Invoice Service
@@ -8,7 +33,8 @@ export class InvoiceService {
   /**
    * Generate HTML invoice for email
    */
-  generateInvoiceHTML(payment: PaymentWithDetails): string {
+  generateInvoiceHTML(payment: PaymentWithDetails, extras?: InvoiceExtras): string {
+    const eftReference = resolveEftReference(payment, extras);
     const property = payment.property || payment.tenant?.properties?.[0]?.property;
     const tenant = payment.tenant;
     const organization = payment.user;
@@ -18,7 +44,7 @@ export class InvoiceService {
       (pt) => pt.property?.id === property?.id && pt.isActive
     );
     const unitLabel = activeLease?.unitLabel;
-    const bankingDetails = organization as unknown as {
+    const bankingDetails = (extras?.banking ?? null) as {
       bankName?: string;
       bankAccountName?: string;
       bankAccountNumber?: string;
@@ -302,12 +328,19 @@ export class InvoiceService {
       <div class="total-amount">${formatCurrency(Number(payment.amount))}</div>
     </div>
 
+    <!-- EFT reference callout -->
+    <div style="margin: 20px 0; padding: 16px 20px; border: 2px solid #0A2D67; border-radius: 8px; background: #EEF4FF;">
+      <div style="font-size: 13px; color: #33445C;">Pay by EFT using this reference</div>
+      <div style="font-size: 26px; font-weight: 700; letter-spacing: 2px; color: #0A2D67; margin-top: 4px;">${eftReference}</div>
+      <div style="font-size: 12px; color: #33445C; margin-top: 6px;">It stays the same every month. Save it on your beneficiary so your payment is recognised automatically.</div>
+    </div>
+
     <!-- Banking Details -->
     ${
       bankingDetails?.bankName
         ? `
     <div class="banking-details">
-      <h3><� Banking Details for Payment</h3>
+      <h3>Banking details for payment</h3>
       ${
         bankingDetails.bankName
           ? `
@@ -360,7 +393,7 @@ export class InvoiceService {
       }
       <div class="banking-row">
         <span class="banking-label">Payment Reference:</span>
-        <span class="banking-value">${payment.paymentReference}</span>
+        <span class="banking-value"><strong>${eftReference}</strong></span>
       </div>
     </div>
     `
@@ -372,16 +405,16 @@ export class InvoiceService {
       bankingDetails?.paymentInstructions
         ? `
     <div class="payment-instructions">
-      <h4>� Payment Instructions</h4>
+      <h4>Payment instructions</h4>
       <p>${bankingDetails.paymentInstructions}</p>
     </div>
     `
         : `
     <div class="payment-instructions">
-      <h4>� Payment Instructions</h4>
-      <p>" Please use the payment reference <strong>${payment.paymentReference}</strong> when making your payment</p>
-      <p>" Payment is due by <strong>${formatDate(payment.dueDate)}</strong></p>
-      <p>" Please send proof of payment to ${organization?.email || 'the property manager'}</p>
+      <h4>Payment instructions</h4>
+      <p>&bull; Please use the payment reference <strong>${eftReference}</strong> when making your payment</p>
+      <p>&bull; Payment is due by <strong>${formatDate(payment.dueDate)}</strong></p>
+      <p>&bull; Please send proof of payment to ${organization?.email || 'the property manager'}</p>
     </div>
     `
     }
@@ -403,11 +436,12 @@ export class InvoiceService {
   /**
    * Generate plain text invoice for email (fallback)
    */
-  generateInvoiceText(payment: PaymentWithDetails): string {
+  generateInvoiceText(payment: PaymentWithDetails, extras?: InvoiceExtras): string {
+    const eftReference = resolveEftReference(payment, extras);
     const property = payment.property || payment.tenant?.properties?.[0]?.property;
     const tenant = payment.tenant;
     const organization = payment.user;
-    const bankingDetails = organization as unknown as {
+    const bankingDetails = (extras?.banking ?? null) as {
       bankName?: string;
       bankAccountName?: string;
       bankAccountNumber?: string;
@@ -440,16 +474,16 @@ export class InvoiceService {
     };
 
     return `
-PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+===============================================================
                       RENTAL INVOICE
-PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+===============================================================
 
 Invoice #: ${payment.invoiceNumber || payment.paymentReference}
 Status: ${payment.status}
 Issue Date: ${formatDate(payment.createdAt)}
 Due Date: ${formatDate(payment.dueDate)}
 
-                                                               
+---------------------------------------------------------------
 FROM:
 ${organization?.companyName || `${organization?.firstName || ''} ${organization?.lastName || ''}` || 'Property Management'}
 ${organization?.email ? `Email: ${organization.email}` : ''}
@@ -468,36 +502,36 @@ ${property.address || ''}`
     : ''
 }
 
-                                                               
+---------------------------------------------------------------
 DESCRIPTION                                              AMOUNT
-                                                               
+---------------------------------------------------------------
 ${payment.description || 'Monthly Rent'}
                                               ${formatCurrency(Number(payment.amount))}
-                                                               
+---------------------------------------------------------------
 
                           TOTAL AMOUNT DUE: ${formatCurrency(Number(payment.amount))}
 
-                                                               
+---------------------------------------------------------------
 BANKING DETAILS FOR PAYMENT:
-                                                               
+---------------------------------------------------------------
 ${bankingDetails?.bankName ? `Bank Name: ${bankingDetails.bankName}` : ''}
 ${bankingDetails?.bankAccountName ? `Account Name: ${bankingDetails.bankAccountName}` : ''}
 ${bankingDetails?.bankAccountNumber ? `Account Number: ${bankingDetails.bankAccountNumber}` : ''}
 ${bankingDetails?.bankBranchCode ? `Branch Code: ${bankingDetails.bankBranchCode}` : ''}
 ${bankingDetails?.bankSwiftCode ? `SWIFT Code: ${bankingDetails.bankSwiftCode}` : ''}
-Payment Reference: ${payment.paymentReference}
+Payment Reference: ${eftReference} (use this every month)
 
-                                                               
+---------------------------------------------------------------
 PAYMENT INSTRUCTIONS:
-                                                               
+---------------------------------------------------------------
 ${
   bankingDetails?.paymentInstructions ||
-  `" Please use the payment reference ${payment.paymentReference} when making your payment
-" Payment is due by ${formatDate(payment.dueDate)}
-" Please send proof of payment to ${organization?.email || 'the property manager'}`
+  `- Please use the payment reference ${eftReference} when making your payment
+- Payment is due by ${formatDate(payment.dueDate)}
+- Please send proof of payment to ${organization?.email || 'the property manager'}`
 }
 
-                                                               
+---------------------------------------------------------------
 Thank you for your prompt payment!
 
 For any queries regarding this invoice, please contact us at
@@ -505,8 +539,38 @@ ${organization?.email || 'your property manager'}.
 
 This is a computer-generated invoice.
 Generated on ${formatDate(new Date())}
-PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+===============================================================
     `.trim();
+  }
+
+  /**
+   * Build the HTML + text invoice with the landlord's banking details and the
+   * tenant's lease reference. Use this instead of calling the generators directly.
+   */
+  async buildInvoice(payment: PaymentWithDetails): Promise<{ html: string; text: string }> {
+    let banking: BankingDetails | null = null;
+    try {
+      banking = await getBankingDetails(payment.userId);
+    } catch (error) {
+      logger.warn('Invoice built without banking details', { paymentId: payment.id, error });
+    }
+
+    let eftReference: string | null = null;
+    try {
+      eftReference = await reconciliationService.getReferenceForPayment(
+        payment.userId,
+        payment.propertyId,
+        payment.tenantId
+      );
+    } catch (error) {
+      logger.warn('Invoice built without lease reference', { paymentId: payment.id, error });
+    }
+
+    const extras: InvoiceExtras = { banking, eftReference };
+    return {
+      html: this.generateInvoiceHTML(payment, extras),
+      text: this.generateInvoiceText(payment, extras),
+    };
   }
 }
 

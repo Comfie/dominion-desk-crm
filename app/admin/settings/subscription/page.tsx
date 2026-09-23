@@ -5,19 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Settings,
-  Save,
-  RefreshCw,
-  Calendar,
-  Percent,
-  Building2,
-  Clock,
-  DollarSign,
-} from 'lucide-react';
+import { BETA_MODE } from '@/lib/config/beta-scope';
+import { calculateUnitPricing, PRICING, UNITS_TO_CAP } from '@/lib/config/pricing';
+import { Settings, Save, RefreshCw, Calendar, Building2, Clock, DollarSign } from 'lucide-react';
 
 interface SettingItem {
   key: string;
@@ -145,7 +137,6 @@ export default function AdminSubscriptionSettingsPage() {
 
   const getSettingIcon = (key: string) => {
     if (key.includes('trial_days') || key.includes('grace_period')) return Calendar;
-    if (key.includes('percentage')) return Percent;
     if (key.includes('property')) return Building2;
     if (key.includes('fee')) return DollarSign;
     return Settings;
@@ -154,8 +145,9 @@ export default function AdminSubscriptionSettingsPage() {
   const getSettingCategory = (key: string): string => {
     if (key.includes('trial')) return 'trial';
     if (key.startsWith('payment.')) return 'payment';
+    // Legacy percentage-pricing keys: billing now uses lib/config/pricing.ts.
     if (key.includes('fee') || key.includes('percentage') || key.includes('free_property'))
-      return 'pricing';
+      return 'legacy';
     if (key.includes('grace')) return 'access';
     return 'other';
   };
@@ -171,9 +163,12 @@ export default function AdminSubscriptionSettingsPage() {
   }
 
   const trialSettings = settings.filter((s) => getSettingCategory(s.key) === 'trial');
-  const pricingSettings = settings.filter((s) => getSettingCategory(s.key) === 'pricing');
   const accessSettings = settings.filter((s) => getSettingCategory(s.key) === 'access');
-  const paymentSettings = settings.filter((s) => getSettingCategory(s.key) === 'payment');
+  // Card payments are off during beta, so the online transaction fee has no effect.
+  const paymentSettings = BETA_MODE
+    ? []
+    : settings.filter((s) => getSettingCategory(s.key) === 'payment');
+  const pricingExamples = [1, 3, 6, 10, UNITS_TO_CAP, 25].map(calculateUnitPricing);
 
   return (
     <div className="space-y-6">
@@ -181,7 +176,7 @@ export default function AdminSubscriptionSettingsPage() {
         <div>
           <h1 className="text-3xl font-bold">Subscription Settings</h1>
           <p className="text-muted-foreground">
-            Configure global subscription pricing and trial settings
+            Trial length, trial limits and access rules. Pricing is shown below for reference.
           </p>
         </div>
         <div className="flex gap-2">
@@ -207,32 +202,41 @@ export default function AdminSubscriptionSettingsPage() {
               <div className="flex items-center gap-2">
                 <Calendar className="text-primary h-5 w-5" />
                 <div>
-                  <p className="text-muted-foreground text-sm">Trial Period</p>
+                  <p className="text-muted-foreground text-sm">Trial period</p>
                   <p className="font-semibold">{currentValues.trialDays} days</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="text-primary h-5 w-5" />
                 <div>
-                  <p className="text-muted-foreground text-sm">Free Properties</p>
-                  <p className="font-semibold">{currentValues.freePropertyCount}</p>
+                  <p className="text-muted-foreground text-sm">Trial property limit</p>
+                  <p className="font-semibold">{currentValues.trialPropertyLimit} properties</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="text-primary h-5 w-5" />
                 <div>
-                  <p className="text-muted-foreground text-sm">Base Fee</p>
-                  <p className="font-semibold">R{currentValues.baseFee}/month</p>
+                  <p className="text-muted-foreground text-sm">Per occupied unit</p>
+                  <p className="font-semibold">R{PRICING.perUnit}/month</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Percent className="text-primary h-5 w-5" />
+                <DollarSign className="text-primary h-5 w-5" />
                 <div>
-                  <p className="text-muted-foreground text-sm">Additional Properties</p>
-                  <p className="font-semibold">{currentValues.percentageFee}% of rent</p>
+                  <p className="text-muted-foreground text-sm">Minimum / cap</p>
+                  <p className="font-semibold">
+                    R{PRICING.minimumMonthly} / R{PRICING.maximumMonthly}
+                  </p>
                 </div>
               </div>
             </div>
+            {currentValues.trialPropertyLimit < 10 && (
+              <p className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                The trial property limit is {currentValues.trialPropertyLimit}. Landlords with
+                larger portfolios won&apos;t be able to load everything during their trial. The
+                recommended value is 50.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -276,43 +280,51 @@ export default function AdminSubscriptionSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Pricing Settings */}
+      {/* Pricing (read-only) */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Pricing Settings
+            Pricing
           </CardTitle>
-          <CardDescription>Configure subscription pricing and fee structure</CardDescription>
+          <CardDescription>
+            R{PRICING.perUnit} per occupied unit (active lease) per month, minimum R
+            {PRICING.minimumMonthly}, capped at R{PRICING.maximumMonthly}. Vacant units are free.
+            Founding landlords: {PRICING.foundingDiscountPercent}% off for{' '}
+            {PRICING.foundingDiscountMonths} months.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {pricingSettings.map((setting) => {
-            const Icon = getSettingIcon(setting.key);
-            return (
-              <div key={setting.key} className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor={setting.key} className="flex items-center gap-2">
-                    <Icon className="text-muted-foreground h-4 w-4" />
-                    {getSettingLabel(setting.key)}
-                  </Label>
-                  {setting.isDefault && (
-                    <Badge variant="secondary" className="text-xs">
-                      Default
-                    </Badge>
-                  )}
-                </div>
-                <Input
-                  id={setting.key}
-                  type="number"
-                  step={setting.key.includes('percentage') ? '0.1' : '1'}
-                  value={editValues[setting.key] || ''}
-                  onChange={(e) => setEditValues({ ...editValues, [setting.key]: e.target.value })}
-                  className="max-w-[200px]"
-                />
-                <p className="text-muted-foreground text-xs">{setting.description}</p>
-              </div>
-            );
-          })}
+          <div className="overflow-x-auto">
+            <table className="w-full max-w-lg text-sm">
+              <thead>
+                <tr className="text-muted-foreground border-b text-left">
+                  <th className="py-2 font-medium">Occupied units</th>
+                  <th className="py-2 font-medium">Monthly</th>
+                  <th className="py-2 font-medium">Founding price</th>
+                  <th className="py-2 font-medium">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pricingExamples.map((p) => (
+                  <tr key={p.units} className="border-b last:border-0">
+                    <td className="py-2 tabular-nums">{p.units}</td>
+                    <td className="py-2 font-medium tabular-nums">R{p.total}</td>
+                    <td className="py-2 tabular-nums">
+                      R{Math.round(p.total * (1 - PRICING.foundingDiscountPercent / 100))}
+                    </td>
+                    <td className="text-muted-foreground py-2">
+                      {p.minimumApplied ? 'Minimum' : p.capApplied ? 'Capped' : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Pricing is defined in <code>lib/config/pricing.ts</code> so billing, the landing page
+            and this screen can never disagree. Change it there and redeploy.
+          </p>
         </CardContent>
       </Card>
 

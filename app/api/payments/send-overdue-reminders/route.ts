@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { invoiceService } from '@/lib/features/payments/services/invoice.service';
 import { sendEmail } from '@/lib/email';
@@ -88,8 +89,7 @@ export async function POST(request: NextRequest) {
         );
 
         // Generate invoice HTML with overdue notice
-        const invoiceHTML = invoiceService.generateInvoiceHTML(payment);
-        const invoiceText = invoiceService.generateInvoiceText(payment);
+        const { html: invoiceHTML, text: invoiceText } = await invoiceService.buildInvoice(payment);
 
         // Add overdue notice to the HTML
         const overdueNotice = `

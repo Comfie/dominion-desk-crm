@@ -11,7 +11,6 @@ import {
   CreditCard,
   Landmark,
   Calendar,
-  Shield,
   Loader2,
   CheckCircle2,
   Copy,
@@ -36,6 +35,7 @@ interface PaymentDetails {
   status: string;
   description: string | null;
   paymentReference: string;
+  eftReference: string;
   transactionFeePercentage: number;
   property: {
     id: string;
@@ -62,7 +62,7 @@ export default function PaymentCheckoutPage() {
   const { toast } = useToast();
   const paymentId = params.id as string;
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('eft');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const {
@@ -270,7 +270,7 @@ export default function PaymentCheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Reference</span>
-                    <span className="font-mono text-xs">{payment.paymentReference}</span>
+                    <span className="font-mono text-xs">{payment.eftReference}</span>
                   </div>
                   {payment.dueDate && (
                     <div className="flex justify-between">
@@ -326,47 +326,7 @@ export default function PaymentCheckoutPage() {
                     <CardDescription>Choose how you&apos;d like to pay</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Card Payment Option */}
-                    <div
-                      className="border-border bg-muted/40 cursor-not-allowed rounded-lg border-2 p-4 opacity-60 transition-all"
-                      aria-disabled="true"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`rounded-full p-3 ${
-                            selectedMethod === 'card'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          <CreditCard className="h-6 w-6" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold">Pay Online</h3>
-                            <Badge variant="secondary">Coming soon</Badge>
-                          </div>
-                          <p className="text-muted-foreground text-sm">
-                            Online card payments are not available yet.
-                          </p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Shield className="text-muted-foreground h-4 w-4" />
-                            <span className="text-muted-foreground text-xs">
-                              Use EFT for now and upload proof of payment.
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <div className="flex h-5 w-8 items-center justify-center rounded bg-blue-600 text-xs font-bold text-white">
-                            VISA
-                          </div>
-                          <div className="flex h-5 w-8 items-center justify-center rounded bg-red-500 text-xs font-bold text-white">
-                            MC
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
+                    {/* Online card payments return once a payment gateway is live. */}
                     {/* EFT Payment Option */}
                     <div
                       className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
@@ -494,13 +454,13 @@ export default function PaymentCheckoutPage() {
                           <span className="text-muted-foreground">Reference</span>
                           <div className="flex items-center gap-2">
                             <span className="text-primary font-mono font-medium">
-                              {payment.paymentReference}
+                              {payment.eftReference}
                             </span>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() => copyToClipboard(payment.paymentReference, 'Reference')}
+                              onClick={() => copyToClipboard(payment.eftReference, 'Reference')}
                             >
                               {copiedField === 'Reference' ? (
                                 <CheckCircle2 className="h-3 w-3 text-green-600" />
@@ -545,8 +505,16 @@ export default function PaymentCheckoutPage() {
                         </div>
                       )}
 
+                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                        <p className="font-medium">Always use reference {payment.eftReference}</p>
+                        <p className="mt-1 text-blue-800 dark:text-blue-200">
+                          It&apos;s the same every month, so save it as your beneficiary reference.
+                          Your landlord&apos;s system uses it to confirm your payment automatically.
+                        </p>
+                      </div>
+
                       <div className="text-muted-foreground text-sm">
-                        After making your payment, please{' '}
+                        After making your payment, you can also{' '}
                         <Link href={`/portal/payments`} className="text-primary hover:underline">
                           upload your proof of payment
                         </Link>{' '}
@@ -603,7 +571,7 @@ export default function PaymentCheckoutPage() {
         <div className="mx-auto max-w-4xl px-4 text-center">
           <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
             <Landmark className="h-4 w-4" />
-            <span>EFT payments are available now. Online payments are coming soon.</span>
+            <span>Pay by EFT using your personal reference.</span>
           </div>
         </div>
       </footer>

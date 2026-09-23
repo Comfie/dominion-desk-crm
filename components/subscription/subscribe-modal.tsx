@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Check, CreditCard, Loader2, AlertTriangle } from 'lucide-react';
 
 import {
@@ -32,7 +32,6 @@ interface SubscribeModalProps {
 }
 
 export function SubscribeModal({ open, onOpenChange, currentBilling }: SubscribeModalProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [isInitiating, setIsInitiating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,19 +125,18 @@ export function SubscribeModal({ open, onOpenChange, currentBilling }: Subscribe
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Base subscription</span>
-                <span className="font-medium">{formatCurrency(currentBilling.baseFee)}</span>
+                <span className="text-muted-foreground">
+                  Occupied units ({currentBilling.chargeablePropertyCount} × R99)
+                </span>
+                <span className="font-medium">
+                  {formatCurrency(currentBilling.totalPropertyFees)}
+                </span>
               </div>
 
-              {currentBilling.activePropertyCount > currentBilling.freePropertyCount && (
+              {currentBilling.baseFee > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Property fees ({currentBilling.chargeablePropertyCount}{' '}
-                    {currentBilling.chargeablePropertyCount === 1 ? 'property' : 'properties'})
-                  </span>
-                  <span className="font-medium">
-                    {formatCurrency(currentBilling.totalPropertyFees)}
-                  </span>
+                  <span className="text-muted-foreground">Top-up to R299 minimum</span>
+                  <span className="font-medium">{formatCurrency(currentBilling.baseFee)}</span>
                 </div>
               )}
 

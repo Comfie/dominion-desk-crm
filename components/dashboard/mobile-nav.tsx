@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Building2, Calendar, DollarSign, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, DollarSign, MoreHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -22,13 +22,13 @@ const mobileNavItems = [
     icon: Building2,
   },
   {
-    name: 'Bookings',
-    href: '/bookings',
-    icon: Calendar,
+    name: 'Tenants',
+    href: '/tenants',
+    icon: Users,
   },
   {
-    name: 'Financials',
-    href: '/financials/income',
+    name: 'Rent',
+    href: '/financials/rent-collection',
     icon: DollarSign,
   },
 ];

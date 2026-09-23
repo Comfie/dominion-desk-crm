@@ -7,11 +7,13 @@ import {
 } from './navigation';
 
 function sectionNamesFor(accountType: string) {
-  return getDashboardNavigationSections(accountType).map((section) => section.title);
+  return getDashboardNavigationSections(accountType, { betaMode: false }).map(
+    (section) => section.title
+  );
 }
 
 function itemNamesFor(accountType: string) {
-  return getDashboardNavigationSections(accountType).flatMap((section) =>
+  return getDashboardNavigationSections(accountType, { betaMode: false }).flatMap((section) =>
     section.items.map((item) => item.name)
   );
 }
@@ -36,7 +38,7 @@ describe('dashboard navigation sections', () => {
   });
 
   it('only marks the matching placement item active', () => {
-    const placementSection = getDashboardNavigationSections('AGENCY').find(
+    const placementSection = getDashboardNavigationSections('AGENCY', { betaMode: false }).find(
       (section) => section.title === 'Placement'
     );
 
@@ -52,7 +54,7 @@ describe('dashboard navigation sections', () => {
   });
 
   it('keeps the placement pipeline active only on the placement root', () => {
-    const placementSection = getDashboardNavigationSections('AGENCY').find(
+    const placementSection = getDashboardNavigationSections('AGENCY', { betaMode: false }).find(
       (section) => section.title === 'Placement'
     );
     const pipelineItem = placementSection!.items.find((item) => item.name === 'Placement Pipeline');
@@ -64,7 +66,7 @@ describe('dashboard navigation sections', () => {
   });
 
   it('marks only the most specific child active for nested navigation', () => {
-    const communications = getDashboardNavigationSections('AGENCY').find(
+    const communications = getDashboardNavigationSections('AGENCY', { betaMode: false }).find(
       (section) => section.title === 'Communications'
     );
     const children = communications!.items[0]!.children!;
@@ -74,5 +76,17 @@ describe('dashboard navigation sections', () => {
       .map((child) => child.name);
 
     expect(activeChildren).toEqual(['Automations']);
+  });
+
+  it('hides unfinished modules in beta mode', () => {
+    const names = getDashboardNavigationSections('AGENCY', { betaMode: true }).flatMap((section) =>
+      section.items.flatMap((item) => [item.name, ...(item.children ?? []).map((c) => c.name)])
+    );
+
+    expect(names).not.toContain('Bookings');
+    expect(names).not.toContain('Placement Pipeline');
+    expect(names).toEqual(
+      expect.arrayContaining(['Properties', 'Tenants', 'Rent Collection', 'Bank Reconciliation'])
+    );
   });
 });
