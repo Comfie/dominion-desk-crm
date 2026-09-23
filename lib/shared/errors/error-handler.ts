@@ -35,6 +35,12 @@ interface ErrorResponse {
  * ```
  */
 export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
+  // Auth helpers (requireAuth, requireCustomer, ...) throw a ready-made
+  // NextResponse (401/403). Return it as-is instead of turning it into a 500.
+  if (error instanceof NextResponse) {
+    return error as NextResponse<ErrorResponse>;
+  }
+
   // Known application errors
   if (error instanceof AppError) {
     logger.warn(`Application error: ${error.message}`, {
