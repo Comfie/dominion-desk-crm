@@ -1,3 +1,4 @@
+import { calculateUnitPricing, PRICING, UNITS_TO_CAP } from '@/lib/config/pricing';
 import { prisma } from '@/lib/db';
 import { emailTemplates, sendEmail } from '@/lib/email';
 
@@ -202,96 +203,52 @@ export function calculatePropertyFee(
 }
 
 /**
- * Calculate complete subscription billing for a user
+ * Calculate complete subscription billing for a user.
+ *
+ * Pricing lives in lib/config/pricing.ts: R99 per occupied unit (active lease),
+ * minimum R299, capped at R999. `baseFee` carries any top-up to the minimum so
+ * that baseFee + totalPropertyFees === totalMonthlyFee for existing UIs.
  */
 export async function calculateSubscriptionBilling(
   userId: string
 ): Promise<SubscriptionCalculation> {
-  // Get user's subscription settings
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      baseSubscriptionFee: true,
-      percentageFee: true,
-      minPropertyFee: true,
-      maxPropertyFee: true,
-      freePropertyCount: true,
-    },
-  });
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  const baseFee = Number(user.baseSubscriptionFee);
-  const freeCount = user.freePropertyCount;
-
-  // Get all active property-tenant relationships with rent
   const activeLeases = await prisma.propertyTenant.findMany({
-    where: {
-      userId,
-      isActive: true,
-    },
+    where: { userId, isActive: true },
     include: {
-      property: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      tenant: {
-        select: {
-          firstName: true,
-          lastName: true,
-        },
-      },
+      property: { select: { id: true, name: true } },
+      tenant: { select: { firstName: true, lastName: true } },
     },
-    orderBy: {
-      createdAt: 'asc', // Oldest first so we know which are "free"
-    },
+    orderBy: { createdAt: 'asc' },
   });
 
-  const breakdown: PropertyBillingItem[] = [];
-  let totalPropertyFees = 0;
+  const pricing = calculateUnitPricing(activeLeases.length);
+  const totalPropertyFees = Math.min(pricing.subtotal, PRICING.maximumMonthly);
+  const baseFee = pricing.total - totalPropertyFees; // minimum top-up, else 0
 
-  activeLeases.forEach((lease, index) => {
-    const isFreeProperty = index < freeCount;
-    const monthlyRent = Number(lease.monthlyRent);
-
-    let calculatedFee = 0;
-    let actualFee = 0;
-
-    if (!isFreeProperty) {
-      const fees = calculatePropertyFee(
-        monthlyRent,
-        Number(user.percentageFee),
-        Number(user.minPropertyFee),
-        Number(user.maxPropertyFee)
-      );
-      calculatedFee = fees.calculated;
-      actualFee = fees.actual;
-      totalPropertyFees += actualFee;
-    }
-
-    breakdown.push({
-      leaseId: lease.id,
-      propertyId: lease.property.id,
-      propertyName: lease.property.name,
-      tenantName: `${lease.tenant.firstName} ${lease.tenant.lastName}`,
-      monthlyRent,
-      calculatedFee,
-      actualFee,
-      isFreeProperty,
-    });
-  });
+  const breakdown: PropertyBillingItem[] = activeLeases.map((lease, index) => ({
+    leaseId: lease.id,
+    propertyId: lease.property.id,
+    propertyName: lease.unitLabel
+      ? `${lease.property.name} (${lease.unitLabel})`
+      : lease.property.name,
+    tenantName: `${lease.tenant.firstName} ${lease.tenant.lastName}`,
+    monthlyRent: Number(lease.monthlyRent),
+    calculatedFee: PRICING.perUnit,
+    // Units beyond the cap cost nothing.
+    actualFee:
+      index < UNITS_TO_CAP
+        ? Math.min(PRICING.perUnit, totalPropertyFees - index * PRICING.perUnit)
+        : 0,
+    isFreeProperty: index >= UNITS_TO_CAP,
+  }));
 
   return {
     baseFee,
     totalPropertyFees,
-    totalMonthlyFee: baseFee + totalPropertyFees,
+    totalMonthlyFee: pricing.total,
     activePropertyCount: activeLeases.length,
-    freePropertyCount: Math.min(freeCount, activeLeases.length),
-    chargeablePropertyCount: Math.max(0, activeLeases.length - freeCount),
+    freePropertyCount: Math.max(0, activeLeases.length - UNITS_TO_CAP),
+    chargeablePropertyCount: Math.min(activeLeases.length, UNITS_TO_CAP),
     breakdown,
   };
 }

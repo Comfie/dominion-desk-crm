@@ -6,13 +6,17 @@ import { prisma } from '@/lib/db';
 const DEFAULT_SETTINGS = {
   // Trial settings
   'subscription.trial_days': { value: '60', description: 'Number of days for free trial' },
-  'subscription.trial_property_limit': { value: '2', description: 'Max properties during trial' },
+  // Beta: landlords must be able to load their WHOLE portfolio during the trial,
+  // otherwise they can't judge the product. Pricing is enforced at subscription.
+  'subscription.trial_property_limit': { value: '50', description: 'Max properties during trial' },
 
   // Pricing settings
+  // NOTE: live pricing is R99/occupied unit, min R299, cap R999 (lib/config/pricing.ts).
+  // The legacy keys below are kept for the admin screen and old invoices only.
   'subscription.base_fee': { value: '299', description: 'Base monthly subscription fee (R)' },
   'subscription.percentage_fee': {
     value: '4',
-    description: 'Percentage of rent for properties 3+',
+    description: 'Legacy: percentage of rent (no longer used for billing)',
   },
   'subscription.min_property_fee': { value: '99', description: 'Minimum fee per property (R)' },
   'subscription.max_property_fee': { value: '999', description: 'Maximum fee per property (R)' },

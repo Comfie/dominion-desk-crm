@@ -299,24 +299,26 @@ export default function SubscriptionPage() {
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-600" />
                 <span>
-                  <strong>R299/month</strong> base subscription
+                  <strong>R99 per occupied unit</strong> per month. Vacant units are free
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-600" />
                 <span>
-                  <strong>First 2 properties</strong> included free
+                  <strong>Minimum R299/month</strong> covers up to 3 units
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-600" />
                 <span>
-                  <strong>4% of monthly rent</strong> for each additional active property
+                  <strong>Capped at R999/month</strong> from 11 units up, however many you add
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-600" />
-                <span>Per-property fees: min R99, max R999</span>
+                <span>
+                  <strong>Never a percentage of your rent</strong> and no transaction fees
+                </span>
               </li>
             </ul>
           </div>
@@ -331,23 +333,23 @@ export default function SubscriptionPage() {
             Current Billing Estimate
           </CardTitle>
           <CardDescription>
-            Based on {billing?.activePropertyCount || 0} active properties with tenants
+            Based on {billing?.activePropertyCount || 0} occupied units (active leases)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Summary */}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border p-4 text-center">
-              <p className="text-muted-foreground text-sm">Base Fee</p>
-              <p className="text-2xl font-bold">{formatCurrency(billing?.baseFee || 299)}</p>
+              <p className="text-muted-foreground text-sm">Minimum top-up</p>
+              <p className="text-2xl font-bold">{formatCurrency(billing?.baseFee ?? 0)}</p>
             </div>
             <div className="rounded-lg border p-4 text-center">
-              <p className="text-muted-foreground text-sm">Property Fees</p>
+              <p className="text-muted-foreground text-sm">Unit fees (R99 each)</p>
               <p className="text-2xl font-bold">
                 {formatCurrency(billing?.totalPropertyFees || 0)}
               </p>
               <p className="text-muted-foreground text-xs">
-                {billing?.chargeablePropertyCount || 0} chargeable properties
+                {billing?.chargeablePropertyCount || 0} chargeable units
               </p>
             </div>
             <div className="bg-primary/5 rounded-lg border p-4 text-center">
@@ -363,7 +365,7 @@ export default function SubscriptionPage() {
             <div className="space-y-2">
               <h4 className="flex items-center gap-2 font-medium">
                 <Users className="h-4 w-4" />
-                Active Properties Breakdown
+                Occupied units
               </h4>
               <Table>
                 <TableHeader>
@@ -371,7 +373,7 @@ export default function SubscriptionPage() {
                     <TableHead>Property</TableHead>
                     <TableHead>Tenant</TableHead>
                     <TableHead className="text-right">Monthly Rent</TableHead>
-                    <TableHead className="text-right">Fee (4%)</TableHead>
+                    <TableHead className="text-right">List fee</TableHead>
                     <TableHead className="text-right">Actual Fee</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -382,7 +384,7 @@ export default function SubscriptionPage() {
                         {item.propertyName}
                         {item.isFreeProperty && (
                           <Badge variant="secondary" className="ml-2 text-xs">
-                            Free
+                            Over cap: free
                           </Badge>
                         )}
                       </TableCell>
