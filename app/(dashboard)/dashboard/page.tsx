@@ -1,5 +1,7 @@
 'use client';
 
+import { BETA_MODE } from '@/lib/config/beta-scope';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -148,6 +150,8 @@ function getRevenueDirection(change: number) {
 }
 
 export default function DashboardPage() {
+  // Captured once per mount so render stays pure (react-hooks/purity).
+  const [nowMs] = useState(() => Date.now());
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: async () => {
@@ -220,7 +224,7 @@ export default function DashboardPage() {
     {
       label: 'Inquiries',
       value: stats?.pendingInquiries || 0,
-      hint: `${stats?.activeBookings || 0} active bookings`,
+      hint: BETA_MODE ? 'Awaiting response' : `${stats?.activeBookings || 0} active bookings`,
       icon: MessageSquare,
       iconClassName: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
     },
@@ -485,7 +489,7 @@ export default function DashboardPage() {
                           const isOverdue = payment.status === 'OVERDUE';
                           const daysOverdue = payment.dueDate
                             ? Math.floor(
-                                (Date.now() - new Date(payment.dueDate).getTime()) /
+                                (nowMs - new Date(payment.dueDate).getTime()) /
                                   (1000 * 60 * 60 * 24)
                               )
                             : 0;
@@ -893,65 +897,81 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card variant="elevated">
-              <CardHeader className="flex flex-row items-center justify-between p-5">
-                <div>
-                  <CardTitle className="text-base">Recent bookings</CardTitle>
+            {BETA_MODE ? (
+              <Card variant="elevated">
+                <CardHeader className="p-5">
+                  <CardTitle className="text-base">Who has paid this month?</CardTitle>
                   <CardDescription className="text-xs">
-                    Available as a separate activity stream so it does not dominate the landing
-                    view.
+                    Upload your bank statement CSV and match deposits to rent in seconds.
                   </CardDescription>
-                </div>
-                <Link href="/bookings">
-                  <Button variant="ghost" size="sm">
-                    View all
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  <Button asChild className="w-full">
+                    <Link href="/financials/reconciliation">Reconcile bank statement</Link>
                   </Button>
-                </Link>
-              </CardHeader>
-              <CardContent className="px-5 pt-0 pb-5">
-                {data?.recentBookings && data.recentBookings.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.recentBookings.slice(0, 4).map((booking) => (
-                      <Link key={booking.id} href={`/bookings/${booking.id}`}>
-                        <div className="hover:bg-muted/40 flex items-start justify-between rounded-xl border p-3 transition-all hover:shadow-sm">
-                          <div>
-                            <p className="text-sm font-medium">{booking.property.name}</p>
-                            <p className="text-muted-foreground text-xs">
-                              {formatDate(booking.checkInDate)} to{' '}
-                              {formatDate(booking.checkOutDate)}
-                            </p>
-                            <p className="text-muted-foreground mt-2 text-xs">
-                              Guest: {booking.guestName}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <Badge
-                              variant={
-                                booking.status === 'CONFIRMED'
-                                  ? 'default'
-                                  : booking.status === 'CHECKED_IN'
-                                    ? 'secondary'
-                                    : 'outline'
-                              }
-                            >
-                              {booking.status}
-                            </Badge>
-                            <p className="mt-2 text-xs font-semibold">
-                              {formatCurrency(parseFloat(booking.totalAmount))}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card variant="elevated">
+                <CardHeader className="flex flex-row items-center justify-between p-5">
+                  <div>
+                    <CardTitle className="text-base">Recent bookings</CardTitle>
+                    <CardDescription className="text-xs">
+                      Available as a separate activity stream so it does not dominate the landing
+                      view.
+                    </CardDescription>
                   </div>
-                ) : (
-                  <div className="text-muted-foreground flex h-56 flex-col items-center justify-center text-center">
-                    <Calendar className="mb-3 h-8 w-8 opacity-30" />
-                    <p>No recent bookings</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  <Link href="/bookings">
+                    <Button variant="ghost" size="sm">
+                      View all
+                    </Button>
+                  </Link>
+                </CardHeader>
+                <CardContent className="px-5 pt-0 pb-5">
+                  {data?.recentBookings && data.recentBookings.length > 0 ? (
+                    <div className="space-y-3">
+                      {data.recentBookings.slice(0, 4).map((booking) => (
+                        <Link key={booking.id} href={`/bookings/${booking.id}`}>
+                          <div className="hover:bg-muted/40 flex items-start justify-between rounded-xl border p-3 transition-all hover:shadow-sm">
+                            <div>
+                              <p className="text-sm font-medium">{booking.property.name}</p>
+                              <p className="text-muted-foreground text-xs">
+                                {formatDate(booking.checkInDate)} to{' '}
+                                {formatDate(booking.checkOutDate)}
+                              </p>
+                              <p className="text-muted-foreground mt-2 text-xs">
+                                Guest: {booking.guestName}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <Badge
+                                variant={
+                                  booking.status === 'CONFIRMED'
+                                    ? 'default'
+                                    : booking.status === 'CHECKED_IN'
+                                      ? 'secondary'
+                                      : 'outline'
+                                }
+                              >
+                                {booking.status}
+                              </Badge>
+                              <p className="mt-2 text-xs font-semibold">
+                                {formatCurrency(parseFloat(booking.totalAmount))}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground flex h-56 flex-col items-center justify-center text-center">
+                      <Calendar className="mb-3 h-8 w-8 opacity-30" />
+                      <p>No recent bookings</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 

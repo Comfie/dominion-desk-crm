@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { canAccessPlacementFeatures } from '@/lib/account-capabilities';
+import { BETA_MODE, isPageHiddenInBeta } from '@/lib/config/beta-scope';
 
 export interface NavItem {
   name: string;
@@ -131,6 +132,7 @@ const baseNavigationSections: NavSection[] = [
         icon: DollarSign,
         children: [
           { name: 'Rent Collection', href: '/financials/rent-collection' },
+          { name: 'Bank Reconciliation', href: '/financials/reconciliation' },
           { name: 'Income & Payments', href: '/financials/income' },
           { name: 'Expenses', href: '/financials/expenses' },
         ],
@@ -203,11 +205,30 @@ const placementSection: NavSection = {
 };
 
 export function getDashboardNavigationSections(
-  accountType: string | null | undefined
+  accountType: string | null | undefined,
+  options: { betaMode?: boolean } = {}
 ): NavSection[] {
-  if (!canAccessPlacementFeatures(accountType)) {
-    return baseNavigationSections;
-  }
+  const betaMode = options.betaMode ?? BETA_MODE;
+  const sections = canAccessPlacementFeatures(accountType)
+    ? [baseNavigationSections[0], placementSection, ...baseNavigationSections.slice(1)]
+    : baseNavigationSections;
 
-  return [baseNavigationSections[0], placementSection, ...baseNavigationSections.slice(1)];
+  if (!betaMode) return sections;
+
+  // Beta: drop anything that isn't production-ready (see lib/config/beta-scope).
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items
+        .filter((item) => !item.href || !isPageHiddenInBeta(item.href, true))
+        .map((item) =>
+          item.children
+            ? {
+                ...item,
+                children: item.children.filter((c) => !isPageHiddenInBeta(c.href, true)),
+              }
+            : item
+        ),
+    }))
+    .filter((section) => section.items.length > 0);
 }

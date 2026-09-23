@@ -1,6 +1,8 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
+import { isPageHiddenInBeta } from '@/lib/config/beta-scope';
+
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
@@ -18,8 +20,15 @@ export default withAuth(
     }
 
     // Skip middleware for API routes - they handle their own authorization
+    // (and beta gating via betaApiGuard, since the matcher excludes /api).
     if (pathname.startsWith('/api')) {
       return NextResponse.next();
+    }
+
+    // Beta scope: unfinished modules redirect to a safe home
+    if (isPageHiddenInBeta(pathname)) {
+      const home = role === 'TENANT' ? '/portal/payments' : '/dashboard';
+      return NextResponse.redirect(new URL(home, req.url));
     }
 
     // Force password change if required (except on the change-password page itself)
