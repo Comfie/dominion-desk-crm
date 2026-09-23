@@ -170,6 +170,10 @@ describe('calculateSubscriptionBilling', () => {
   });
 
   it('returns billing and expiry dates in subscription status', async () => {
+    // Freeze time before the billing date; otherwise the overdue-billing
+    // branch runs once the real clock passes 2026-07-01.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-20T12:00:00.000Z'));
     const subscriptionEndsAt = new Date('2026-07-15T12:00:00.000Z');
     const nextBillingDate = new Date('2026-07-01T12:00:00.000Z');
 
@@ -191,13 +195,6 @@ describe('calculateSubscriptionBilling', () => {
         payfastSubscription: {
           nextBillingDate,
         },
-      } as never)
-      .mockResolvedValueOnce({
-        baseSubscriptionFee: 299,
-        percentageFee: 4,
-        minPropertyFee: 99,
-        maxPropertyFee: 999,
-        freePropertyCount: 2,
       } as never);
     vi.mocked(prisma.propertyTenant.findMany).mockResolvedValue([] as never);
 
@@ -205,5 +202,8 @@ describe('calculateSubscriptionBilling', () => {
 
     expect(status.subscriptionEndsAt).toBe(subscriptionEndsAt);
     expect(status.nextBillingDate).toBe(nextBillingDate);
+    // Flat per-unit pricing: no occupied units still means the R299 minimum.
+    expect(status.currentBilling.totalMonthlyFee).toBe(299);
+    vi.useRealTimers();
   });
 });
