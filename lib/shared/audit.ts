@@ -1,4 +1,4 @@
-import { Session } from 'next-auth';
+import type { Session } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/shared/logger';
 
@@ -32,7 +32,9 @@ export type AuditEntity =
   | 'integration'
   | 'team_member'
   | 'user'
-  | 'settings';
+  | 'settings'
+  | 'bank_statement'
+  | 'bank_transaction';
 
 /**
  * Log an audit trail entry

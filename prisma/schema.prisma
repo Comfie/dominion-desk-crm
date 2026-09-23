@@ -104,6 +104,8 @@ model User {
   payfastSubscription     PayFastSubscription?
   billingInvoices         BillingInvoice[]
   payfastTransactions     PayFastTransaction[]
+  bankStatementImports    BankStatementImport[]
+  bankTransactions        BankTransaction[]
 }
 
 // ============== PASSWORD RESET ==============
@@ -651,6 +653,10 @@ model PropertyTenant {
   leaseDocumentUrl String?
   unitLabel        String? // Optional label for multi-tenant properties (e.g., "Room A", "Unit 3")
 
+  // Stable EFT reference the tenant uses every month (e.g. "DD-7K3M9Q").
+  // Used by bank statement reconciliation to auto-match deposits.
+  paymentReference String?
+
   // Status
   isActive    Boolean   @default(true)
   moveInDate  DateTime?
@@ -661,6 +667,7 @@ model PropertyTenant {
   updatedAt DateTime @updatedAt
 
   @@unique([propertyId, tenantId, unitLabel])
+  @@unique([userId, paymentReference])
   @@index([userId])
   @@index([propertyId, isActive])
 }
@@ -1055,6 +1062,9 @@ model Payment {
   verifiedAt         DateTime? // When landlord verified
   verifiedBy         String? // Landlord ID who verified
   verificationNotes  String?   @db.Text // Landlord notes on verification
+
+  // Bank statement lines reconciled against this payment
+  bankTransactions BankTransaction[]
 
   // Metadata
   createdAt DateTime @default(now())
@@ -2167,4 +2177,73 @@ model PayFastTransaction {
   @@index([userId])
   @@index([merchantReference])
   @@index([payfastPaymentId])
+}
+
+// ============== BANK RECONCILIATION ==============
+// Landlords upload a bank statement CSV; each credit line is matched to an
+// open rent Payment using the lease payment reference, amount and tenant name.
+// Non-custodial: DominionDesk never touches the money, it only reads statements.
+
+model BankStatementImport {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fileName    String
+  bankFormat  String // Detected column layout, e.g. "single-amount" or "credit-debit"
+  periodStart DateTime?
+  periodEnd   DateTime?
+  totalRows   Int       @default(0)
+  creditRows  Int       @default(0)
+  newRows     Int       @default(0) // Rows not seen in a previous import
+  autoMatched Int       @default(0)
+  importedBy  String
+
+  createdAt DateTime @default(now())
+
+  transactions BankTransaction[]
+
+  @@index([userId, createdAt])
+}
+
+enum BankTransactionStatus {
+  UNMATCHED // No confident candidate found
+  SUGGESTED // Candidate found, waiting for landlord confirmation
+  MATCHED // Landlord confirmed; linked payment updated
+  IGNORED // Not rent (e.g. interest, transfers between own accounts)
+}
+
+model BankTransaction {
+  id       String              @id @default(cuid())
+  userId   String
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  importId String
+  import   BankStatementImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  transactionDate DateTime
+  description     String
+  amount          Decimal  @db.Decimal(12, 2) // Credits only (positive)
+  balance         Decimal? @db.Decimal(14, 2)
+
+  // Dedupe key: hash of date + amount + description + balance + occurrence
+  fingerprint String
+
+  status BankTransactionStatus @default(UNMATCHED)
+
+  // Suggested or confirmed match
+  paymentId       String?
+  payment         Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  matchConfidence Int? // 0-100
+  matchReasons    Json? // string[] explaining the score, shown to the landlord
+
+  matchedAt DateTime?
+  matchedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, fingerprint])
+  @@index([userId, status])
+  @@index([paymentId])
+  @@index([importId])
 }
