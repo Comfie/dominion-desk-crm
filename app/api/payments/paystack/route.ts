@@ -1,10 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { betaApiGuard } from '@/lib/config/beta-scope';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 // POST - Initialize Paystack payment
 export async function POST(request: NextRequest) {
+  const blocked = betaApiGuard(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -85,6 +90,9 @@ export async function POST(request: NextRequest) {
 
 // GET - Verify Paystack payment
 export async function GET(request: NextRequest) {
+  const blocked = betaApiGuard(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

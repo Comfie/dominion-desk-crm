@@ -1,66 +1,41 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { LandingPageClient } from './LandingPageClient';
 
-describe('LandingPageClient product page', () => {
-  it('renders the product positioning and main CTAs', () => {
+describe('LandingPageClient', () => {
+  it('leads with the bank statement promise and a free-start CTA', () => {
     render(<LandingPageClient />);
-
     expect(
-      screen.getByRole('heading', {
-        name: /run rentals from one operating cockpit/i,
-      })
+      screen.getByRole('heading', { level: 1, name: /upload your bank statement/i })
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /start free/i })[0]).toHaveAttribute(
-      'href',
-      '/register'
-    );
-    expect(screen.getAllByRole('link', { name: /see product walkthrough/i })[0]).toHaveAttribute(
-      'href',
-      '/demo'
-    );
+    expect(screen.getAllByRole('link', { name: /start/i })[0]).toHaveAttribute('href', '/register');
   });
 
-  it('renders the three audience paths and lifecycle rail', () => {
+  it('resolves the statement demo into a rent roll when matched', () => {
     render(<LandingPageClient />);
-
-    expect(screen.getByText('Private landlords')).toBeInTheDocument();
-    expect(screen.getByText('Property companies')).toBeInTheDocument();
-    expect(screen.getByText('Rental agents')).toBeInTheDocument();
-    expect(screen.getByText('Mandate')).toBeInTheDocument();
-    expect(screen.getAllByText('Reports').length).toBeGreaterThan(0);
+    expect(screen.getByText('Waiting for statement')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Match statement' }));
+    expect(screen.getByText('Not paid')).toBeInTheDocument();
+    expect(screen.getByText(/^R .+ outstanding$/)).toBeInTheDocument();
   });
 
-  it('renders the placement, management, tenant portal, and financial suites', () => {
+  it('prices per occupied unit with a minimum and a cap', () => {
     render(<LandingPageClient />);
-
-    expect(screen.getByText('From landlord mandate to tenant handoff')).toBeInTheDocument();
-    expect(screen.getByText('Manage the property and the relationship')).toBeInTheDocument();
-    expect(screen.getByText('Give every tenant a portal after handoff')).toBeInTheDocument();
-    expect(
-      screen.getByText('Know what is paid, overdue, profitable, and export-ready')
-    ).toBeInTheDocument();
+    const slider = screen.getByLabelText(/units have a tenant/i);
+    fireEvent.change(slider, { target: { value: '2' } });
+    expect(screen.getByTestId('calculated-price')).toHaveTextContent('R299');
+    fireEvent.change(slider, { target: { value: '6' } });
+    expect(screen.getByTestId('calculated-price')).toHaveTextContent('R594');
+    fireEvent.change(slider, { target: { value: '25' } });
+    expect(screen.getByTestId('calculated-price')).toHaveTextContent('R999');
   });
 
-  it('does not render unsupported production integration claims', () => {
-    render(<LandingPageClient />);
-
-    expect(screen.queryByText(/live Airbnb sync/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/live Paystack payments/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/guaranteed on-time payments/i)).not.toBeInTheDocument();
-  });
-
-  it('does not render stale screenshot paths from old mockups', () => {
+  it('is honest about what is not built and makes no invented claims', () => {
     const { container } = render(<LandingPageClient />);
-
-    expect(container.innerHTML).not.toContain('/mockups/');
-  });
-
-  it('keeps the hero background treatment in the DominionDesk blue palette', () => {
-    const { container } = render(<LandingPageClient />);
-
-    expect(container.innerHTML).toContain('rgba(59,130,246,0.18)');
-    expect(container.innerHTML).not.toContain('rgba(225,181,106');
+    expect(screen.getByRole('heading', { name: 'Not built yet' })).toBeInTheDocument();
+    const text = container.textContent ?? '';
+    expect(text).not.toMatch(/500\+|R4\.2M|98%|13 hours/);
+    expect(text).not.toMatch(/4% of/);
   });
 });

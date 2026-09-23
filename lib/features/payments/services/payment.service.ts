@@ -1,4 +1,6 @@
-import { PaymentStatus, PaymentMethod } from '@prisma/client';
+import { reconciliationService } from '@/lib/features/reconciliation';
+import type { PaymentMethod } from '@prisma/client';
+import { PaymentStatus } from '@prisma/client';
 import { paymentRepository } from '@/lib/features/payments/repositories/payment.repository';
 import { bookingRepository } from '@/lib/features/bookings/repositories/booking.repository';
 import { invoiceService } from './invoice.service';
@@ -313,6 +315,8 @@ export class PaymentService {
       year: targetYear,
     });
 
+    // Every lease needs its EFT reference before invoices go out.
+    await reconciliationService.ensureLeaseReferences(userId);
     const result = await paymentRepository.generateMonthlyPayments(userId, targetMonth, targetYear);
 
     logger.info('Monthly payments generated', {
@@ -330,7 +334,7 @@ export class PaymentService {
    */
   async getInvoiceHTML(paymentId: string, userId: string) {
     const payment = await this.getById(paymentId, userId);
-    return invoiceService.generateInvoiceHTML(payment);
+    return (await invoiceService.buildInvoice(payment)).html;
   }
 
   /**
@@ -338,7 +342,7 @@ export class PaymentService {
    */
   async getInvoiceText(paymentId: string, userId: string) {
     const payment = await this.getById(paymentId, userId);
-    return invoiceService.generateInvoiceText(payment);
+    return (await invoiceService.buildInvoice(payment)).text;
   }
 
   /**

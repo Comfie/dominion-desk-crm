@@ -1,0 +1,40 @@
+# Backup / alternative to Vercel Cron: calls the daily dispatcher.
+# Free for private repos within the Actions minutes quota (~15s per run).
+# Setup: repo Settings → Secrets and variables → Actions:
+#   CRON_SECRET  = same value as the Vercel env var
+#   APP_URL      = https://dominiondesk.com
+name: Daily cron
+
+# Manual trigger by default. Vercel Cron (vercel.json) is the primary scheduler;
+# running both daily would send reminders twice. To switch to GitHub as the
+# scheduler instead, remove the crons from vercel.json and uncomment below.
+on:
+  # schedule:
+  #   - cron: '15 4 * * *' # 06:15 SAST (GitHub may delay scheduled runs)
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Run a single job (e.g. send-payment-reminders). Leave empty for all.'
+        required: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call daily dispatcher
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          url="$APP_URL/api/cron/daily"
+          if [ -n "$ONLY" ]; then url="$url?only=$ONLY"; fi
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST "$url" \
+            -H "Authorization: Bearer $CRON_SECRET" --max-time 120)
+          cat response.json
+          echo
+          if [ "$status" -ge 300 ]; then
+            echo "::error::Dispatcher returned HTTP $status"
+            exit 1
+          fi

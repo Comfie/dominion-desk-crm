@@ -2,13 +2,13 @@ import type { Metadata } from 'next';
 import { LandingPageClient } from './components/LandingPageClient';
 
 export const metadata: Metadata = {
-  title: 'DominionDesk | Rental Operations OS for South Africa',
+  title: 'DominionDesk | See who has paid rent in seconds',
   description:
-    'Run placement, tenant management, rent collection, maintenance, documents, and reports from one South African rental operations platform.',
+    'Upload your bank statement and DominionDesk matches every EFT to the right tenant. Rent roll, arrears, reminders, leases and a tenant portal for South African landlords.',
   openGraph: {
-    title: 'DominionDesk | Rental Operations OS for South Africa',
+    title: 'DominionDesk | See who has paid rent in seconds',
     description:
-      'A South African rental operations platform for landlords, property companies, and rental agents.',
+      'Bank statement reconciliation, arrears and reminders for South African landlords. R99 per occupied unit.',
     url: 'https://dominiondesk.com',
     siteName: 'DominionDesk',
     locale: 'en_ZA',
@@ -16,9 +16,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DominionDesk | Rental Operations OS for South Africa',
-    description:
-      'Manage placement, tenants, rent, maintenance, documents, and reports from one product.',
+    title: 'DominionDesk | See who has paid rent in seconds',
+    description: 'Upload your bank statement. See who hasn’t paid.',
   },
 };
 

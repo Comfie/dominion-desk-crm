@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { betaApiGuard } from '@/lib/config/beta-scope';
 import { requireAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { getTenantForPortalSession } from '@/lib/tenant-session';
@@ -9,6 +11,9 @@ import { allowMockTenantPayments } from '@/lib/features/payments/utils/mock-paym
  * Initialize a Paystack payment for a tenant
  */
 export async function POST(request: NextRequest) {
+  const blocked = betaApiGuard(request);
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth();
 

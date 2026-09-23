@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/auth-helpers';
 import { paymentRepository } from '@/lib/features/payments/repositories/payment.repository';
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const invoiceHTML = invoiceService.generateInvoiceHTML(payment);
+        const { html: invoiceHTML } = await invoiceService.buildInvoice(payment);
 
         const emailResult = await sendEmail({
           to: payment.tenant.email,
