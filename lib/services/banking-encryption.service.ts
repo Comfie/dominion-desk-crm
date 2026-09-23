@@ -16,7 +16,7 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
-interface BankingDetails {
+export interface BankingDetails {
   bankName?: string;
   bankAccountName?: string;
   bankAccountNumber?: string;
