@@ -48,6 +48,27 @@ tenants pay by EFT anyway. This PR makes the core loop work without a gateway:
 - Rebuilt around an interactive statement → rent-roll demo, honest "not built yet" list,
   per-unit pricing calculator, FAQ. Removed invented stats and placement-first copy.
 
+### Invoices (bug fixes)
+
+- Invoice emails never showed the landlord's bank details (they moved to encrypted storage but
+  the template still read `payment.user`). New `invoiceService.buildInvoice()` loads them; all
+  six senders use it.
+- Plain-text invoices contained 567 NUL bytes and corrupted emoji; repaired, with a regression test.
+- Invoices now show the lease reference (`DD-XXXXXX`) in a prominent "pay with this reference" box.
+- New leases get a reference automatically before monthly rent generation.
+
+### App-wide typography fix
+
+- `globals.css` defined `--font-bold: 700` inside `@theme`. In Tailwind v4 `--font-*` means font
+  family, so `.font-bold` compiled to `font-family: 700` and **every bold/semibold in the app
+  rendered at regular weight**. Renamed to `--font-weight-*`. Expect headings across the
+  dashboard to look noticeably bolder, as originally designed.
+
+### Admin
+
+- Subscription settings show the live per-unit pricing with examples; legacy % fields hidden;
+  warning when the trial property limit is below 10. Card-fee setting hidden during beta.
+
 ### Housekeeping
 
 - Fixed pre-existing lint error (`Date.now()` in render) and a time-bomb in `subscription.service.test.ts`.
@@ -55,7 +76,7 @@ tenants pay by EFT anyway. This PR makes the core loop work without a gateway:
 ## Verification
 
 - `npm run type-check` clean
-- `NODE_ENV=test npx vitest run`: **179/179 passing** (was 23 failing, all caused by `NODE_ENV=production` in the shell)
+- `NODE_ENV=test npx vitest run`: **183/183 passing** (was 23 failing, all caused by `NODE_ENV=production` in the shell)
 - `npm run build` succeeds
 
 ## Deploy checklist
@@ -70,5 +91,4 @@ tenants pay by EFT anyway. This PR makes the core loop work without a gateway:
 ## Known follow-ups
 
 - Bank CSV fixtures from real FNB/Absa/Nedbank/Standard Bank/Capitec exports (only synthetic layouts tested).
-- Include the lease reference in invoice emails and PDFs.
-- Admin subscription settings page still shows legacy % pricing fields.
+- Restart any running `next dev` after pulling: the typography fix is in `globals.css` and a long-running dev server may serve stale CSS.
